@@ -1,0 +1,20 @@
+node_modules/
+dist/
+build/
+coverage/
+
+# Local research logs containing raw agent payloads
+research/raw-events.jsonl
+*.log
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
