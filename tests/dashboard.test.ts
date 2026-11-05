@@ -215,5 +215,24 @@ describe('Phase 5: Local Usage Dashboard (127.0.0.1)', () => {
     expect(overJson.workspaces?.count).toBe(2);
     expect(overJson.workspaces?.names).toContain('Unstable Wiki');
   });
+
+  it('handles /api/session/status, /api/session/pause, and /api/session/resume', async () => {
+    const statusRes = await fetch(`${baseUrl}/api/session/status`);
+    expect(statusRes.status).toBe(200);
+    const statusJson = (await statusRes.json()) as { ok: boolean; state: unknown };
+    expect(statusJson.state).toBeDefined();
+
+    const pauseRes = await fetch(`${baseUrl}/api/session/pause`, { method: 'POST' });
+    expect(pauseRes.status).toBe(200);
+    const pauseJson = (await pauseRes.json()) as { ok: boolean; isPaused: boolean };
+    expect(pauseJson.ok).toBe(true);
+    expect(pauseJson.isPaused).toBe(true);
+
+    const resumeRes = await fetch(`${baseUrl}/api/session/resume`, { method: 'POST' });
+    expect(resumeRes.status).toBe(200);
+    const resumeJson = (await resumeRes.json()) as { ok: boolean; isPaused: boolean };
+    expect(resumeJson.ok).toBe(true);
+    expect(resumeJson.isPaused).toBe(false);
+  });
 });
 

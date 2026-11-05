@@ -681,6 +681,10 @@ export function getDashboardHtml(): string {
     </div>
 
     <div class="header-actions">
+      <button class="status-pill" id="btnPauseLeave" onclick="togglePauseLeave()" title="Pause and store session for up to 24 hours across PC shutdown" style="cursor:pointer; background:rgba(232,255,31,0.08); border:1px solid rgba(232,255,31,0.3); color:var(--acc); font-family:inherit; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:6px; outline:none; transition:all .2s ease;">
+        <span id="pauseIcon">⏸️</span>
+        <span id="pauseText">Pause & Leave</span>
+      </button>
       <div class="status-pill" id="tokenmaxxingPill" style="border-color:rgba(232,255,31,0.3); background:rgba(232,255,31,0.06);">
         <span style="color:var(--acc); font-weight:700;" id="tokenmaxxingText">⚡ TOKENMAXXING • 0</span>
       </div>
@@ -835,11 +839,11 @@ export function getDashboardHtml(): string {
           <div class="in-c" style="justify-content: space-between;">
             <div class="card-top" style="margin-bottom:0;">
               <span class="cap">SESSION TIMER</span>
-              <span class="status-badge running_tool">ANTIGRAVITY</span>
+              <span class="status-badge running_tool" id="sessionBadge">24H PERSISTENT</span>
             </div>
             <div>
               <div class="big-num mono" id="kpiSessionTimer">00:00:00</div>
-              <div class="muted" id="kpiSessionSub" style="margin-top:2px;">Preserved across turns</div>
+              <div class="muted" id="kpiSessionSub" style="margin-top:2px;">Auto-saved for 24h shutdown recovery</div>
             </div>
           </div>
         </div>
@@ -1443,21 +1447,83 @@ export function getDashboardHtml(): string {
       }
     }
 
-    function startLiveSessionTimer(startedAtIso) {
+    let isSessionPaused = false;
+
+    function startLiveSessionTimer(startedAtIso, isPaused) {
       if (sessionTimerInterval) clearInterval(sessionTimerInterval);
       const startMs = Date.parse(startedAtIso) || Date.now();
 
-      function update() {
-        const elapsedSec = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+      function formatTime(elapsedSec) {
         const hrs = Math.floor(elapsedSec / 3600);
         const mins = Math.floor((elapsedSec % 3600) / 60);
         const secs = elapsedSec % 60;
         const pad = function(n) { return n < 10 ? '0' + n : String(n); };
-        document.getElementById('kpiSessionTimer').innerText = pad(hrs) + ':' + pad(mins) + ':' + pad(secs);
+        return pad(hrs) + ':' + pad(mins) + ':' + pad(secs);
+      }
+
+      function update() {
+        const elapsedSec = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+        const timerEl = document.getElementById('kpiSessionTimer');
+        if (timerEl) timerEl.innerText = formatTime(elapsedSec);
       }
 
       update();
-      sessionTimerInterval = setInterval(update, 1000);
+      if (!isPaused) {
+        sessionTimerInterval = setInterval(update, 1000);
+      }
+    }
+
+    async function togglePauseLeave() {
+      try {
+        const endpoint = isSessionPaused ? '/api/session/resume' : '/api/session/pause';
+        const res = await fetch(API_BASE + endpoint, { method: 'POST' });
+        if (res.ok) {
+          const json = await res.json();
+          isSessionPaused = !!json.isPaused;
+          updatePauseLeaveUi(isSessionPaused);
+          if (currentData && currentData.session && currentData.session.startedAt) {
+            startLiveSessionTimer(currentData.session.startedAt, isSessionPaused);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to toggle session pause/leave:', err);
+      }
+    }
+
+    function updatePauseLeaveUi(paused) {
+      const icon = document.getElementById('pauseIcon');
+      const text = document.getElementById('pauseText');
+      const btn = document.getElementById('btnPauseLeave');
+      const badge = document.getElementById('sessionBadge');
+      const sub = document.getElementById('kpiSessionSub');
+
+      if (paused) {
+        if (icon) icon.innerText = '▶️';
+        if (text) text.innerText = 'Resume Session';
+        if (btn) {
+          btn.style.borderColor = 'rgba(16,185,129,0.5)';
+          btn.style.color = '#10b981';
+          btn.style.background = 'rgba(16,185,129,0.12)';
+        }
+        if (badge) {
+          badge.className = 'status-badge idle';
+          badge.innerText = 'PAUSED (SAVED)';
+        }
+        if (sub) sub.innerText = 'Timer frozen — 24h retention active';
+      } else {
+        if (icon) icon.innerText = '⏸️';
+        if (text) text.innerText = 'Pause & Leave';
+        if (btn) {
+          btn.style.borderColor = 'rgba(232,255,31,0.3)';
+          btn.style.color = 'var(--acc)';
+          btn.style.background = 'rgba(232,255,31,0.08)';
+        }
+        if (badge) {
+          badge.className = 'status-badge running_tool';
+          badge.innerText = '24H PERSISTENT';
+        }
+        if (sub) sub.innerText = 'Auto-saved for 24h shutdown recovery';
+      }
     }
 
     /* ------------------------------------------------------------------ */
@@ -2324,6 +2390,10 @@ export function getDashboardHtml(): string {
     /* ------------------------------------------------------------------ */
     /*  Settings Sync & EventSource Stream                                */
     /* ------------------------------------------------------------------ */
+    const API_BASE = (window.location.protocol === 'vscode-webview:' || !window.location.host || !window.location.host.startsWith('127.0.0.1'))
+      ? 'http://127.0.0.1:41177'
+      : '';
+
     function renderSettings(s) {
       document.getElementById('settingDisablePresence').checked = !!s.disableRichPresence;
       document.getElementById('settingHideModels').checked = !!s.hideModels;
@@ -2334,7 +2404,7 @@ export function getDashboardHtml(): string {
     async function updateSetting(key, val) {
       const body = {};
       body[key] = val;
-      await fetch('/api/settings', {
+      await fetch(API_BASE + '/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -2351,7 +2421,13 @@ export function getDashboardHtml(): string {
       if (data.editor) renderEditor(data.editor);
       if (data.discord) renderDiscord(data.discord);
       if (data.settings) renderSettings(data.settings);
-      if (data.session && data.session.startedAt) startLiveSessionTimer(data.session.startedAt);
+
+      isSessionPaused = !!(data.isPaused || (data.settings && data.settings.pauseTracking));
+      updatePauseLeaveUi(isSessionPaused);
+
+      if (data.session && data.session.startedAt) {
+        startLiveSessionTimer(data.session.startedAt, isSessionPaused);
+      }
 
       if (activeConversationId) {
         const activeConv = data.conversations.find(function(c) { return c.conversationId === activeConversationId; });
@@ -2367,7 +2443,7 @@ export function getDashboardHtml(): string {
     });
 
     function startSSE() {
-      const es = new EventSource('/api/stream');
+      const es = new EventSource(API_BASE + '/api/stream');
       es.onmessage = function(e) {
         try {
           const payload = JSON.parse(e.data);
@@ -2382,7 +2458,7 @@ export function getDashboardHtml(): string {
 
     async function init() {
       try {
-        const res = await fetch('/api/overview');
+        const res = await fetch(API_BASE + '/api/overview');
         if (res.ok) {
           const json = await res.json();
           updateAll(json);

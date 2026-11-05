@@ -298,6 +298,79 @@ export class DashboardServer {
           return;
         }
 
+        // REST API: Session Status
+        if (method === 'GET' && url === '/api/session/status') {
+          const trackerAny = this.tracker as unknown as {
+            getSessionManager?: () => {
+              getSessionState: () => unknown;
+              canResumeSession: (maxAge?: number) => boolean;
+            };
+          };
+          const sm = typeof trackerAny.getSessionManager === 'function' ? trackerAny.getSessionManager() : null;
+          const sessionState = sm ? sm.getSessionState() : { isPaused: false, elapsedSeconds: 0 };
+          const canResume = sm ? sm.canResumeSession(24 * 3600 * 1000) : false;
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, state: sessionState, canResume }));
+          return;
+        }
+
+        // REST API: Session Pause ("Pause & Leave")
+        if (method === 'POST' && url === '/api/session/pause') {
+          const trackerAny = this.tracker as unknown as {
+            pauseSession?: () => unknown;
+            setPaused?: (p: boolean) => void;
+            getSnapshot?: () => TrackerSnapshot;
+          };
+          let pausedState: unknown = null;
+          if (typeof trackerAny.pauseSession === 'function') {
+            pausedState = trackerAny.pauseSession();
+          } else if (typeof trackerAny.setPaused === 'function') {
+            trackerAny.setPaused(true);
+          }
+          this.presenceManager?.updateFromSnapshot(this.tracker.getSnapshot());
+          this.broadcastUpdate();
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, isPaused: true, state: pausedState }));
+          return;
+        }
+
+        // REST API: Session Resume
+        if (method === 'POST' && url === '/api/session/resume') {
+          const trackerAny = this.tracker as unknown as {
+            resumeSession?: () => unknown;
+            setPaused?: (p: boolean) => void;
+            getSnapshot?: () => TrackerSnapshot;
+          };
+          let resumedState: unknown = null;
+          if (typeof trackerAny.resumeSession === 'function') {
+            resumedState = trackerAny.resumeSession();
+          } else if (typeof trackerAny.setPaused === 'function') {
+            trackerAny.setPaused(false);
+          }
+          this.presenceManager?.updateFromSnapshot(this.tracker.getSnapshot());
+          this.broadcastUpdate();
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, isPaused: false, state: resumedState }));
+          return;
+        }
+
+        // REST API: Session Fresh
+        if (method === 'POST' && url === '/api/session/fresh') {
+          const trackerAny = this.tracker as unknown as {
+            startFreshSession?: () => unknown;
+            getSnapshot?: () => TrackerSnapshot;
+          };
+          let freshState: unknown = null;
+          if (typeof trackerAny.startFreshSession === 'function') {
+            freshState = trackerAny.startFreshSession();
+          }
+          this.presenceManager?.updateFromSnapshot(this.tracker.getSnapshot());
+          this.broadcastUpdate();
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, isFresh: true, state: freshState }));
+          return;
+        }
+
         // REST API: Settings (POST update)
         if (method === 'POST' && url === '/api/settings') {
           this.readBody(req, res, 8192, (body) => {
