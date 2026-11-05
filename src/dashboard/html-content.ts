@@ -1161,7 +1161,7 @@ export function getDashboardHtml(): string {
 
     function createDotNumber(host, pitch) {
       pitch = pitch || 4;
-      const cols = 48;
+      const cols = 80;
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('class', 'dots');
       svg.setAttribute('aria-hidden', 'true');
@@ -1719,7 +1719,7 @@ export function getDashboardHtml(): string {
         const badgeText = isActive ? (c.status === 'running_tool' ? 'RUNNING TOOL' : 'THINKING') : 'IDLE';
 
         return (
-          '<tr onclick="openDrawer(\'' + c.conversationId + '\')">' +
+          '<tr data-id="' + c.conversationId + '" onclick="openDrawer(this.dataset.id)">' +
           '<td><span class="status-badge ' + badgeClass + '">' + badgeText + '</span></td>' +
           '<td class="mono">' + c.conversationId.slice(0, 14) + '...</td>' +
           '<td style="color:var(--t1); font-weight:600;">' + c.currentModel + '</td>' +
@@ -1784,7 +1784,7 @@ export function getDashboardHtml(): string {
         const badgeText = isActive ? (c.status === 'running_tool' ? 'RUNNING TOOL' : 'THINKING') : 'IDLE';
 
         return (
-          '<tr onclick="openDrawer(\'' + c.conversationId + '\')">' +
+          '<tr data-id="' + c.conversationId + '" onclick="openDrawer(this.dataset.id)">' +
           '<td><span class="status-badge ' + badgeClass + '">' + badgeText + '</span></td>' +
           '<td class="mono">' + c.conversationId + '</td>' +
           '<td style="color:var(--t1); font-weight:600;">' + c.currentModel + '</td>' +
@@ -1806,7 +1806,7 @@ export function getDashboardHtml(): string {
         const badgeText = isActive ? (a.status === 'running_tool' ? 'RUNNING TOOL' : 'THINKING') : 'IDLE';
 
         return (
-          '<tr onclick="openDrawer(\'' + a.conversationId + '\')">' +
+          '<tr data-id="' + a.conversationId + '" onclick="openDrawer(this.dataset.id)">' +
           '<td><span class="status-badge ' + badgeClass + '">' + badgeText + '</span></td>' +
           '<td class="mono">' + a.conversationId.slice(0, 18) + '...</td>' +
           '<td style="color:var(--t1); font-weight:600;">' + a.model + '</td>' +
