@@ -4,6 +4,7 @@ export default defineConfig([
   {
     entry: {
       'hook-forwarder': 'src/forwarder/hook-forwarder.ts',
+      'daemon': 'src/daemon/index.ts',
     },
     format: ['cjs'],
     target: 'node20',
@@ -19,6 +20,6 @@ export default defineConfig([
         js: '.cjs',
       };
     },
+    external: ['better-sqlite3'],
   },
 ]);
-

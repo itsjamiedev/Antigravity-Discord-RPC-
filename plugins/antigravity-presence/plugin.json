@@ -1,0 +1,13 @@
+{
+  "name": "antigravity-presence",
+  "displayName": "Antigravity Presence",
+  "description": "Privacy-safe Discord Rich Presence and local usage dashboard for Google Antigravity agents.",
+  "version": "0.1.0",
+  "author": "Antigravity Presence Project",
+  "homepage": "http://127.0.0.1:41177",
+  "suggestedPrompts": [
+    "Show active agent count on Discord",
+    "Open the local Antigravity usage dashboard",
+    "Check token consumption across models"
+  ]
+}

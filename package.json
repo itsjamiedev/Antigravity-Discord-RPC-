@@ -9,7 +9,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "start": "tsx src/daemon/index.ts"
+    "start": "node dist/daemon.cjs",
+    "dev": "tsx src/daemon/index.ts",
+    "hooks:install": "node scripts/install-hooks.js",
+    "hooks:uninstall": "node scripts/uninstall-hooks.js"
   },
   "engines": {
     "node": ">=20.0.0"
