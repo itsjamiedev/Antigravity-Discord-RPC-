@@ -155,4 +155,37 @@ describe('SidebarDashboardProvider (Native Activity Bar Webview View)', () => {
       })
     );
   });
+
+  it('replies to requestState message with current snapshot or disk fallback', () => {
+    const provider = new SidebarDashboardProvider(undefined, mockSnapshot);
+    const mockPostMessage = vi.fn();
+    let messageHandler: ((msg: { command: string }) => void) | null = null;
+    const mockWebviewView = {
+      webview: {
+        options: {},
+        html: '',
+        onDidReceiveMessage: vi.fn((fn) => {
+          messageHandler = fn;
+        }),
+        postMessage: mockPostMessage,
+      },
+      show: vi.fn(),
+    };
+
+    provider.resolveWebviewView(mockWebviewView as any, {} as any, {} as any);
+    expect(typeof messageHandler).toBe('function');
+
+    messageHandler!({ command: 'requestState' });
+    expect(mockPostMessage).toHaveBeenCalledWith({
+      type: 'update',
+      snapshot: mockSnapshot,
+    });
+  });
+
+  it('generates HTML with CSP meta tag and fallback handling when snapshot is null', () => {
+    const html = getSidebarHtml(null);
+    expect(html).toContain('Content-Security-Policy');
+    expect(html).toContain('http://127.0.0.1:*');
+    expect(html).toContain('Antigravity Telemetry');
+  });
 });

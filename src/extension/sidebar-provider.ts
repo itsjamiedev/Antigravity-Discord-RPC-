@@ -6,8 +6,11 @@
  * directly inside the IDE primary sidebar with agency-grade Doppelrand aesthetics.
  */
 
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import type * as vscode from 'vscode';
-import type { TrackerSnapshot } from '../shared/types.js';
+import type { TrackerSnapshot, ModelStats, TokenUsageRecord } from '../shared/types.js';
 
 export function formatNumber(n: number): string {
   if (typeof n !== 'number' || !Number.isFinite(n)) return '0';
@@ -22,8 +25,126 @@ export function formatDuration(elapsedSec: number): string {
   return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
 }
 
+export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
+  try {
+    const baseDir = path.join(os.homedir(), '.gemini', 'antigravity');
+    const sessionFile = path.join(baseDir, 'presence-session.json');
+    const tokensFile = path.join(baseDir, 'presence-tokens.json');
+
+    let startedAt = new Date().toISOString();
+    let isPaused = false;
+    let sessionId = 'session-fallback';
+
+    if (fs.existsSync(sessionFile)) {
+      try {
+        const sessData = JSON.parse(fs.readFileSync(sessionFile, 'utf8'));
+        if (sessData && sessData.startedAt) {
+          startedAt = sessData.startedAt;
+          isPaused = Boolean(sessData.isPaused);
+          sessionId = sessData.sessionId || sessionId;
+        }
+      } catch {}
+    }
+
+    let inputTokens = 0;
+    let cacheReadTokens = 0;
+    let outputTokens = 0;
+    let totalTokens = 0;
+    const modelStats: ModelStats[] = [];
+
+    if (fs.existsSync(tokensFile)) {
+      try {
+        const tokData = JSON.parse(fs.readFileSync(tokensFile, 'utf8'));
+        if (tokData && tokData.cumulativeTokensByModel) {
+          for (const [model, mTokens] of Object.entries(
+            tokData.cumulativeTokensByModel as Record<string, TokenUsageRecord>
+          )) {
+            if (!mTokens) continue;
+            inputTokens += mTokens.inputTokens || 0;
+            cacheReadTokens += mTokens.cacheReadTokens || 0;
+            outputTokens += mTokens.outputTokens || 0;
+            totalTokens += mTokens.totalTokens || 0;
+
+            modelStats.push({
+              model,
+              conversationCount: 1,
+              invocationCount: 1,
+              toolCallCount: 0,
+              errorCount: 0,
+              tokens: {
+                inputTokens: mTokens.inputTokens || 0,
+                cacheReadTokens: mTokens.cacheReadTokens || 0,
+                outputTokens: mTokens.outputTokens || 0,
+                totalTokens: mTokens.totalTokens || 0,
+                estimated: false,
+                source: 'transcript_exact',
+              },
+              lastUsedAt: tokData.lastSavedAt || new Date().toISOString(),
+            });
+          }
+        }
+      } catch {}
+    }
+
+    modelStats.sort((a, b) => b.tokens.totalTokens - a.tokens.totalTokens);
+
+    return {
+      session: {
+        sessionId,
+        startedAt,
+        lastActivityAt: new Date().toISOString(),
+        activeAgentCount: 0,
+        totalConversations: 0,
+        totalEventsProcessed: 0,
+        tokens: {
+          inputTokens,
+          cacheReadTokens,
+          outputTokens,
+          totalTokens,
+          estimated: false,
+          source: 'transcript_exact',
+        },
+      },
+      agents: [],
+      activeAgents: [],
+      conversations: [],
+      modelStats,
+      dailyUsage: [],
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
-  const tokens = snapshot?.session.tokens;
+  let effective = snapshot;
+  if (!effective || !effective.session?.tokens || effective.session.tokens.totalTokens === 0) {
+    const diskFallback = loadDiskFallbackSnapshot();
+    if (diskFallback) {
+      effective = {
+        ...diskFallback,
+        ...(effective ?? {}),
+        session: {
+          ...diskFallback.session,
+          ...(effective?.session ?? {}),
+          tokens:
+            (effective?.session?.tokens?.totalTokens ?? 0) > 0
+              ? effective!.session.tokens
+              : diskFallback.session.tokens,
+          startedAt:
+            effective?.session?.startedAt && effective.session.startedAt !== effective.session.lastActivityAt
+              ? effective.session.startedAt
+              : diskFallback.session.startedAt,
+        },
+        modelStats:
+          effective?.modelStats && effective.modelStats.length > 0
+            ? effective.modelStats
+            : diskFallback.modelStats,
+      };
+    }
+  }
+
+  const tokens = effective?.session?.tokens;
   const totalTokens = tokens?.totalTokens ?? 0;
   const cacheTokens = tokens?.cacheReadTokens ?? 0;
   const inTokens = tokens?.inputTokens ?? 0;
@@ -37,12 +158,12 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   const outRatio = totalTokens > 0 ? Math.max(1, Math.round((outTokens / totalTokens) * 100)) : 0;
   const cacheBarRatio = totalTokens > 0 ? Math.max(0, 100 - inRatio - outRatio) : 0;
 
-  const models = snapshot?.modelStats ?? [];
-  const activeAgents = snapshot?.activeAgents ?? [];
+  const models = effective?.modelStats ?? [];
+  const activeAgents = effective?.activeAgents ?? [];
   const isAgentActive = activeAgents.length > 0;
   const activeAgent = activeAgents[0];
 
-  const startedAt = snapshot?.session.startedAt ?? new Date().toISOString();
+  const startedAt = effective?.session?.startedAt ?? new Date().toISOString();
   const elapsedSec = Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000));
   const timeFormatted = formatDuration(elapsedSec);
 
@@ -50,6 +171,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src http://127.0.0.1:* http://localhost:* ws:; img-src https: data:;">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Antigravity Telemetry</title>
   <style>
@@ -700,7 +822,15 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
         const c = wsInfo && wsInfo.count ? wsInfo.count : 1;
         wsEl.innerText = c > 1 ? c + ' Workspaces active' : '1 Workspace active';
       }
+
+      hasReceivedUpdate = true;
+      const badge = document.getElementById('sideStatusText');
+      if (badge && (badge.innerText === 'Connecting...' || badge.innerText === 'Initializing')) {
+        badge.innerText = 'Live Synced';
+      }
     }
+
+    let hasReceivedUpdate = false;
 
     // Connect to live SSE stream from local dashboard server
     function initSSE() {
@@ -716,7 +846,10 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
         };
         es.onerror = function() {
           const badge = document.getElementById('sideStatusText');
-          if (badge) badge.innerText = 'Connecting...';
+          if (badge && !hasReceivedUpdate) {
+            badge.innerText = 'Connecting...';
+          }
+          try { es.close(); } catch {}
           setTimeout(initSSE, 4000);
         };
       } catch {
@@ -733,6 +866,11 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
         updateFromSnapshot(msg.snapshot);
       }
     });
+
+    // Request latest state immediately from Extension Host
+    if (vscode) {
+      vscode.postMessage({ command: 'requestState' });
+    }
 
     // Actions dispatched to VS Code
     function openFullDashboard() {
@@ -791,8 +929,9 @@ export class SidebarDashboardProvider implements vscode.WebviewViewProvider {
   private currentSnapshot?: TrackerSnapshot | null;
   private customVscode?: typeof vscode;
 
-  constructor(customVscode?: typeof vscode) {
+  constructor(customVscode?: typeof vscode, initialSnapshot?: TrackerSnapshot | null) {
     this.customVscode = customVscode;
+    this.currentSnapshot = initialSnapshot ?? null;
   }
 
   private getVscode(): typeof vscode {
@@ -816,28 +955,44 @@ export class SidebarDashboardProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [],
     };
 
-    webviewView.webview.html = getSidebarHtml(this.currentSnapshot);
+    const initial = this.currentSnapshot || loadDiskFallbackSnapshot();
+    webviewView.webview.html = getSidebarHtml(initial);
 
     webviewView.webview.onDidReceiveMessage((message: { command: string }) => {
-      const vs = this.getVscode();
       switch (message.command) {
+        case 'requestState':
+          if (this.currentSnapshot) {
+            void webviewView.webview.postMessage({
+              type: 'update',
+              snapshot: this.currentSnapshot,
+            });
+          } else {
+            const fallback = loadDiskFallbackSnapshot();
+            if (fallback) {
+              void webviewView.webview.postMessage({
+                type: 'update',
+                snapshot: fallback,
+              });
+            }
+          }
+          break;
         case 'openFullDashboard':
-          void vs.commands.executeCommand('antigravityPresence.openDashboardInIde');
+          void this.getVscode().commands.executeCommand('antigravityPresence.openDashboardInIde');
           break;
         case 'openBrowserDashboard':
-          void vs.commands.executeCommand('antigravityPresence.openDashboard');
+          void this.getVscode().commands.executeCommand('antigravityPresence.openDashboard');
           break;
         case 'pauseSession':
-          void vs.commands.executeCommand('antigravityPresence.pauseAndLeaveSession');
+          void this.getVscode().commands.executeCommand('antigravityPresence.pauseAndLeaveSession');
           break;
         case 'resumeSession':
-          void vs.commands.executeCommand('antigravityPresence.resumePreviousSession');
+          void this.getVscode().commands.executeCommand('antigravityPresence.resumePreviousSession');
           break;
         case 'startFreshSession':
-          void vs.commands.executeCommand('antigravityPresence.startFreshSession');
+          void this.getVscode().commands.executeCommand('antigravityPresence.startFreshSession');
           break;
         case 'reconnectDiscord':
-          void vs.commands.executeCommand('antigravityPresence.reconnectDiscord');
+          void this.getVscode().commands.executeCommand('antigravityPresence.reconnectDiscord');
           break;
       }
     });

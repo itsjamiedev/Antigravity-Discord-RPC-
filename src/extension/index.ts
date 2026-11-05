@@ -36,6 +36,7 @@ let sidebarProvider: SidebarDashboardProvider | null = null;
 let isLeader = false;
 let leaderCheckTimer: NodeJS.Timeout | null = null;
 let workspaceHeartbeatTimer: NodeJS.Timeout | null = null;
+let followerSyncTimer: NodeJS.Timeout | null = null;
 const windowSessionId = 'win-' + Math.random().toString(36).slice(2, 9);
 
 function getCurrentWorkspaceFolders(): string[] {
@@ -119,7 +120,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   tracker = new PureTracker();
 
   // 6. Initialize Activity Bar Sidebar Dashboard Provider
-  sidebarProvider = new SidebarDashboardProvider(vscode);
+  sidebarProvider = new SidebarDashboardProvider(vscode, tracker.getSnapshot());
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       'antigravityPresence.sidebarView',
@@ -150,6 +151,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         await tryAcquireLeaderRole();
       }
     }, 4000);
+
+    // Follower-to-Leader real-time telemetry synchronization loop
+    startFollowerSync();
   }
 
   // 7. Register VS Code Editor Event Listeners (Manual Coding Mode)
@@ -236,8 +240,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('antigravityPresence.pauseAndLeaveSession', () => {
       if (tracker) {
         tracker.pauseSession();
-        if (presenceManager) {
+        if (isLeader && presenceManager) {
           presenceManager.updateFromSnapshot(tracker.getSnapshot());
+        } else if (!isLeader) {
+          forwardSessionActionToLeader('pause');
         }
         vscode.window.showInformationMessage(
           'Antigravity Presence: Session paused & stored for up to 24 hours. Safe to shut down your PC or close the IDE.'
@@ -248,8 +254,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('antigravityPresence.resumePreviousSession', () => {
       if (tracker) {
         const resumed = tracker.resumeSession();
-        if (presenceManager) {
+        if (isLeader && presenceManager) {
           presenceManager.updateFromSnapshot(tracker.getSnapshot());
+        } else if (!isLeader) {
+          forwardSessionActionToLeader('resume');
         }
         const hrs = Math.floor(resumed.elapsedSeconds / 3600);
         const mins = Math.floor((resumed.elapsedSeconds % 3600) / 60);
@@ -263,8 +271,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('antigravityPresence.startFreshSession', () => {
       if (tracker) {
         tracker.startFreshSession();
-        if (presenceManager) {
+        if (isLeader && presenceManager) {
           presenceManager.updateFromSnapshot(tracker.getSnapshot());
+        } else if (!isLeader) {
+          forwardSessionActionToLeader('fresh');
         }
         vscode.window.showInformationMessage('Antigravity Presence: Fresh session started (00:00:00).');
         updateStatusBar();
@@ -337,6 +347,10 @@ async function tryAcquireLeaderRole(): Promise<boolean> {
       clearInterval(workspaceHeartbeatTimer);
       workspaceHeartbeatTimer = null;
     }
+    if (followerSyncTimer) {
+      clearInterval(followerSyncTimer);
+      followerSyncTimer = null;
+    }
 
     // Leader registers its own open workspace folders
     dashboardServer.registerWindowWorkspaces(windowSessionId, getCurrentWorkspaceFolders());
@@ -402,6 +416,10 @@ export function deactivate(): void {
   if (workspaceHeartbeatTimer) {
     clearInterval(workspaceHeartbeatTimer);
     workspaceHeartbeatTimer = null;
+  }
+  if (followerSyncTimer) {
+    clearInterval(followerSyncTimer);
+    followerSyncTimer = null;
   }
   if (agentWatcher) {
     agentWatcher.stop();
@@ -535,4 +553,120 @@ function updateStatusBar(): void {
       statusBarItem.tooltip = 'Antigravity Presence • Click to open Local Usage Dashboard';
     }
   }
+}
+
+function startFollowerSync(): void {
+  if (followerSyncTimer) {
+    clearInterval(followerSyncTimer);
+    followerSyncTimer = null;
+  }
+
+  const pollLeader = () => {
+    if (isLeader) {
+      if (followerSyncTimer) {
+        clearInterval(followerSyncTimer);
+        followerSyncTimer = null;
+      }
+      return;
+    }
+
+    fetchOverviewFromLeader((fullState) => {
+      if (!fullState || isLeader) return;
+      if (tracker) {
+        tracker.syncFromLeaderSnapshot(fullState);
+      }
+      sidebarProvider?.updateSnapshot(fullState);
+      updateStatusBarFromLeader(fullState);
+    });
+  };
+
+  // Immediate poll
+  pollLeader();
+  // Poll every 1500ms
+  followerSyncTimer = setInterval(pollLeader, 1500);
+}
+
+function fetchOverviewFromLeader(callback: (data: any | null) => void): void {
+  try {
+    const req = http.request(
+      {
+        hostname: '127.0.0.1',
+        port: 41177,
+        path: '/api/overview',
+        method: 'GET',
+        timeout: 1200,
+      },
+      (res) => {
+        if (res.statusCode !== 200) {
+          res.resume();
+          callback(null);
+          return;
+        }
+        let raw = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+          raw += chunk;
+        });
+        res.on('end', () => {
+          try {
+            const data = JSON.parse(raw);
+            callback(data);
+          } catch {
+            callback(null);
+          }
+        });
+      }
+    );
+    req.on('error', () => {
+      callback(null);
+    });
+    req.on('timeout', () => {
+      req.destroy();
+      callback(null);
+    });
+    req.end();
+  } catch {
+    callback(null);
+  }
+}
+
+function updateStatusBarFromLeader(state: any): void {
+  if (!statusBarItem || isLeader) return;
+  const activeAgents = state.activeAgents || [];
+  if (activeAgents.length > 0) {
+    const count = activeAgents.length;
+    statusBarItem.text = `$(hubot) Antigravity: ${count} AI ${count === 1 ? 'Agent' : 'Agents'} Active`;
+    const models = Array.from(new Set(activeAgents.map((a: any) => a.model).filter(Boolean)));
+    statusBarItem.tooltip = `Antigravity Presence (Follower)\nModels: ${models.join(', ') || 'Gemini 3.8 Flash'}\nClick to open Dashboard`;
+  } else {
+    const editor = vscode.window.activeTextEditor;
+    if (editor && editor.document) {
+      const fileName = path.basename(editor.document.fileName);
+      const line = editor.selection.active.line + 1;
+      statusBarItem.text = `$(edit) Antigravity: ${fileName}:${line}`;
+      statusBarItem.tooltip = `Editing ${fileName} (${editor.document.languageId}) - Line ${line} of ${editor.document.lineCount}\nClick to open Dashboard`;
+    } else {
+      statusBarItem.text = '$(check) Antigravity: Connected';
+      statusBarItem.tooltip = 'Antigravity Presence • Click to open Local Usage Dashboard';
+    }
+  }
+}
+
+function forwardSessionActionToLeader(action: 'pause' | 'resume' | 'fresh'): void {
+  try {
+    const req = http.request(
+      {
+        hostname: '127.0.0.1',
+        port: 41177,
+        path: `/api/session/${action}`,
+        method: 'POST',
+        timeout: 1500,
+      },
+      (res) => {
+        res.resume();
+      }
+    );
+    req.on('error', () => {});
+    req.end();
+  } catch {}
 }

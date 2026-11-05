@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { SessionManager } from '../src/tracker/session-manager.js';
+import { PureTracker } from '../src/tracker/pure-tracker.js';
 
 describe('SessionManager (24-Hour Pause & Leave Resumption)', () => {
   let tempDir: string;
@@ -155,6 +156,54 @@ describe('SessionManager (24-Hour Pause & Leave Resumption)', () => {
     expect(state!.startedAt).toBe(legacyStart);
     expect(state!.elapsedSeconds).toBeGreaterThanOrEqual(5790);
     expect(state!.isPaused).toBe(false);
+  });
+
+  it('PureTracker syncs session, timer and agents from Leader snapshot in follower mode', () => {
+    const tracker = new PureTracker(false, path.join(tempDir, 'tokens.json'), sessionFilePath);
+    const mockLeaderSnapshot = {
+      session: {
+        sessionId: 'leader-session-123',
+        startedAt: new Date(Date.now() - 7200_000).toISOString(),
+        lastActivityAt: new Date().toISOString(),
+        activeAgentCount: 1,
+        totalConversations: 10,
+        totalEventsProcessed: 45,
+        tokens: {
+          inputTokens: 50_000,
+          cacheReadTokens: 200_000,
+          outputTokens: 10_000,
+          totalTokens: 260_000,
+          estimated: false,
+          source: 'transcript_exact' as const,
+        },
+      },
+      agents: [],
+      activeAgents: [
+        {
+          conversationId: 'c1',
+          model: 'Gemini 3.8 Flash',
+          status: 'thinking' as const,
+          statusEstimated: false,
+          activeTool: null,
+          startedAt: new Date().toISOString(),
+          lastEventAt: new Date().toISOString(),
+          lastEventType: 'SessionStart' as const,
+          parentConversationId: null,
+          isSubagent: false,
+          hasError: false,
+        },
+      ],
+      conversations: [],
+      modelStats: [],
+      dailyUsage: [],
+    };
+
+    tracker.syncFromLeaderSnapshot(mockLeaderSnapshot);
+    const snap = tracker.getSnapshot();
+    expect(snap.session.sessionId).toBe('leader-session-123');
+    expect(snap.session.startedAt).toBe(mockLeaderSnapshot.session.startedAt);
+    expect(snap.session.tokens.totalTokens).toBe(260_000);
+    tracker.close();
   });
 });
 

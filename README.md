@@ -1,7 +1,7 @@
 # Antigravity Presence
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/itsjamiedev/Antigravity-Discord-RPC-/main/.github/assets/banner.png" alt="Antigravity Presence Banner" width="100%" />
+  <img src="resources/banner.png" alt="Antigravity Presence Banner" width="100%" />
 </p>
 
 <p align="center">

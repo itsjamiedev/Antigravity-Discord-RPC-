@@ -124,6 +124,37 @@ export class PureTracker {
     this.startHeartbeat();
   }
 
+  public syncFromLeaderSnapshot(snap: TrackerSnapshot): void {
+    if (!snap) return;
+
+    if (snap.session) {
+      this.session = {
+        ...this.session,
+        ...snap.session,
+        tokens: snap.session.tokens ?? this.session.tokens,
+      };
+      if (snap.session.startedAt) {
+        this.startTime = snap.session.startedAt;
+      }
+    }
+
+    if (Array.isArray(snap.agents)) {
+      this.agents.clear();
+      for (const a of snap.agents) {
+        this.agents.set(a.conversationId, a);
+      }
+    }
+
+    if (Array.isArray(snap.conversations)) {
+      this.conversations.clear();
+      for (const c of snap.conversations) {
+        this.conversations.set(c.conversationId, c);
+      }
+    }
+
+    this.notify();
+  }
+
   public updateFromAgentWatcher(state: AgentWatcherState): void {
     if (this.isPaused) return;
 
@@ -264,6 +295,12 @@ export class PureTracker {
       (a) => a.status === 'thinking' || a.status === 'running_tool'
     );
 
+    const localTokens = this.tokenStore.getTotalCumulativeTokens();
+    const effectiveTokens =
+      localTokens.totalTokens > 0
+        ? localTokens
+        : (this.session.tokens ?? localTokens);
+
     const modelStatsList = this.tokenStore.getModelStats();
     const dailyUsage = this.tokenStore.getDailyUsage();
 
@@ -271,7 +308,7 @@ export class PureTracker {
       session: {
         ...this.session,
         activeAgentCount: activeAgentsList.length,
-        tokens: this.tokenStore.getTotalCumulativeTokens(),
+        tokens: effectiveTokens,
       },
       agents: agentsList,
       activeAgents: activeAgentsList,
