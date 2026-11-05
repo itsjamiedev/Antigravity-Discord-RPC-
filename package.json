@@ -33,6 +33,10 @@
       {
         "command": "antigravityPresence.togglePresence",
         "title": "Antigravity Presence: Toggle Discord Presence"
+      },
+      {
+        "command": "antigravityPresence.reloadWindow",
+        "title": "Antigravity Presence: Reload Extension Host Window"
       }
     ],
     "configuration": {

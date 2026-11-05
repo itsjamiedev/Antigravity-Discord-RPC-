@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { AgentWatcher } from '../src/extension/agent-watcher.js';
+import { AgentWatcher, getGroundTruthConversationStatuses } from '../src/extension/agent-watcher.js';
 import { PureTracker } from '../src/tracker/pure-tracker.js';
 
 describe('Hookless AgentWatcher & PureTracker', () => {
@@ -239,6 +239,16 @@ describe('Hookless AgentWatcher & PureTracker', () => {
     expect(snap.modelStats.length).toBe(1);
     expect(snap.dailyUsage.length).toBe(1);
     tracker.close();
+  });
+
+  it('getGroundTruthConversationStatuses returns Map without throwing even on missing or corrupted DB', () => {
+    const emptyMap = getGroundTruthConversationStatuses(tempBrainDir);
+    expect(emptyMap instanceof Map).toBe(true);
+    expect(emptyMap.size).toBe(0);
+
+    // Call against real Antigravity dir if present
+    const realMap = getGroundTruthConversationStatuses();
+    expect(realMap instanceof Map).toBe(true);
   });
 });
 

@@ -245,6 +245,16 @@ export class DashboardServer {
           return;
         }
 
+        // Graceful shutdown / release port for new leader or updates
+        if (method === 'POST' && url === '/api/shutdown') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, shuttingDown: true }));
+          setTimeout(() => {
+            void this.stop();
+          }, 100);
+          return;
+        }
+
         // Ingest: Hook Forwarder
         if (method === 'POST' && url === '/api/ingest') {
           this.readBody(req, res, 16384, (body) => {

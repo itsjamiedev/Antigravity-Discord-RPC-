@@ -3,9 +3,15 @@
  *
  * Provides privacy-safe Discord Rich Presence and local dashboard monitoring
  * natively inside the IDE with zero external hooks and zero agent risk.
+ *
+ * Features Leader Election: In multi-window environments, exactly ONE window
+ * becomes Leader (hosting the Dashboard on port 41177 and managing the single
+ * connection to Discord IPC). Secondary windows act as Followers and forward
+ * manual editor activity to the Leader with zero IPC conflicts.
  */
 
 import * as vscode from 'vscode';
+import http from 'node:http';
 import path from 'node:path';
 import { DiscordIpcClient } from '../discord/ipc-client.js';
 import { PresenceManager } from '../discord/presence-manager.js';
@@ -14,6 +20,7 @@ import { PureTracker } from '../tracker/pure-tracker.js';
 import { AgentWatcher, type AgentWatcherState } from './agent-watcher.js';
 import { DashboardServer } from '../dashboard/server.js';
 import type { CentralTracker } from '../tracker/tracker.js';
+import type { ManualEditorState } from '../shared/types.js';
 
 let discordClient: DiscordIpcClient | null = null;
 let presenceManager: PresenceManager | null = null;
@@ -23,13 +30,16 @@ let agentWatcher: AgentWatcher | null = null;
 let dashboardServer: DashboardServer | null = null;
 let statusBarItem: vscode.StatusBarItem | null = null;
 
+let isLeader = false;
+let leaderCheckTimer: NodeJS.Timeout | null = null;
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   console.log('[Antigravity Presence] Native Extension activating in Antigravity IDE...');
 
   // 1. Create Status Bar Item
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
   statusBarItem.command = 'antigravityPresence.openDashboard';
-  statusBarItem.text = '$(broadcast) Antigravity: Connecting...';
+  statusBarItem.text = '$(broadcast) Antigravity: Initializing...';
   statusBarItem.tooltip = 'Antigravity Presence • Click to open Local Usage Dashboard';
   statusBarItem.show();
   context.subscriptions.push(statusBarItem);
@@ -47,7 +57,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     if (state === 'connected') {
       updateStatusBar();
     } else if (state === 'disconnected') {
-      if (statusBarItem) {
+      if (statusBarItem && isLeader) {
         statusBarItem.text = '$(circle-slash) Antigravity: Disconnected';
       }
     }
@@ -59,28 +69,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // 5. Initialize PureTracker (zero C++ dependencies)
   tracker = new PureTracker();
 
-  // 6. Initialize Agent Watcher (Hookless)
-  agentWatcher = new AgentWatcher();
-  agentWatcher.on('change', (state: AgentWatcherState) => {
-    onAgentStateChanged(state);
-  });
-  agentWatcher.start();
-
-  // 7. Initialize Local Dashboard Server (127.0.0.1:41177)
-  try {
-    dashboardServer = new DashboardServer({
-      port: 41177,
-      tracker: tracker as unknown as CentralTracker,
-      presenceManager,
-      discordClient,
-      configManager,
-    });
-    await dashboardServer.start();
-  } catch (err) {
-    console.log('[Antigravity Presence] Dashboard server note:', err);
+  // 6. Attempt Leader Election (Port 41177 Dashboard Server)
+  const wonElection = await tryAcquireLeaderRole();
+  if (!wonElection) {
+    console.log('[Antigravity Presence] Operating in Follower mode (another IDE window is Leader).');
+    // Periodically check if Leader closed, to take over seamlessly
+    leaderCheckTimer = setInterval(async () => {
+      if (!isLeader) {
+        await tryAcquireLeaderRole();
+      }
+    }, 4000);
   }
 
-  // 8. Register VS Code Editor Event Listeners (Manual Coding Mode)
+  // 7. Register VS Code Editor Event Listeners (Manual Coding Mode)
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(() => onEditorChanged()),
     vscode.window.onDidChangeTextEditorSelection(() => onEditorChanged()),
@@ -91,13 +92,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  // 9. Register Extension Commands
+  // 8. Register Extension Commands
   context.subscriptions.push(
     vscode.commands.registerCommand('antigravityPresence.openDashboard', () => {
       void vscode.env.openExternal(vscode.Uri.parse('http://127.0.0.1:41177'));
     }),
     vscode.commands.registerCommand('antigravityPresence.reconnectDiscord', async () => {
-      if (discordClient) {
+      if (discordClient && isLeader) {
         if (statusBarItem) statusBarItem.text = '$(sync~spin) Antigravity: Reconnecting...';
         await discordClient.connect();
         updateStatusBar();
@@ -110,22 +111,70 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       vscode.window.showInformationMessage(
         `Antigravity Presence: Discord Rich Presence is now ${!current ? 'Disabled' : 'Enabled'}`
       );
-      if (presenceManager && tracker) {
+      if (presenceManager && tracker && isLeader) {
         presenceManager.updateFromSnapshot(tracker.getSnapshot());
       }
       updateStatusBar();
+    }),
+    vscode.commands.registerCommand('antigravityPresence.reloadWindow', () => {
+      void vscode.commands.executeCommand('workbench.action.reloadWindow');
     })
   );
 
-  // Initial connect & state sync
-  void discordClient.connect();
   onEditorChanged();
   updateStatusBar();
   console.log('[Antigravity Presence] Activated successfully in Antigravity IDE!');
 }
 
+async function tryAcquireLeaderRole(): Promise<boolean> {
+  if (dashboardServer) return true;
+  if (!tracker || !presenceManager || !discordClient || !configManager) return false;
+
+  try {
+    const server = new DashboardServer({
+      port: 41177,
+      tracker: tracker as unknown as CentralTracker,
+      presenceManager,
+      discordClient,
+      configManager,
+    });
+    await server.start();
+    dashboardServer = server;
+    isLeader = true;
+    console.log('[Antigravity Presence] Acquired Leader role on port 41177.');
+
+    // Leader manages the Discord IPC pipe
+    void discordClient.connect();
+
+    // Leader monitors all Antigravity workspace agents
+    if (!agentWatcher) {
+      agentWatcher = new AgentWatcher();
+      agentWatcher.on('change', (state: AgentWatcherState) => {
+        onAgentStateChanged(state);
+      });
+      agentWatcher.start();
+    }
+
+    if (leaderCheckTimer) {
+      clearInterval(leaderCheckTimer);
+      leaderCheckTimer = null;
+    }
+
+    updateStatusBar();
+    return true;
+  } catch {
+    dashboardServer = null;
+    isLeader = false;
+    return false;
+  }
+}
+
 export function deactivate(): void {
   console.log('[Antigravity Presence] Deactivating extension...');
+  if (leaderCheckTimer) {
+    clearInterval(leaderCheckTimer);
+    leaderCheckTimer = null;
+  }
   if (agentWatcher) {
     agentWatcher.stop();
     agentWatcher = null;
@@ -165,35 +214,72 @@ function syncConfigFromVsCode(): void {
 function onAgentStateChanged(state: AgentWatcherState): void {
   if (!tracker || !presenceManager) return;
   tracker.updateFromAgentWatcher(state);
-  presenceManager.updateFromSnapshot(tracker.getSnapshot());
+  if (isLeader) {
+    presenceManager.updateFromSnapshot(tracker.getSnapshot());
+  }
   updateStatusBar();
 }
 
 function onEditorChanged(): void {
-  if (!presenceManager || !tracker) return;
-
   const editor = vscode.window.activeTextEditor;
-  if (editor && editor.document) {
-    const fileName = path.basename(editor.document.fileName);
-    const language = editor.document.languageId;
-    const lineCount = editor.document.lineCount;
-    const currentLine = editor.selection.active.line + 1;
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri)?.name ?? null;
+  const editorState: ManualEditorState | null =
+    editor && editor.document
+      ? {
+          fileName: path.basename(editor.document.fileName),
+          language: editor.document.languageId,
+          currentLine: editor.selection.active.line + 1,
+          totalLines: editor.document.lineCount,
+          workspaceName: vscode.workspace.getWorkspaceFolder(editor.document.uri)?.name ?? null,
+          updatedAt: new Date().toISOString(),
+        }
+      : null;
 
-    presenceManager.setManualEditorState({
-      fileName,
-      language,
-      currentLine,
-      totalLines: lineCount,
-      workspaceName: workspaceFolder,
-      updatedAt: new Date().toISOString(),
-    });
-  } else {
-    presenceManager.setManualEditorState(null);
+  if (isLeader) {
+    if (presenceManager && tracker) {
+      presenceManager.setManualEditorState(editorState);
+      presenceManager.updateFromSnapshot(tracker.getSnapshot());
+    }
+  } else if (editorState) {
+    // Follower forwards its manual editor activity to Leader
+    forwardEditorStateToLeader(editorState);
   }
 
-  presenceManager.updateFromSnapshot(tracker.getSnapshot());
   updateStatusBar();
+}
+
+function forwardEditorStateToLeader(state: ManualEditorState): void {
+  try {
+    const payload = JSON.stringify({
+      fileName: state.fileName,
+      language: state.language,
+      currentLine: state.currentLine,
+      totalLines: state.totalLines,
+      workspaceName: state.workspaceName,
+      updatedAt: state.updatedAt,
+    });
+
+    const req = http.request(
+      {
+        hostname: '127.0.0.1',
+        port: 41177,
+        path: '/api/editor',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload),
+        },
+        timeout: 1000,
+      },
+      (res) => {
+        res.resume();
+      }
+    );
+    req.on('error', () => {});
+    req.write(payload);
+    req.end();
+  } catch {
+    // Fail-open
+  }
 }
 
 function updateStatusBar(): void {
@@ -205,7 +291,7 @@ function updateStatusBar(): void {
   if (isAgentActive) {
     const count = agentState?.activeAgentCount ?? 1;
     statusBarItem.text = `$(hubot) Antigravity: ${count} AI ${count === 1 ? 'Agent' : 'Agents'} Active`;
-    statusBarItem.tooltip = `Antigravity Presence\nModels: ${agentState?.activeModels.join(', ') || 'Gemini 4 Argon'}\nClick to open Dashboard`;
+    statusBarItem.tooltip = `Antigravity Presence\nModels: ${agentState?.activeModels.join(', ') || 'Gemini 3.8 Flash'}\nClick to open Dashboard`;
   } else {
     const editor = vscode.window.activeTextEditor;
     if (editor && editor.document) {
@@ -214,7 +300,7 @@ function updateStatusBar(): void {
       statusBarItem.text = `$(edit) Antigravity: ${fileName}:${line}`;
       statusBarItem.tooltip = `Editing ${fileName} (${editor.document.languageId}) - Line ${line} of ${editor.document.lineCount}\nClick to open Dashboard`;
     } else {
-      statusBarItem.text = '$(broadcast) Antigravity: Ready';
+      statusBarItem.text = isLeader ? '$(broadcast) Antigravity: Ready' : '$(check) Antigravity: Connected';
       statusBarItem.tooltip = 'Antigravity Presence • Click to open Local Usage Dashboard';
     }
   }

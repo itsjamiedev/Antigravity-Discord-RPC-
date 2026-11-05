@@ -28,6 +28,140 @@ export interface AgentWatcherState {
   agents: ActiveAgentInfo[];
 }
 
+export interface AgentWatcherOptions {
+  brainDir?: string;
+  pollIntervalMs?: number;
+  activeThresholdMs?: number;
+  summariesDbDir?: string;
+}
+
+/**
+ * Pure TypeScript SQLite B-Tree Leaf Reader for `conversation_summaries.db`
+ * and its `-wal` file with ZERO native C++ dependencies and ZERO child processes.
+ *
+ * Ground truth: Antigravity IDE writes `CASCADE_RUN_STATUS_RUNNING` to this table
+ * whenever an agent begins running/thinking/tool execution, and `CASCADE_RUN_STATUS_IDLE`
+ * the moment it completes its turn or is stopped by the user.
+ */
+export function getGroundTruthConversationStatuses(customDbDir?: string): Map<string, string> {
+  const dirPath = customDbDir ?? path.join(os.homedir(), '.gemini', 'antigravity');
+  const dbFile = path.join(dirPath, 'conversation_summaries.db');
+  const walFile = path.join(dirPath, 'conversation_summaries.db-wal');
+  const runningMap = new Map<string, string>();
+
+  function readVarint(buf: Buffer, offset: number): { val: number; len: number } {
+    let val = 0;
+    let len = 0;
+    for (let i = 0; i < 9; i++) {
+      if (offset + i >= buf.length) break;
+      const b = buf[offset + i]!;
+      len++;
+      if (i === 8) {
+        val = (val << 8) | b;
+        break;
+      }
+      val = (val << 7) | (b & 0x7f);
+      if ((b & 0x80) === 0) break;
+    }
+    return { val, len };
+  }
+
+  function parseLeafPage(buf: Buffer, offset: number): void {
+    if (offset + 8 > buf.length) return;
+    const pageHeaderType = buf[offset];
+    if (pageHeaderType !== 0x0d) return; // Only table leaf B-tree pages
+
+    const cellCount = buf.readUInt16BE(offset + 3);
+    for (let c = 0; c < cellCount; c++) {
+      const ptrOffset = offset + 8 + c * 2;
+      if (ptrOffset + 2 > buf.length) break;
+      const cellOffset = offset + buf.readUInt16BE(ptrOffset);
+      if (cellOffset >= buf.length) continue;
+
+      let ptr = cellOffset;
+      const payloadSize = readVarint(buf, ptr);
+      ptr += payloadSize.len;
+      const rowId = readVarint(buf, ptr);
+      ptr += rowId.len;
+
+      const recordStart = ptr;
+      const headerSize = readVarint(buf, ptr);
+      ptr += headerSize.len;
+
+      const serialTypes: number[] = [];
+      while (ptr < recordStart + headerSize.val && ptr < buf.length) {
+        const st = readVarint(buf, ptr);
+        serialTypes.push(st.val);
+        ptr += st.len;
+      }
+
+      // Col 0: conversation_id (Text of length 36 => serial type 36*2 + 13 = 85)
+      if (serialTypes.length >= 7 && serialTypes[0] === 85) {
+        const bodyPtr = recordStart + headerSize.val;
+        if (bodyPtr + 36 <= buf.length) {
+          const convId = buf.subarray(bodyPtr, bodyPtr + 36).toString('utf8');
+          if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(convId)) {
+            let colPtr = bodyPtr + 36;
+            let status = '';
+            for (let col = 1; col < serialTypes.length; col++) {
+              const st = serialTypes[col]!;
+              let len = 0;
+              if (st >= 12 && st % 2 === 0) len = (st - 12) / 2;
+              else if (st >= 13 && st % 2 === 1) len = (st - 13) / 2;
+              else if (st === 1) len = 1;
+              else if (st === 2) len = 2;
+              else if (st === 3) len = 3;
+              else if (st === 4) len = 4;
+              else if (st === 5) len = 6;
+              else if (st === 6 || st === 7) len = 8;
+
+              if (col === 6 && colPtr + len <= buf.length) {
+                status = buf.subarray(colPtr, colPtr + len).toString('utf8');
+              }
+              colPtr += len;
+            }
+
+            if (status.startsWith('CASCADE_RUN_STATUS_')) {
+              runningMap.set(convId, status);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  try {
+    if (fs.existsSync(dbFile)) {
+      const buf = fs.readFileSync(dbFile);
+      if (buf.length >= 4096) {
+        const pageSize = buf.readUInt16BE(16);
+        if (pageSize >= 512) {
+          const totalPages = Math.floor(buf.length / pageSize);
+          for (let p = 1; p <= totalPages; p++) {
+            parseLeafPage(buf, (p - 1) * pageSize);
+          }
+        }
+      }
+    }
+
+    if (fs.existsSync(walFile)) {
+      const walBuf = fs.readFileSync(walFile);
+      const pageSize = 4096;
+      if (walBuf.length >= 32 + 24 + pageSize) {
+        let ptr = 32;
+        while (ptr + 24 + pageSize <= walBuf.length) {
+          parseLeafPage(walBuf, ptr + 24);
+          ptr += 24 + pageSize;
+        }
+      }
+    }
+  } catch {
+    // Fail-open: return whatever was extracted
+  }
+
+  return runningMap;
+}
+
 /**
  * Extracts the real model name for a conversation by scanning the binary protobuf
  * metadata from its SQLite DB / WAL file with zero native dependencies.
@@ -119,12 +253,14 @@ export class AgentWatcher extends EventEmitter {
   };
   private pollIntervalMs: number;
   private activeThresholdMs: number;
+  private summariesDbDir?: string;
 
-  constructor(options?: { brainDir?: string; pollIntervalMs?: number; activeThresholdMs?: number }) {
+  constructor(options?: AgentWatcherOptions) {
     super();
     this.brainDir = options?.brainDir ?? path.join(os.homedir(), '.gemini', 'antigravity', 'brain');
     this.pollIntervalMs = options?.pollIntervalMs ?? 1500; // Poll every 1.5s
-    this.activeThresholdMs = options?.activeThresholdMs ?? 120000; // 120s active turn threshold (no false idles)
+    this.activeThresholdMs = options?.activeThresholdMs ?? 120000; // 120s active turn threshold
+    this.summariesDbDir = options?.summariesDbDir;
   }
 
   public start(): void {
@@ -187,6 +323,7 @@ export class AgentWatcher extends EventEmitter {
         }
       });
 
+      const groundTruthStatuses = getGroundTruthConversationStatuses(this.summariesDbDir);
       const now = Date.now();
       const activeAgents: ActiveAgentInfo[] = [];
       const modelsSet = new Set<string>();
@@ -198,13 +335,19 @@ export class AgentWatcher extends EventEmitter {
 
       for (const dir of conversationDirs) {
         const transcriptPath = path.join(this.brainDir, dir, '.system_generated', 'logs', 'transcript.jsonl');
-        if (!fs.existsSync(transcriptPath)) continue;
+        const transcriptExists = fs.existsSync(transcriptPath);
 
         try {
-          const stat = fs.statSync(transcriptPath);
+          let statSize = 0;
+          let lastActiveMs = 0;
+
+          if (transcriptExists) {
+            const stat = fs.statSync(transcriptPath);
+            statSize = stat.size;
+            lastActiveMs = stat.mtimeMs;
+          }
 
           // Track multi-file activity across transcript, database WAL, and steps
-          let lastActiveMs = stat.mtimeMs;
           const convDir = path.join(os.homedir(), '.gemini', 'antigravity', 'conversations');
           const walFile = path.join(convDir, `${dir}.db-wal`);
           const dbFile = path.join(convDir, `${dir}.db`);
@@ -221,41 +364,37 @@ export class AgentWatcher extends EventEmitter {
           }
 
           // Read the tail of the transcript for tokens and execution state
-          const parsedTail = this.readTranscriptTail(transcriptPath, stat.size, dir);
-          if (parsedTail) {
-            if (parsedTail.tokens.totalTokens > 0) {
-              hasTokens = true;
-              aggInput += parsedTail.tokens.inputTokens;
-              aggCache += parsedTail.tokens.cacheReadTokens;
-              aggOutput += parsedTail.tokens.outputTokens;
-            }
+          const parsedTail = transcriptExists ? this.readTranscriptTail(transcriptPath, statSize, dir) : null;
+          if (parsedTail && parsedTail.tokens.totalTokens > 0) {
+            hasTokens = true;
+            aggInput += parsedTail.tokens.inputTokens;
+            aggCache += parsedTail.tokens.cacheReadTokens;
+            aggOutput += parsedTail.tokens.outputTokens;
+          }
 
-            // An agent is active ONLY if:
-            // 1. The turn is in-progress (parsedTail.isExecuting is true)
-            // 2. AND the conversation was touched within activeThresholdMs (120s)
-            // NOTE: If isExecuting is false (completed answer with no tools),
-            // isRecent is FALSE IMMEDIATELY (0s delay), making it idle without waiting!
-            const isRecent = parsedTail.isExecuting && (now - lastActiveMs < this.activeThresholdMs);
+          // Ground-Truth Active State:
+          // 1. If conversation_summaries.db contains this conversation:
+          //    - CASCADE_RUN_STATUS_RUNNING => ALWAYS ACTIVE (immune to slow thinking/tool runs!)
+          //    - CASCADE_RUN_STATUS_IDLE => ALWAYS IDLE (instant 0s stop!)
+          // 2. Otherwise fall back to transcript turn heuristic:
+          let isActive = false;
+          if (groundTruthStatuses.has(dir)) {
+            isActive = groundTruthStatuses.get(dir) === 'CASCADE_RUN_STATUS_RUNNING';
+          } else if (parsedTail) {
+            isActive = parsedTail.isExecuting && (now - lastActiveMs < this.activeThresholdMs);
+          } else if (lastActiveMs > 0 && now - lastActiveMs < 5000) {
+            isActive = true;
+          }
 
-            if (isRecent) {
-              modelsSet.add(parsedTail.model);
-              activeAgents.push({
-                conversationId: dir,
-                lastActiveMs,
-                model: parsedTail.model,
-                stepIndex: parsedTail.stepIndex,
-                tokens: parsedTail.tokens,
-              });
-            }
-          } else if (now - lastActiveMs < 5000) {
-            // File was modified within 5 seconds but was transiently locked/being written; keep active
-            const model = extractModelForConversation(dir);
+          if (isActive) {
+            const model = parsedTail?.model ?? extractModelForConversation(dir);
             modelsSet.add(model);
             activeAgents.push({
               conversationId: dir,
-              lastActiveMs,
+              lastActiveMs: lastActiveMs || now,
               model,
-              tokens: {
+              stepIndex: parsedTail?.stepIndex,
+              tokens: parsedTail?.tokens ?? {
                 inputTokens: 0,
                 cacheReadTokens: 0,
                 outputTokens: 0,
@@ -266,7 +405,7 @@ export class AgentWatcher extends EventEmitter {
             });
           }
         } catch {
-          // ignore individual transcript read failures
+          // ignore individual conversation read failures
         }
       }
 
