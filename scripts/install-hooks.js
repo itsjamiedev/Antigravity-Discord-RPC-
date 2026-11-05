@@ -17,7 +17,7 @@ const presenceDir = path.join(os.homedir(), '.gemini', 'antigravity-presence');
 const targetBundlePath = path.join(presenceDir, 'hook-forwarder.cjs');
 const localBundlePath = path.resolve(import.meta.dirname, '..', 'dist', 'hook-forwarder.cjs');
 
-export function installHooks(): void {
+export function installHooks() {
   // 1. Ensure isolated runtime directory exists
   if (!fs.existsSync(presenceDir)) {
     fs.mkdirSync(presenceDir, { recursive: true });
@@ -51,17 +51,23 @@ exit /b 0
 `;
   fs.writeFileSync(runnerCmdPath, cmdScript, 'utf8');
 
+  // Also copy to ~/.gemini/antigravity/bin if it exists (which is in PATH)
+  const antigravityBinDir = path.join(os.homedir(), '.gemini', 'antigravity', 'bin');
+  if (fs.existsSync(antigravityBinDir)) {
+    fs.copyFileSync(runnerCmdPath, path.join(antigravityBinDir, 'run-hook.cmd'));
+  }
+
   // 3. Register in hooks.json
   if (!fs.existsSync(geminiConfigDir)) {
     fs.mkdirSync(geminiConfigDir, { recursive: true });
   }
 
-  let hooksConfig: Record<string, unknown> = {};
+  let hooksConfig = {};
   if (fs.existsSync(hooksJsonPath)) {
     try {
       const raw = fs.readFileSync(hooksJsonPath, 'utf8').trim();
       if (raw) {
-        hooksConfig = JSON.parse(raw) as Record<string, unknown>;
+        hooksConfig = JSON.parse(raw);
       }
     } catch {
       hooksConfig = {};
