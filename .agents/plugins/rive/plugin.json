@@ -1,0 +1,23 @@
+{
+    "skills":  "./",
+    "description":  "Comprehensive Rive animation platform skill covering scripting (Luau), React/Next.js runtime integration, state machines, and data binding",
+    "keywords":  [
+                     "rive",
+                     "animation",
+                     "state-machines",
+                     "react-canvas",
+                     "motion",
+                     "interactive"
+                 ],
+    "version":  "1.0.0",
+    "category":  "Motion \u0026 Animation",
+    "author":  {
+                   "name":  "BowTiedSwan",
+                   "url":  "https://github.com/BowTiedSwan/rive-skills"
+               },
+    "name":  "rive",
+    "homepage":  "https://github.com/BowTiedSwan/rive-skills",
+    "repository":  "https://github.com/BowTiedSwan/rive-skills",
+    "license":  "MIT",
+    "displayName":  "Rive Animation Platform"
+}

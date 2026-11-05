@@ -1,0 +1,29 @@
+{
+  "entries": [
+    {
+      "path": ".agents/skills"
+    },
+    {
+      "path": ".agents/plugins/pstack/skills",
+      "exclude": ["tdd", "teach"]
+    },
+    {
+      "path": ".agents/plugins/replica/skills"
+    },
+    {
+      "path": ".agents/plugins/superpowers/skills"
+    },
+    {
+      "path": ".agents/plugins/threejs-skills/skills"
+    },
+    {
+      "path": ".agents/plugins/wiggle"
+    },
+    {
+      "path": ".agents/plugins/rive"
+    },
+    {
+      "path": ".agents/plugins/anatomy"
+    }
+  ]
+}

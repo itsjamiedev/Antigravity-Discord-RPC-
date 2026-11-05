@@ -1,0 +1,23 @@
+{
+    "skills":  "./",
+    "description":  "Create animated logo files (Lottie JSON, GIF, MP4) from static logo images with professional motion design patterns",
+    "keywords":  [
+                     "lottie",
+                     "animation",
+                     "logo",
+                     "motion-design",
+                     "gif",
+                     "mp4"
+                 ],
+    "version":  "1.0.0",
+    "category":  "Motion \u0026 Animation",
+    "author":  {
+                   "name":  "talknerdytome-labs",
+                   "url":  "https://github.com/talknerdytome-labs/wiggle-claude-skill"
+               },
+    "name":  "wiggle",
+    "homepage":  "https://github.com/talknerdytome-labs/wiggle-claude-skill",
+    "repository":  "https://github.com/talknerdytome-labs/wiggle-claude-skill",
+    "license":  "MIT",
+    "displayName":  "Wiggle Logo Animator"
+}

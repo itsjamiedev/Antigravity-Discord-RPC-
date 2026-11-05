@@ -1,0 +1,23 @@
+{
+    "skills":  "./skills",
+    "description":  "Comprehensive Three.js 3D skills: scene setup, geometry, materials, lighting, textures, animations, loaders, shaders, post-processing, and interaction",
+    "keywords":  [
+                     "threejs",
+                     "webgl",
+                     "3d",
+                     "shaders",
+                     "materials",
+                     "animation"
+                 ],
+    "version":  "1.0.0",
+    "category":  "3D \u0026 Graphics",
+    "author":  {
+                   "name":  "CloudAI-X",
+                   "url":  "https://github.com/CloudAI-X/threejs-skills"
+               },
+    "name":  "threejs-skills",
+    "homepage":  "https://github.com/CloudAI-X/threejs-skills",
+    "repository":  "https://github.com/CloudAI-X/threejs-skills",
+    "license":  "MIT",
+    "displayName":  "Three.js Skills"
+}

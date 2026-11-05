@@ -1,0 +1,25 @@
+{
+  "skills": "./",
+  "description": "Crafted, interactive isometric SVG/WebGL figures explaining technical ideas as physical objects with multi-part solids, four-tone shading, and live motion.",
+  "keywords": [
+    "anatomy",
+    "isometric",
+    "svg",
+    "diagrams",
+    "technical-illustration",
+    "webgl",
+    "motion",
+    "react"
+  ],
+  "version": "1.0.0",
+  "category": "Visual Design & Illustration",
+  "author": {
+    "name": "wheresryan22",
+    "url": "https://github.com/wheresryan22/anatomy"
+  },
+  "name": "anatomy",
+  "homepage": "https://skills.wheresryan.sh/anatomy",
+  "repository": "https://github.com/wheresryan22/anatomy.git",
+  "license": "MIT",
+  "displayName": "Anatomy Isometric Figures"
+}
