@@ -162,3 +162,4 @@ export function assertStrictlyWhitelisted(obj: unknown): obj is WhitelistedHookP
   }
   return true;
 }
+
