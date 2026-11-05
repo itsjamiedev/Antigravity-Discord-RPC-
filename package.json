@@ -36,7 +36,23 @@
     "commands": [
       {
         "command": "antigravityPresence.openDashboard",
-        "title": "Antigravity Presence: Open Local Dashboard"
+        "title": "Antigravity Presence: Open Dashboard in Browser"
+      },
+      {
+        "command": "antigravityPresence.openDashboardInIde",
+        "title": "Antigravity Presence: Open Dashboard in IDE"
+      },
+      {
+        "command": "antigravityPresence.pauseAndLeaveSession",
+        "title": "Antigravity Presence: Pause & Leave Session (24h Retention)"
+      },
+      {
+        "command": "antigravityPresence.resumePreviousSession",
+        "title": "Antigravity Presence: Resume Previous Session"
+      },
+      {
+        "command": "antigravityPresence.startFreshSession",
+        "title": "Antigravity Presence: Start Fresh Session"
       },
       {
         "command": "antigravityPresence.reconnectDiscord",

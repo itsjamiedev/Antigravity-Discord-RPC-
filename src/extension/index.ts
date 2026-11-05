@@ -19,6 +19,7 @@ import { ConfigManager, getDefaultConfigPath } from '../config/privacy-config.js
 import { PureTracker } from '../tracker/pure-tracker.js';
 import { AgentWatcher, type AgentWatcherState } from './agent-watcher.js';
 import { DashboardServer } from '../dashboard/server.js';
+import { openDashboardWebview } from './dashboard-webview.js';
 import type { CentralTracker } from '../tracker/tracker.js';
 import type { ManualEditorState } from '../shared/types.js';
 
@@ -84,9 +85,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // 1. Create Status Bar Item
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-  statusBarItem.command = 'antigravityPresence.openDashboard';
+  statusBarItem.command = 'antigravityPresence.showMenu';
   statusBarItem.text = '$(broadcast) Antigravity: Initializing...';
-  statusBarItem.tooltip = 'Antigravity Presence • Click to open Local Usage Dashboard';
+  statusBarItem.tooltip = 'Antigravity Presence • Click for control menu & metrics';
   statusBarItem.show();
   context.subscriptions.push(statusBarItem);
 
@@ -146,8 +147,109 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // 8. Register Extension Commands
   context.subscriptions.push(
+    vscode.commands.registerCommand('antigravityPresence.showMenu', async () => {
+      const choice = await vscode.window.showQuickPick(
+        [
+          {
+            label: '$(dashboard) Open In-IDE Dashboard',
+            detail: 'View real-time Bento metrics, tokens, and model breakdown in an editor tab',
+            action: 'ide',
+          },
+          {
+            label: '$(globe) Open Dashboard in Browser',
+            detail: 'Open http://127.0.0.1:41177 in your default web browser',
+            action: 'browser',
+          },
+          {
+            label: '$(debug-pause) Pause & Leave Session (24h Retention)',
+            detail: 'Freeze session timer and preserve token accounting across PC shutdown',
+            action: 'pause',
+          },
+          {
+            label: '$(play) Resume Previous Session',
+            detail: 'Continue active session timing from stored elapsed progress',
+            action: 'resume',
+          },
+          {
+            label: '$(refresh) Start Fresh Session',
+            detail: 'Reset session timer to 00:00:00 and begin a brand new session',
+            action: 'fresh',
+          },
+          {
+            label: '$(sync) Reconnect Discord',
+            detail: 'Force reconnect to the Discord IPC client',
+            action: 'reconnect',
+          },
+          {
+            label: '$(eye) Toggle Rich Presence',
+            detail: 'Enable or disable Discord Rich Presence broadcasting',
+            action: 'toggle',
+          },
+        ],
+        {
+          placeHolder: 'Antigravity Presence — Control Center',
+        }
+      );
+
+      if (!choice) return;
+      if (choice.action === 'ide') {
+        openDashboardWebview(context);
+      } else if (choice.action === 'browser') {
+        void vscode.env.openExternal(vscode.Uri.parse('http://127.0.0.1:41177'));
+      } else if (choice.action === 'pause') {
+        await vscode.commands.executeCommand('antigravityPresence.pauseAndLeaveSession');
+      } else if (choice.action === 'resume') {
+        await vscode.commands.executeCommand('antigravityPresence.resumePreviousSession');
+      } else if (choice.action === 'fresh') {
+        await vscode.commands.executeCommand('antigravityPresence.startFreshSession');
+      } else if (choice.action === 'reconnect') {
+        await vscode.commands.executeCommand('antigravityPresence.reconnectDiscord');
+      } else if (choice.action === 'toggle') {
+        await vscode.commands.executeCommand('antigravityPresence.togglePresence');
+      }
+    }),
     vscode.commands.registerCommand('antigravityPresence.openDashboard', () => {
       void vscode.env.openExternal(vscode.Uri.parse('http://127.0.0.1:41177'));
+    }),
+    vscode.commands.registerCommand('antigravityPresence.openDashboardInIde', () => {
+      openDashboardWebview(context);
+    }),
+    vscode.commands.registerCommand('antigravityPresence.pauseAndLeaveSession', () => {
+      if (tracker) {
+        tracker.pauseSession();
+        if (presenceManager) {
+          presenceManager.updateFromSnapshot(tracker.getSnapshot());
+        }
+        vscode.window.showInformationMessage(
+          'Antigravity Presence: Session paused & stored for up to 24 hours. Safe to shut down your PC or close the IDE.'
+        );
+        updateStatusBar();
+      }
+    }),
+    vscode.commands.registerCommand('antigravityPresence.resumePreviousSession', () => {
+      if (tracker) {
+        const resumed = tracker.resumeSession();
+        if (presenceManager) {
+          presenceManager.updateFromSnapshot(tracker.getSnapshot());
+        }
+        const hrs = Math.floor(resumed.elapsedSeconds / 3600);
+        const mins = Math.floor((resumed.elapsedSeconds % 3600) / 60);
+        const timeStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+        vscode.window.showInformationMessage(
+          `Antigravity Presence: Session resumed with ${timeStr} preserved!`
+        );
+        updateStatusBar();
+      }
+    }),
+    vscode.commands.registerCommand('antigravityPresence.startFreshSession', () => {
+      if (tracker) {
+        tracker.startFreshSession();
+        if (presenceManager) {
+          presenceManager.updateFromSnapshot(tracker.getSnapshot());
+        }
+        vscode.window.showInformationMessage('Antigravity Presence: Fresh session started (00:00:00).');
+        updateStatusBar();
+      }
     }),
     vscode.commands.registerCommand('antigravityPresence.reconnectDiscord', async () => {
       if (discordClient && isLeader) {
@@ -220,12 +322,55 @@ async function tryAcquireLeaderRole(): Promise<boolean> {
     // Leader registers its own open workspace folders
     dashboardServer.registerWindowWorkspaces(windowSessionId, getCurrentWorkspaceFolders());
 
+    // Check if a previous session from within 24h should be resumed
+    checkAndPromptSessionResumption();
+
     updateStatusBar();
     return true;
   } catch {
     dashboardServer = null;
     isLeader = false;
     return false;
+  }
+}
+
+function checkAndPromptSessionResumption(): void {
+  if (!tracker) return;
+  const sm = tracker.getSessionManager();
+  const state = sm.getSessionState();
+  if (!state) return;
+
+  const now = Date.now();
+  const offlineGapMs = now - state.lastHeartbeatMs;
+
+  // Only prompt if session has at least 30 seconds of activity,
+  // was offline for > 45 seconds (prevents dialog on rapid dev hot reloads),
+  // and is within the 24-hour retention window.
+  if (sm.canResumeSession(24 * 3600 * 1000) && (offlineGapMs > 45_000 || state.isPaused)) {
+    const elapsedSec = state.elapsedSeconds || 0;
+    if (elapsedSec < 30 && !state.isPaused) return;
+
+    const hrs = Math.floor(elapsedSec / 3600);
+    const mins = Math.floor((elapsedSec % 3600) / 60);
+    const timeStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+
+    const savedHoursAgo = Math.floor(offlineGapMs / (3600 * 1000));
+    const savedMinutesAgo = Math.max(1, Math.floor(offlineGapMs / 60000));
+    const agoStr = savedHoursAgo > 0 ? `${savedHoursAgo}h ago` : `${savedMinutesAgo}m ago`;
+
+    void vscode.window
+      .showInformationMessage(
+        `Antigravity Presence: Previous session found (${timeStr} elapsed, saved ${agoStr}). Continue session or start fresh?`,
+        'Resume Session',
+        'Start Fresh'
+      )
+      .then((choice) => {
+        if (choice === 'Resume Session') {
+          void vscode.commands.executeCommand('antigravityPresence.resumePreviousSession');
+        } else if (choice === 'Start Fresh') {
+          void vscode.commands.executeCommand('antigravityPresence.startFreshSession');
+        }
+      });
   }
 }
 
@@ -256,6 +401,7 @@ export function deactivate(): void {
     dashboardServer = null;
   }
   if (tracker) {
+    tracker.getSessionManager().saveOnShutdown();
     tracker.close();
     tracker = null;
   }
