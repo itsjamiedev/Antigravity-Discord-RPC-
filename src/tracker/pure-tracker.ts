@@ -72,7 +72,16 @@ export class PureTracker {
     this.session.activeAgentCount = state.activeAgentCount;
     this.session.tokens = state.totalTokens;
 
-    // Update active agents map
+    const activeIds = new Set(state.agents.map((a) => a.conversationId));
+
+    // 1. Mark any agents no longer active as idle
+    for (const [id, agent] of this.agents.entries()) {
+      if (!activeIds.has(id)) {
+        agent.status = 'idle';
+      }
+    }
+
+    // 2. Update active agents and models
     for (const active of state.agents) {
       const agent: Agent = {
         conversationId: active.conversationId,
@@ -123,6 +132,13 @@ export class PureTracker {
       this.conversations.set(active.conversationId, conv);
     }
 
+    // Also update conversations that became idle
+    for (const [id, conv] of this.conversations.entries()) {
+      if (!activeIds.has(id)) {
+        conv.status = 'idle';
+      }
+    }
+
     this.session.totalConversations = this.conversations.size;
     this.notify();
   }
@@ -138,6 +154,13 @@ export class PureTracker {
     const agentsList = Array.from(this.agents.values());
     const activeAgentsList = agentsList.filter((a) => a.status === 'thinking');
 
+    // Only active models for currently active agents
+    const activeModelsList = Array.from(
+      new Set(activeAgentsList.map((a) => a.model))
+    );
+
+    const modelStatsList = Array.from(this.modelStats.values());
+
     const dailyUsage: DailyUsage[] = [
       {
         date: new Date().toISOString().slice(0, 10),
@@ -145,17 +168,17 @@ export class PureTracker {
         invocationCount: 0,
         toolCallCount: 0,
         errorCount: 0,
-        modelsUsed: Array.from(this.modelStats.keys()),
+        modelsUsed: activeModelsList.length > 0 ? activeModelsList : Array.from(this.modelStats.keys()),
         tokens: this.session.tokens,
       },
     ];
 
     return {
-      session: { ...this.session },
+      session: { ...this.session, activeAgentCount: activeAgentsList.length },
       agents: agentsList,
       activeAgents: activeAgentsList,
       conversations: Array.from(this.conversations.values()),
-      modelStats: Array.from(this.modelStats.values()),
+      modelStats: modelStatsList,
       dailyUsage,
     };
   }

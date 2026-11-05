@@ -44,6 +44,7 @@ describe('Hookless AgentWatcher & PureTracker', () => {
       input_tokens: 1250,
       cache_read_tokens: 45000,
       output_tokens: 380,
+      tool_calls: [{ name: 'run_command', args: {} }],
     });
     fs.writeFileSync(transcriptFile, step1 + '\n', 'utf8');
 

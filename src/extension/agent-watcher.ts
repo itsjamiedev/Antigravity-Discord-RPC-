@@ -2,7 +2,7 @@
  * AgentWatcher — Hookless Antigravity Agent Activity Monitor
  *
  * Discovers and tracks active agents across all Antigravity workspaces
- * by reading transcript timestamps and exact tokens from disk.
+ * by reading transcript timestamps, conversation database metadata, and exact tokens.
  * Requires 0 hooks and 0 native C++ dependencies.
  */
 
@@ -26,6 +26,55 @@ export interface AgentWatcherState {
   totalTokens: TokenUsageRecord;
   isAgentActive: boolean;
   agents: ActiveAgentInfo[];
+}
+
+/**
+ * Extracts the real model name for a conversation by scanning the tail
+ * of its SQLite DB / WAL file (gen_metadata buffer) with zero native dependencies.
+ */
+export function extractModelForConversation(conversationId: string): string {
+  const convDir = path.join(os.homedir(), '.gemini', 'antigravity', 'conversations');
+  const candidates = [
+    path.join(convDir, `${conversationId}.db-wal`),
+    path.join(convDir, `${conversationId}.db`),
+  ];
+
+  for (const f of candidates) {
+    if (!fs.existsSync(f)) continue;
+    try {
+      const size = fs.statSync(f).size;
+      if (size === 0) continue;
+
+      const readLen = Math.min(size, 512 * 1024);
+      const buf = Buffer.alloc(readLen);
+      const fd = fs.openSync(f, 'r');
+      try {
+        fs.readSync(fd, buf, 0, readLen, size - readLen);
+      } finally {
+        fs.closeSync(fd);
+      }
+
+      const str = buf.toString('latin1');
+      const matches = str.match(
+        /(Gemini [0-9\.]+ [a-zA-Z]+( \([a-zA-Z]+\))?|gemini-[0-9\.]+[a-zA-Z0-9\-]+|Claude [0-9\.]+ [a-zA-Z]+|claude-[0-9a-zA-Z\-]+)/gi
+      );
+
+      if (matches && matches.length > 0) {
+        const raw = matches[matches.length - 1] ?? '';
+        const lower = raw.toLowerCase();
+        if (lower.includes('flash-lite')) return 'Gemini 3.5 Flash Lite';
+        if (lower.includes('flash')) return 'Gemini 3.8 Flash';
+        if (lower.includes('argon')) return 'Gemini 4 Argon';
+        if (lower.includes('sonnet')) return 'Claude Sonnet 3.5';
+        if (lower.includes('opus')) return 'Claude Opus 3.5';
+        return raw.trim();
+      }
+    } catch {
+      // ignore read error
+    }
+  }
+
+  return 'Gemini 4 Argon';
 }
 
 export class AgentWatcher extends EventEmitter {
@@ -52,8 +101,8 @@ export class AgentWatcher extends EventEmitter {
   constructor(options?: { brainDir?: string; pollIntervalMs?: number; activeThresholdMs?: number }) {
     super();
     this.brainDir = options?.brainDir ?? path.join(os.homedir(), '.gemini', 'antigravity', 'brain');
-    this.pollIntervalMs = options?.pollIntervalMs ?? 3000;
-    this.activeThresholdMs = options?.activeThresholdMs ?? 20000; // 20s idle threshold
+    this.pollIntervalMs = options?.pollIntervalMs ?? 1500; // Poll every 1.5s
+    this.activeThresholdMs = options?.activeThresholdMs ?? 8000; // 8s idle threshold
   }
 
   public start(): void {
@@ -131,10 +180,9 @@ export class AgentWatcher extends EventEmitter {
 
         try {
           const stat = fs.statSync(transcriptPath);
-          const isRecent = now - stat.mtimeMs < this.activeThresholdMs;
 
-          // Read the tail of the transcript for tokens and model
-          const parsedTail = this.readTranscriptTail(transcriptPath, stat.size);
+          // Read the tail of the transcript for tokens and execution state
+          const parsedTail = this.readTranscriptTail(transcriptPath, stat.size, dir);
           if (parsedTail) {
             if (parsedTail.tokens.totalTokens > 0) {
               hasTokens = true;
@@ -142,6 +190,11 @@ export class AgentWatcher extends EventEmitter {
               aggCache += parsedTail.tokens.cacheReadTokens;
               aggOutput += parsedTail.tokens.outputTokens;
             }
+
+            // An agent is active ONLY if:
+            // 1. Transcript was modified within the active threshold (8s)
+            // 2. AND the last step indicates an active execution (not finished with text response)
+            const isRecent = (now - stat.mtimeMs < this.activeThresholdMs) && parsedTail.isExecuting;
 
             if (isRecent) {
               modelsSet.add(parsedTail.model);
@@ -161,9 +214,6 @@ export class AgentWatcher extends EventEmitter {
 
       const isAgentActive = activeAgents.length > 0;
       const activeModels = Array.from(modelsSet);
-      if (activeModels.length === 0 && isAgentActive) {
-        activeModels.push('Gemini 4 Argon');
-      }
 
       const totalTokens: TokenUsageRecord = hasTokens
         ? {
@@ -200,8 +250,9 @@ export class AgentWatcher extends EventEmitter {
 
   private readTranscriptTail(
     filePath: string,
-    fileSize: number
-  ): { model: string; stepIndex?: number; tokens: TokenUsageRecord } | null {
+    fileSize: number,
+    conversationId: string
+  ): { model: string; stepIndex?: number; tokens: TokenUsageRecord; isExecuting: boolean } | null {
     if (fileSize <= 0) return null;
 
     try {
@@ -217,8 +268,10 @@ export class AgentWatcher extends EventEmitter {
       const text = buffer.toString('utf8');
       const lines = text.trim().split('\n');
 
-      let model = 'Gemini 4 Argon';
+      // 1. Extract the real model from the conversation metadata
+      let model = extractModelForConversation(conversationId);
       let stepIndex: number | undefined;
+      let isExecuting = true;
       let tokens: TokenUsageRecord = {
         inputTokens: 0,
         cacheReadTokens: 0,
@@ -228,7 +281,7 @@ export class AgentWatcher extends EventEmitter {
         source: 'unavailable',
       };
 
-      // Traverse lines backwards to find the latest valid step
+      // Check the very last step in the transcript
       for (let i = lines.length - 1; i >= 0; i--) {
         const rawLine = lines[i];
         if (!rawLine) continue;
@@ -238,13 +291,29 @@ export class AgentWatcher extends EventEmitter {
         try {
           const parsed = JSON.parse(line);
           if (typeof parsed === 'object' && parsed !== null) {
-            if (typeof parsed.step_index === 'number' && stepIndex === undefined) {
+            // First valid step encountered from the end is the latest step
+            if (stepIndex === undefined && typeof parsed.step_index === 'number') {
               stepIndex = parsed.step_index;
+
+              // If the latest step is a completed PLANNER_RESPONSE with no tool calls,
+              // the agent has finished answering and is waiting for user input.
+              if (
+                parsed.type === 'PLANNER_RESPONSE' &&
+                (!Array.isArray(parsed.tool_calls) || parsed.tool_calls.length === 0)
+              ) {
+                isExecuting = false;
+              }
             }
 
-            // Check if model name is embedded
+            // Extract model override if explicitly embedded in JSON
             if (typeof parsed.model === 'string' && parsed.model) {
-              model = parsed.model;
+              const lower = parsed.model.toLowerCase();
+              if (lower.includes('flash-lite')) model = 'Gemini 3.5 Flash Lite';
+              else if (lower.includes('flash')) model = 'Gemini 3.8 Flash';
+              else if (lower.includes('argon')) model = 'Gemini 4 Argon';
+              else if (lower.includes('sonnet')) model = 'Claude Sonnet 3.5';
+              else if (lower.includes('opus')) model = 'Claude Opus 3.5';
+              else model = parsed.model;
             }
 
             // Extract tokens
@@ -272,7 +341,7 @@ export class AgentWatcher extends EventEmitter {
         }
       }
 
-      return { model, stepIndex, tokens };
+      return { model, stepIndex, tokens, isExecuting };
     } catch {
       return null;
     }

@@ -21,16 +21,25 @@ import type { DiscordIpcClient } from './ipc-client.js';
 export function formatModelDisplayName(model: string): string {
   const map: Record<string, string> = {
     'gemini-4-argon-medium': 'Gemini 4 Argon',
-    'gemini-4-argon-high': 'Gemini 4 Argon (High)',
-    'gemini-4-argon-low': 'Gemini 4 Argon (Low)',
+    'gemini-4-argon-high': 'Gemini 4 Argon',
+    'gemini-4-argon-low': 'Gemini 4 Argon',
     'gemini-3.8-flash-high': 'Gemini 3.8 Flash',
     'gemini-3.8-flash-medium': 'Gemini 3.8 Flash',
-    'gemini-3.8-flash-low': 'Gemini 3.8 Flash (Low)',
+    'gemini-3.8-flash-low': 'Gemini 3.8 Flash',
     'gemini-3.5-flash-lite': 'Gemini 3.5 Flash Lite',
     'claude-sonnet-5-5-high': 'Claude Sonnet 3.5',
     'claude-opus-5-5-high': 'Claude Opus 3.5',
   };
-  return map[model] ?? model;
+  if (map[model]) return map[model];
+
+  const lower = model.toLowerCase();
+  if (lower.includes('flash-lite')) return 'Gemini 3.5 Flash Lite';
+  if (lower.includes('flash')) return 'Gemini 3.8 Flash';
+  if (lower.includes('argon')) return 'Gemini 4 Argon';
+  if (lower.includes('sonnet')) return 'Claude Sonnet 3.5';
+  if (lower.includes('opus')) return 'Claude Opus 3.5';
+
+  return model.replace(/\s*\(.*?\)/g, '').trim();
 }
 
 export function buildDiscordActivity(
@@ -165,9 +174,11 @@ export class PresenceManager {
     nowMs: number
   ): void {
     const elapsedMs = nowMs - this.lastSentTimeMs;
+    const isStateTransition = activity?.details !== this.lastSentActivity?.details;
+    const effectiveDebounce = isStateTransition ? Math.min(2500, debounceMs) : debounceMs;
 
-    // Leading edge: If more than debounceMs has passed, dispatch immediately
-    if (elapsedMs >= debounceMs) {
+    // Leading edge: If more than effectiveDebounce has passed, dispatch immediately
+    if (elapsedMs >= effectiveDebounce) {
       this.clearDebounceTimer();
       this.sendDirect(activity, nowMs);
       return;
@@ -176,7 +187,7 @@ export class PresenceManager {
     // Coalesce within window: Save pending activity and arm trailing timer
     this.pendingActivity = activity;
     if (!this.debounceTimer) {
-      const remainingMs = Math.max(50, debounceMs - elapsedMs);
+      const remainingMs = Math.max(50, effectiveDebounce - elapsedMs);
       this.debounceTimer = setTimeout(() => {
         this.debounceTimer = null;
         if (this.pendingActivity !== null || this.lastSentActivity !== null) {
