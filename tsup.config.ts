@@ -3,6 +3,7 @@ import { defineConfig } from 'tsup';
 export default defineConfig([
   {
     entry: {
+      'extension': 'src/extension/index.ts',
       'hook-forwarder': 'src/forwarder/hook-forwarder.ts',
       'daemon': 'src/daemon/index.ts',
     },
@@ -20,6 +21,6 @@ export default defineConfig([
         js: '.cjs',
       };
     },
-    external: ['better-sqlite3'],
+    external: ['vscode', 'better-sqlite3'],
   },
 ]);

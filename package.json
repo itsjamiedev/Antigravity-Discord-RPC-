@@ -1,7 +1,9 @@
 {
   "name": "antigravity-presence",
-  "version": "0.1.0",
-  "description": "Privacy-safe Discord Rich Presence and local usage dashboard for Google Antigravity agents",
+  "displayName": "Antigravity Presence",
+  "publisher": "itsjamiefied",
+  "version": "1.0.0",
+  "description": "Privacy-safe Discord Rich Presence and local usage dashboard for Google Antigravity",
   "author": "itsjamiefied",
   "repository": {
     "type": "git",
@@ -11,8 +13,59 @@
     "url": "https://github.com/itsjamiedev/Antigravity-Discord-RPC-/issues"
   },
   "homepage": "https://github.com/itsjamiedev/Antigravity-Discord-RPC-#readme",
-  "private": true,
-  "type": "module",
+  "main": "./dist/extension.cjs",
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "antigravityPresence.openDashboard",
+        "title": "Antigravity Presence: Open Local Dashboard"
+      },
+      {
+        "command": "antigravityPresence.reconnectDiscord",
+        "title": "Antigravity Presence: Reconnect Discord"
+      },
+      {
+        "command": "antigravityPresence.togglePresence",
+        "title": "Antigravity Presence: Toggle Discord Presence"
+      }
+    ],
+    "configuration": {
+      "title": "Antigravity Presence",
+      "properties": {
+        "antigravityPresence.disableRichPresence": {
+          "type": "boolean",
+          "default": false,
+          "description": "Disable Discord Rich Presence"
+        },
+        "antigravityPresence.enableManualEditsPresence": {
+          "type": "boolean",
+          "default": true,
+          "description": "Display manual file editing activity on Discord when AI agents are idle"
+        },
+        "antigravityPresence.hideFileNamesInManualEdits": {
+          "type": "boolean",
+          "default": false,
+          "description": "Hide file names in Discord presence when manually editing"
+        },
+        "antigravityPresence.hideModels": {
+          "type": "boolean",
+          "default": false,
+          "description": "Hide specific AI model names on Discord"
+        },
+        "antigravityPresence.hideTokens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Hide token counts on Discord (shown in local dashboard)"
+        }
+      }
+    }
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -20,10 +73,10 @@
     "typecheck": "tsc --noEmit",
     "start": "node dist/daemon.cjs",
     "dev": "tsx src/daemon/index.ts",
-    "hooks:install": "node scripts/install-hooks.js",
-    "hooks:uninstall": "node scripts/uninstall-hooks.js"
+    "package": "npx @vscode/vsce package --no-dependencies"
   },
   "engines": {
+    "vscode": "^1.90.0",
     "node": ">=20.0.0"
   },
   "dependencies": {
@@ -33,10 +86,10 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.13.4",
+    "@types/vscode": "^1.90.0",
     "tsup": "^8.3.6",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "vitest": "^3.0.6"
   }
 }
-
