@@ -1,8 +1,14 @@
 /**
- * Antigravity Presence — Embedded Spatial Glass Dashboard HTML
+ * Antigravity Presence — Executive OLED Spatial Glass Dashboard
  *
- * 100% offline, zero-dependency, self-contained single page application
- * with real-time SSE streaming, 5 interactive tabs, SVG charts, and privacy settings.
+ * Implements /impeccable and /design-taste-frontend architectural standards:
+ * - Executive OLED Dark Aesthetic (#05070c) with double-bezel (Doppelrand) nested cards
+ * - Geist / Geist Mono typography with Minecraft Seven pixel header badge
+ * - Real-time SSE streaming for instant zero-latency updates
+ * - Interactive slide-over conversation detail drawer with live agent status & active tool
+ * - Per-model token accounting and visual distribution bars
+ * - Multi-layer stacked SVG token graphs with hover tooltips
+ * - 100% self-contained, zero-CDN, offline-ready
  */
 
 export function getDashboardHtml(): string {
@@ -14,43 +20,57 @@ export function getDashboardHtml(): string {
   <title>Antigravity Presence — Local Dashboard</title>
   <style>
     :root {
-      --bg: #090a0f;
-      --card-bg: rgba(22, 27, 34, 0.7);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --card-hover: rgba(255, 255, 255, 0.12);
-      --text-main: #f0f6fc;
-      --text-muted: #8b949e;
-      --accent: #58a6ff;
-      --accent-glow: rgba(88, 166, 255, 0.25);
-      --green: #3fb950;
-      --green-glow: rgba(63, 185, 80, 0.2);
-      --amber: #d29922;
-      --purple: #bc8cff;
-      --red: #f85149;
-      --radius: 12px;
-      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --bg-base: #05070c;
+      --bg-surface: #0a0e1a;
+      --bg-card: #0d1222;
+      --bg-card-inner: #090d18;
+      --border-outer: rgba(255, 255, 255, 0.08);
+      --border-inner: rgba(255, 255, 255, 0.05);
+      --border-focus: rgba(56, 189, 248, 0.4);
+      --text-main: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.2);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.2);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.2);
+      --rose: #f43f5e;
+      --purple: #a855f7;
+      --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "Geist Mono", "JetBrains Mono", SFMono-Regular, monospace;
+      --font-pixel: "Minecraft Seven", "Courier New", monospace;
+      --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
 
     body {
-      background-color: var(--bg);
+      background-color: var(--bg-base);
       color: var(--text-main);
-      font-family: var(--font);
+      font-family: var(--font-sans);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
       background-image: 
-        radial-gradient(circle at 15% 15%, rgba(88, 166, 255, 0.07) 0%, transparent 40%),
-        radial-gradient(circle at 85% 85%, rgba(188, 140, 255, 0.05) 0%, transparent 40%);
+        radial-gradient(circle at 10% 0%, rgba(56, 189, 248, 0.06) 0%, transparent 45%),
+        radial-gradient(circle at 90% 100%, rgba(16, 185, 129, 0.05) 0%, transparent 45%);
     }
 
+    /* TOP FLOATING NAV */
     header {
-      background: rgba(13, 17, 23, 0.85);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--card-border);
-      padding: 16px 28px;
+      background: rgba(7, 10, 18, 0.82);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border-outer);
+      padding: 12px 28px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -59,48 +79,68 @@ export function getDashboardHtml(): string {
       z-index: 100;
     }
 
-    .brand {
+    .brand-group {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
     }
 
-    .brand svg {
-      width: 28px;
-      height: 28px;
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(16, 185, 129, 0.15));
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(56, 189, 248, 0.15);
+    }
+
+    .brand-icon svg {
+      width: 18px;
+      height: 18px;
       fill: var(--accent);
     }
 
     .brand-title {
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       font-weight: 600;
       letter-spacing: -0.02em;
-    }
-
-    .brand-tag {
-      font-size: 0.75rem;
-      padding: 2px 8px;
-      border-radius: 20px;
-      background: rgba(88, 166, 255, 0.15);
-      color: var(--accent);
-      border: 1px solid rgba(88, 166, 255, 0.3);
-    }
-
-    .header-status {
+      color: #fff;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 8px;
+    }
+
+    .pixel-tag {
+      font-family: var(--font-pixel);
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      letter-spacing: 0.08em;
+    }
+
+    /* HEADER CONTROLS */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
     .status-pill {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.85rem;
-      padding: 6px 14px;
-      border-radius: 20px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-outer);
     }
 
     .status-dot {
@@ -111,59 +151,78 @@ export function getDashboardHtml(): string {
     }
 
     .status-dot.active {
-      background: var(--green);
-      box-shadow: 0 0 10px var(--green);
+      background: var(--emerald);
+      box-shadow: 0 0 10px var(--emerald-glow), 0 0 4px var(--emerald);
+      animation: pulse-glow 2s infinite ease-in-out;
     }
 
     .status-dot.amber {
       background: var(--amber);
-      box-shadow: 0 0 10px var(--amber);
+      box-shadow: 0 0 10px var(--amber-glow);
     }
 
-    nav {
-      background: rgba(13, 17, 23, 0.4);
-      border-bottom: 1px solid var(--card-border);
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.15); opacity: 0.8; }
+    }
+
+    /* NAV TABS */
+    .tabs-wrapper {
+      max-width: 1400px;
+      margin: 20px auto 0;
       padding: 0 28px;
-      display: flex;
-      gap: 8px;
+      width: 100%;
     }
 
-    .nav-btn {
+    .nav-tabs {
+      display: inline-flex;
+      background: rgba(13, 18, 34, 0.7);
+      border: 1px solid var(--border-outer);
+      border-radius: 9999px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .tab-btn {
       background: transparent;
       border: none;
-      color: var(--text-muted);
-      font-family: inherit;
-      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-family: var(--font-sans);
+      font-size: 0.82rem;
       font-weight: 500;
-      padding: 14px 16px;
+      padding: 6px 18px;
+      border-radius: 9999px;
       cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s ease;
+      transition: all 0.2s var(--ease-spring);
     }
 
-    .nav-btn:hover {
-      color: var(--text-main);
+    .tab-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.04);
     }
 
-    .nav-btn.active {
+    .tab-btn.active {
+      background: rgba(56, 189, 248, 0.15);
       color: var(--accent);
-      border-bottom-color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      box-shadow: 0 2px 10px rgba(56, 189, 248, 0.12);
     }
 
+    /* MAIN CONTAINER */
     main {
-      padding: 28px;
-      max-width: 1300px;
-      margin: 0 auto;
+      max-width: 1400px;
+      margin: 16px auto 60px;
+      padding: 0 28px;
       width: 100%;
       flex: 1;
     }
 
-    .tab-content {
+    .view-panel {
       display: none;
-      animation: fadeIn 0.2s ease;
+      animation: fadeIn 0.3s var(--ease-spring);
     }
 
-    .tab-content.active {
+    .view-panel.active {
       display: block;
     }
 
@@ -172,505 +231,859 @@ export function getDashboardHtml(): string {
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Metric Cards Grid */
-    .metrics-grid {
+    /* DOUBLE-BEZEL CARDS */
+    .bezel-card {
+      border-radius: 20px;
+      border: 1px solid var(--border-outer);
+      background: rgba(255, 255, 255, 0.015);
+      padding: 6px;
+      margin-bottom: 24px;
+      transition: border-color 0.2s var(--ease-spring);
+    }
+
+    .bezel-card:hover {
+      border-color: rgba(255, 255, 255, 0.14);
+    }
+
+    .bezel-core {
+      background: var(--bg-card-inner);
+      border-radius: 14px;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.06);
+      padding: 24px;
+      border: 1px solid var(--border-inner);
+    }
+
+    /* BENTO GRID HERO */
+    .bento-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
-      margin-bottom: 28px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
     }
 
-    .card {
-      background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius);
+    .stat-card {
+      border-radius: 18px;
+      border: 1px solid var(--border-outer);
+      background: rgba(255, 255, 255, 0.012);
+      padding: 5px;
+    }
+
+    .stat-core {
+      background: #090d18;
+      border-radius: 13px;
       padding: 20px;
-      transition: border-color 0.2s ease, transform 0.2s ease;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 1px solid var(--border-inner);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
     }
 
-    .card:hover {
-      border-color: var(--card-hover);
-    }
-
-    .card-header {
+    .stat-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 12px;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      font-weight: 500;
     }
 
-    .badge {
-      font-size: 0.7rem;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-weight: 600;
+    .stat-label {
+      font-size: 0.75rem;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      font-weight: 600;
     }
 
-    .badge.exact {
-      background: rgba(63, 185, 80, 0.15);
-      color: var(--green);
-      border: 1px solid rgba(63, 185, 80, 0.3);
+    .badge-exact {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
     }
 
-    .badge.estimated {
-      background: rgba(188, 140, 255, 0.15);
-      color: var(--purple);
-      border: 1px solid rgba(188, 140, 255, 0.3);
+    .badge-live {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.3);
     }
 
-    .badge.idle { background: rgba(139, 148, 158, 0.2); color: var(--text-muted); }
-    .badge.thinking { background: rgba(88, 166, 255, 0.2); color: var(--accent); }
-    .badge.running_tool { background: rgba(210, 153, 34, 0.2); color: var(--amber); }
-    .badge.waiting_approval { background: rgba(188, 140, 255, 0.2); color: var(--purple); }
-    .badge.waiting_background { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
-    .badge.error { background: rgba(248, 81, 73, 0.2); color: var(--red); }
-    .badge.stale { background: rgba(139, 148, 158, 0.2); color: var(--text-muted); }
-
-    .card-value {
-      font-size: 1.8rem;
+    .stat-value {
+      font-size: 1.85rem;
       font-weight: 700;
+      color: #fff;
       letter-spacing: -0.03em;
       margin-bottom: 6px;
+      font-variant-numeric: tabular-nums;
     }
 
-    .card-subtext {
-      font-size: 0.8rem;
+    .stat-sub {
+      font-size: 0.76rem;
       color: var(--text-muted);
+      font-family: var(--font-mono);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
     }
 
-    /* Table styles */
+    /* MANUAL EDITOR PRESENCE CARD */
+    .editor-presence-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .editor-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .editor-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+    }
+
+    .editor-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+
+    .editor-meta {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    /* DATA TABLES */
     .table-container {
-      background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      margin-top: 16px;
+      width: 100%;
+      overflow-x: auto;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
       text-align: left;
-      font-size: 0.85rem;
+      font-size: 0.84rem;
     }
 
     th {
-      background: rgba(255, 255, 255, 0.03);
-      padding: 12px 16px;
-      font-weight: 600;
       color: var(--text-muted);
-      border-bottom: 1px solid var(--card-border);
+      font-weight: 600;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-outer);
     }
 
     td {
       padding: 14px 16px;
-      border-bottom: 1px solid var(--card-border);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      color: var(--text-secondary);
+      vertical-align: middle;
     }
 
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+    tbody tr {
+      transition: background 0.15s var(--ease-spring);
+      cursor: pointer;
+    }
 
-    .mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.8rem; }
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.025);
+    }
 
-    /* Settings UI */
-    .settings-list {
+    .conv-title {
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .model-badge {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      white-space: nowrap;
+    }
+
+    .status-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .status-tag.thinking {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+
+    .status-tag.running_tool {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .status-tag.idle {
+      background: rgba(148, 163, 184, 0.1);
+      color: var(--text-muted);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .mono-num {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      color: var(--text-main);
+    }
+
+    /* SLIDE-OVER CONVERSATION DETAIL DRAWER */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s var(--ease-spring);
+    }
+
+    .drawer-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 520px;
+      max-width: 90vw;
+      background: #080b14;
+      border-left: 1px solid var(--border-outer);
+      box-shadow: -8px 0 32px rgba(0, 0, 0, 0.6);
+      z-index: 201;
+      transform: translateX(100%);
+      transition: transform 0.3s var(--ease-spring);
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      max-width: 700px;
+      overflow-y: auto;
+      padding: 32px 28px;
     }
 
-    .settings-item {
+    .drawer-panel.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      padding: 18px 22px;
-      border-radius: var(--radius);
+      align-items: flex-start;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-outer);
     }
 
-    .settings-info h4 {
-      font-size: 0.95rem;
+    .drawer-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
       margin-bottom: 4px;
     }
 
-    .settings-info p {
-      font-size: 0.8rem;
+    .drawer-id {
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
       color: var(--text-muted);
+      word-break: break-all;
     }
 
-    .toggle-switch {
-      position: relative;
-      display: inline-block;
-      width: 44px;
-      height: 24px;
-    }
-
-    .toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .slider {
-      position: absolute;
+    .close-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-outer);
+      color: var(--text-secondary);
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #21262d;
-      transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
-      border-radius: 24px;
-      border: 1px solid var(--card-border);
+      transition: all 0.15s var(--ease-spring);
     }
 
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 16px;
-      width: 16px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
-      border-radius: 50%;
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
     }
 
-    input:checked + .slider {
-      background-color: var(--accent);
+    .drawer-section {
+      margin-bottom: 24px;
     }
 
-    input:checked + .slider:before {
-      transform: translateX(20px);
+    .section-heading {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 12px;
     }
 
-    /* Charts */
-    .chart-box {
-      width: 100%;
-      height: 200px;
-      margin-top: 12px;
+    .token-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
     }
 
-    svg.chart {
-      width: 100%;
+    .token-box {
+      background: #0d1220;
+      border: 1px solid var(--border-inner);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .token-box-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .token-box-val {
+      font-family: var(--font-mono);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .progress-bar-wrap {
+      background: rgba(255, 255, 255, 0.06);
+      height: 8px;
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-bar-fill {
       height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--emerald));
+      border-radius: 9999px;
+      transition: width 0.4s var(--ease-spring);
+    }
+
+    /* RECENT EVENTS LIST */
+    .event-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .event-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-inner);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.78rem;
+    }
+
+    .event-type {
+      font-weight: 600;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .event-time {
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+    }
+
+    /* INTERACTIVE SVG CHARTS */
+    .chart-container {
+      width: 100%;
+      position: relative;
+    }
+
+    .chart-svg {
+      width: 100%;
+      height: 220px;
       overflow: visible;
     }
 
-    footer {
-      padding: 20px 28px;
-      text-align: center;
+    .chart-tooltip {
+      position: absolute;
+      background: rgba(13, 18, 32, 0.95);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 8px 12px;
       font-size: 0.75rem;
-      color: var(--text-muted);
-      border-top: 1px solid var(--card-border);
+      color: #fff;
+      pointer-events: none;
+      display: none;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+      font-family: var(--font-mono);
+    }
+
+    /* MODEL USAGE CARDS */
+    .model-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .model-card-item {
+      background: #090d18;
+      border: 1px solid var(--border-inner);
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .model-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .model-card-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #0d1222;
+      border: 1px solid var(--accent);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-family: var(--font-sans);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+      z-index: 300;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.25s var(--ease-spring);
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* RESPONSIVE OVERRIDES */
+    @media (max-width: 1024px) {
+      .bento-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .bento-grid {
+        grid-template-columns: 1fr;
+      }
+      .nav-tabs {
+        width: 100%;
+        overflow-x: auto;
+      }
+      .drawer-panel {
+        width: 100vw;
+      }
     }
   </style>
 </head>
 <body>
+
+  <!-- HEADER -->
   <header>
-    <div class="brand">
-      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      <div class="brand-title">Antigravity Presence</div>
-      <div class="brand-tag">Local 127.0.0.1</div>
+    <div class="brand-group">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 19.5h20L12 2zm0 3.8L18.5 17H5.5L12 5.8z"/></svg>
+      </div>
+      <div>
+        <div class="brand-title">
+          Antigravity Presence
+          <span class="pixel-tag">LOCAL 127.0.0.1</span>
+        </div>
+      </div>
     </div>
-    <div class="header-status">
-      <div class="status-pill" id="discordPill">
-        <div class="status-dot" id="discordDot"></div>
+
+    <div class="header-actions">
+      <div class="status-pill">
+        <div id="discordDot" class="status-dot"></div>
         <span id="discordText">Discord: Connecting...</span>
       </div>
-      <div class="status-pill" id="agentPill">
-        <div class="status-dot active" id="agentDot"></div>
-        <span id="agentText">0 Active Agents</span>
+      <div class="status-pill">
+        <div id="agentDot" class="status-dot active"></div>
+        <span id="agentActiveCount">0 Active Agents</span>
       </div>
     </div>
   </header>
 
-  <nav>
-    <button class="nav-btn active" onclick="switchTab('overview')">Overview</button>
-    <button class="nav-btn" onclick="switchTab('agents')">Agents</button>
-    <button class="nav-btn" onclick="switchTab('models')">Models</button>
-    <button class="nav-btn" onclick="switchTab('conversations')">Conversations</button>
-    <button class="nav-btn" onclick="switchTab('analytics')">Analytics</button>
-    <button class="nav-btn" onclick="switchTab('settings')">Settings</button>
-  </nav>
+  <!-- NAVIGATION TABS -->
+  <div class="tabs-wrapper">
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+      <button class="tab-btn" onclick="switchTab('agents')">Agents</button>
+      <button class="tab-btn" onclick="switchTab('models')">Models & Tokens</button>
+      <button class="tab-btn" onclick="switchTab('conversations')">Conversations</button>
+      <button class="tab-btn" onclick="switchTab('analytics')">Analytics Graphs</button>
+      <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+    </nav>
+  </div>
 
+  <!-- MAIN VIEWS -->
   <main>
+
     <!-- OVERVIEW TAB -->
-    <section id="tab-overview" class="tab-content active">
-      <div class="metrics-grid">
-        <div class="card">
-          <div class="card-header">
-            <span>ACTIVE AGENTS</span>
-            <span class="badge exact" id="metricActiveBadge">EXACT</span>
+    <section id="tab-overview" class="view-panel active">
+      <!-- HERO BENTO GRID -->
+      <div class="bento-grid">
+        <div class="stat-card">
+          <div class="stat-core">
+            <div class="stat-header">
+              <span class="stat-label">Active AI Agents</span>
+              <span class="badge-live">LIVE</span>
+            </div>
+            <div class="stat-value" id="statActiveAgents">0</div>
+            <div class="stat-sub" id="statActiveSub">Waiting for turn...</div>
           </div>
-          <div class="card-value" id="metricActiveAgents">0</div>
-          <div class="card-subtext" id="metricActiveBreakdown">No agents currently thinking</div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <span>SESSION TOKENS</span>
-            <span class="badge exact" id="metricTokenBadge">EXACT</span>
+        <div class="stat-card">
+          <div class="stat-core">
+            <div class="stat-header">
+              <span class="stat-label">Total Session Tokens</span>
+              <span class="badge-exact">EXACT</span>
+            </div>
+            <div class="stat-value mono-num" id="statSessionTokens">0</div>
+            <div class="stat-sub" id="statTokensSub">In: 0 • Cache: 0 • Out: 0</div>
           </div>
-          <div class="card-value" id="metricTotalTokens">0</div>
-          <div class="card-subtext" id="metricTokenBreakdown">In: 0 • Cache: 0 • Out: 0</div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <span>TOTAL CONVERSATIONS</span>
-            <span class="badge exact">EXACT</span>
+        <div class="stat-card">
+          <div class="stat-core">
+            <div class="stat-header">
+              <span class="stat-label">Models in Use</span>
+              <span class="badge-exact">PERSISTED</span>
+            </div>
+            <div class="stat-value" id="statModelsCount">0</div>
+            <div class="stat-sub" id="statModelsSub">None</div>
           </div>
-          <div class="card-value" id="metricTotalConversations">0</div>
-          <div class="card-subtext" id="metricEventsProcessed">0 hook events processed</div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <span>MODELS IN USE</span>
-            <span class="badge exact">EXACT</span>
+        <div class="stat-card">
+          <div class="stat-core">
+            <div class="stat-header">
+              <span class="stat-label">Total Conversations</span>
+              <span class="badge-exact">EXACT</span>
+            </div>
+            <div class="stat-value mono-num" id="statConversations">0</div>
+            <div class="stat-sub" id="statConversationsSub">0 root • 0 subagents</div>
           </div>
-          <div class="card-value" id="metricModelCount">0</div>
-          <div class="card-subtext" id="metricPrimaryModel">Awaiting model events</div>
         </div>
       </div>
 
-      <div class="card" style="margin-bottom: 24px;">
-        <div class="card-header">
-          <span>MANUAL EDITOR PRESENCE (DUAL-MODE)</span>
-          <span class="badge exact" id="manualPresenceBadge">IDLE</span>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 4px;" id="manualEditorFile">No active file in editor</div>
-            <div style="font-size: 0.85rem; color: var(--text-muted);" id="manualEditorDetails">Waiting for Antigravity IDE focus</div>
+      <!-- DUAL-MODE MANUAL EDITOR PRESENCE -->
+      <div class="bezel-card">
+        <div class="bezel-core">
+          <div class="editor-presence-card">
+            <div class="editor-info">
+              <div class="editor-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              </div>
+              <div>
+                <div class="editor-title" id="editorFile">No active file in editor</div>
+                <div class="editor-meta" id="editorDetails">Waiting for Antigravity IDE focus</div>
+              </div>
+            </div>
+            <div class="status-tag idle" id="editorBadge">IDLE</div>
           </div>
-          <div style="font-size: 0.8rem; color: var(--text-muted);" id="manualEditorTime">--</div>
         </div>
       </div>
 
-      <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 8px;">Active Agent Sessions</h3>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Status</th>
-              <th>Conversation ID</th>
-              <th>Model</th>
-              <th>Active Tool</th>
-              <th>Last Event</th>
-            </tr>
-          </thead>
-          <tbody id="overviewActiveTableBody">
-            <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No active agents running</td></tr>
-          </tbody>
-        </table>
+      <!-- ACTIVE AGENTS & RECENT CONVERSATIONS TABLE -->
+      <div class="bezel-card">
+        <div class="bezel-core">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="font-size:0.95rem; font-weight:700; color:#fff;">Active Conversations & Sessions</h3>
+            <span style="font-size:0.75rem; color:var(--text-muted);">Click row to inspect agent status & tokens</span>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Conversation</th>
+                  <th>Model</th>
+                  <th>Active Tool</th>
+                  <th>Turn</th>
+                  <th>Tokens</th>
+                  <th>Last Event</th>
+                </tr>
+              </thead>
+              <tbody id="overviewTableBody">
+                <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Loading conversations...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- AGENTS TAB -->
-    <section id="tab-agents" class="tab-content">
-      <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 12px;">All Monitored Agents</h3>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Status</th>
-              <th>Type</th>
-              <th>Conversation</th>
-              <th>Model</th>
-              <th>Active Tool</th>
-              <th>Started</th>
-              <th>Last Event</th>
-            </tr>
-          </thead>
-          <tbody id="agentsTableBody">
-            <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Loading agents...</td></tr>
-          </tbody>
-        </table>
+    <section id="tab-agents" class="view-panel">
+      <div class="bezel-card">
+        <div class="bezel-core">
+          <div style="margin-bottom:20px;">
+            <h3 style="font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:4px;">Active & Discovered Agents</h3>
+            <p style="font-size:0.8rem; color:var(--text-secondary);">Real-time status of AI agents running across all Antigravity workspaces.</p>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Conversation ID</th>
+                  <th>Model</th>
+                  <th>Active Tool</th>
+                  <th>Started At</th>
+                  <th>Last Event</th>
+                </tr>
+              </thead>
+              <tbody id="agentsTableBody">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- MODELS TAB -->
-    <section id="tab-models" class="tab-content">
-      <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 12px;">Model Performance & Token Usage</h3>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Model</th>
-              <th>Conversations</th>
-              <th>Invocations</th>
-              <th>Tool Calls</th>
-              <th>Errors</th>
-              <th>Total Tokens</th>
-              <th>Token Source</th>
-              <th>Last Used</th>
-            </tr>
-          </thead>
-          <tbody id="modelsTableBody">
-            <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Loading models...</td></tr>
-          </tbody>
-        </table>
+    <!-- MODELS & TOKENS TAB -->
+    <section id="tab-models" class="view-panel">
+      <div class="bezel-card">
+        <div class="bezel-core">
+          <div style="margin-bottom:20px;">
+            <h3 style="font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:4px;">Model Token Accounting</h3>
+            <p style="font-size:0.8rem; color:var(--text-secondary);">Exact cumulative token consumption tracked per model across restarts.</p>
+          </div>
+          <div class="model-cards-grid" id="modelCardsGrid">
+            <!-- Dynamically populated model cards -->
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- CONVERSATIONS TAB -->
-    <section id="tab-conversations" class="tab-content">
-      <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 12px;">Recorded Conversations</h3>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Title / ID</th>
-              <th>Model</th>
-              <th>Status</th>
-              <th>Turns</th>
-              <th>Tools</th>
-              <th>Tokens</th>
-              <th>Last Active</th>
-            </tr>
-          </thead>
-          <tbody id="conversationsTableBody">
-            <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Loading conversations...</td></tr>
-          </tbody>
-        </table>
+    <section id="tab-conversations" class="view-panel">
+      <div class="bezel-card">
+        <div class="bezel-core">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div>
+              <h3 style="font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:4px;">All Tracked Conversations</h3>
+              <p style="font-size:0.8rem; color:var(--text-secondary);">Click any conversation to slide open its live agent status, tool calls, and token breakdown.</p>
+            </div>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Conversation ID</th>
+                  <th>Status</th>
+                  <th>Model</th>
+                  <th>Turns</th>
+                  <th>Input</th>
+                  <th>Cache Read</th>
+                  <th>Output</th>
+                  <th>Total</th>
+                  <th>Last Active</th>
+                </tr>
+              </thead>
+              <tbody id="conversationsFullTableBody">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- ANALYTICS TAB -->
-    <section id="tab-analytics" class="tab-content">
-      <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 12px;">Daily Usage Trends (Exact Tokens)</h3>
-      <div class="card" style="margin-bottom: 20px;">
-        <div class="card-header">
-          <span>TOKEN CONSUMPTION OVER TIME</span>
-          <span class="badge exact">EXACT (TRANSCRIPTS)</span>
-        </div>
-        <div class="chart-box" id="analyticsChartBox">
-          <svg class="chart" id="analyticsChart" viewBox="0 0 600 150">
-            <text x="300" y="80" fill="#8b949e" font-size="12" text-anchor="middle">Awaiting activity data...</text>
-          </svg>
-        </div>
-      </div>
+    <section id="tab-analytics" class="view-panel">
+      <div class="bezel-card">
+        <div class="bezel-core">
+          <div style="margin-bottom:20px;">
+            <h3 style="font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:4px;">Daily Token Consumption Trend</h3>
+            <p style="font-size:0.8rem; color:var(--text-secondary);">Interactive stacked token history (Emerald = Cache Read, Cyan = Input, Purple = Output). Hover for exact values.</p>
+          </div>
 
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Conversations</th>
-              <th>Invocations</th>
-              <th>Tool Calls</th>
-              <th>Input Tokens</th>
-              <th>Cache Tokens</th>
-              <th>Output Tokens</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody id="analyticsTableBody">
-            <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Loading daily usage...</td></tr>
-          </tbody>
-        </table>
+          <div class="chart-container">
+            <svg id="tokenDailyChart" class="chart-svg"></svg>
+            <div id="chartTooltip" class="chart-tooltip"></div>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- SETTINGS TAB -->
-    <section id="tab-settings" class="tab-content">
-      <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 16px;">Privacy & Companion Controls</h3>
-      <div class="settings-list">
-        <div class="settings-item">
-          <div class="settings-info">
-            <h4>Disable Discord Rich Presence</h4>
-            <p>Completely stops all Discord IPC activity updates.</p>
+    <section id="tab-settings" class="view-panel">
+      <div class="bezel-card">
+        <div class="bezel-core" style="max-width: 640px;">
+          <h3 style="font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:16px;">Privacy & Presence Configuration</h3>
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <label style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; cursor:pointer;">
+              <span>Disable Discord Rich Presence</span>
+              <input type="checkbox" id="settingDisablePresence" onchange="updateSetting('disableRichPresence', this.checked)">
+            </label>
+            <label style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; cursor:pointer;">
+              <span>Hide Model Names in Rich Presence</span>
+              <input type="checkbox" id="settingHideModels" onchange="updateSetting('hideModels', this.checked)">
+            </label>
+            <label style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; cursor:pointer;">
+              <span>Hide File Names in Manual Coding Mode</span>
+              <input type="checkbox" id="settingHideFileNames" onchange="updateSetting('hideFileNamesInManualEdits', this.checked)">
+            </label>
+            <label style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; cursor:pointer;">
+              <span>Enable Dual-Mode Manual Editor Presence</span>
+              <input type="checkbox" id="settingEnableManualPresence" onchange="updateSetting('enableManualEditsPresence', this.checked)">
+            </label>
           </div>
-          <label class="toggle-switch">
-            <input type="checkbox" id="settingDisableRichPresence" onchange="updateSetting('disableRichPresence', this.checked)">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="settings-item">
-          <div class="settings-info">
-            <h4>Pause Tracking</h4>
-            <p>Temporarily ignores incoming hook and editor events.</p>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" id="settingPauseTracking" onchange="updateSetting('pauseTracking', this.checked)">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="settings-item">
-          <div class="settings-info">
-            <h4>Hide Model Names on Discord</h4>
-            <p>Hides AI model labels (e.g. Gemini, Claude) from public Rich Presence.</p>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" id="settingHideModels" onchange="updateSetting('hideModels', this.checked)">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="settings-item">
-          <div class="settings-info">
-            <h4>Hide Token Counts on Discord</h4>
-            <p>Never show token metrics on your Discord profile.</p>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" id="settingHideTokens" onchange="updateSetting('hideTokens', this.checked)">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="settings-item">
-          <div class="settings-info">
-            <h4>Enable Manual Editor Presence</h4>
-            <p>Shows file and line number when AI mode is idle.</p>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" id="settingEnableManualEditsPresence" onchange="updateSetting('enableManualEditsPresence', this.checked)">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="settings-item">
-          <div class="settings-info">
-            <h4>Hide File Names in Manual Edits</h4>
-            <p>Shows only the programming language and line numbers (e.g. "Coding in TypeScript").</p>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" id="settingHideFileNamesInManualEdits" onchange="updateSetting('hideFileNamesInManualEdits', this.checked)">
-            <span class="slider"></span>
-          </label>
         </div>
       </div>
     </section>
+
   </main>
 
-  <footer>
-    Antigravity Presence • Privacy-Safe Local Companion • 100% Local (127.0.0.1)<br>
-    Made with ❤️ by <strong>itsjamiefied</strong> — a 16-year-old developer using Google Antigravity
-  </footer>
+  <!-- SLIDE-OVER CONVERSATION DETAIL DRAWER -->
+  <div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+  <aside id="drawerPanel" class="drawer-panel">
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-title" id="drawerTitle">Conversation Details</div>
+        <div class="drawer-id" id="drawerId">--</div>
+      </div>
+      <button class="close-btn" onclick="closeDrawer()" title="Close Drawer (Esc)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
 
+    <!-- STATUS & ACTIVE TOOL -->
+    <div class="drawer-section">
+      <div class="section-heading">Agent Execution State</div>
+      <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+        <span id="drawerStatusTag" class="status-tag thinking">Thinking</span>
+        <span id="drawerModelBadge" class="model-badge">Gemini 3.8 Flash</span>
+      </div>
+      <div id="drawerActiveToolCard" style="display:none; background:#0e1424; border:1px solid rgba(16, 185, 129, 0.3); border-radius:10px; padding:12px 14px;">
+        <div style="font-size:0.7rem; color:var(--emerald); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Currently Running Tool</div>
+        <div id="drawerActiveToolName" style="font-family:var(--font-mono); font-size:0.95rem; font-weight:700; color:#fff;">run_command</div>
+      </div>
+    </div>
+
+    <!-- TOKEN BREAKDOWN & CACHE HIT RATIO -->
+    <div class="drawer-section">
+      <div class="section-heading">Token Accounting & Efficiency</div>
+      <div class="token-grid">
+        <div class="token-box">
+          <div class="token-box-label">Input Tokens</div>
+          <div class="token-box-val mono-num" id="drawerInTokens">0</div>
+        </div>
+        <div class="token-box">
+          <div class="token-box-label">Cache Read Tokens</div>
+          <div class="token-box-val mono-num" id="drawerCacheTokens">0</div>
+        </div>
+        <div class="token-box">
+          <div class="token-box-label">Output Tokens</div>
+          <div class="token-box-val mono-num" id="drawerOutTokens">0</div>
+        </div>
+        <div class="token-box">
+          <div class="token-box-label">Total Tokens</div>
+          <div class="token-box-val mono-num" id="drawerTotalTokens">0</div>
+        </div>
+      </div>
+
+      <div style="background:#090d18; border:1px solid var(--border-inner); border-radius:10px; padding:12px 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:0.75rem; color:var(--text-secondary); font-weight:600;">Context Cache Efficiency</span>
+          <span id="drawerCacheRatio" style="font-family:var(--font-mono); font-size:0.8rem; font-weight:700; color:var(--emerald);">0%</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div id="drawerCacheBar" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECENT ACTIVITY TIMELINE -->
+    <div class="drawer-section">
+      <div class="section-heading">Recent Event Timeline</div>
+      <div class="event-timeline" id="drawerEventList">
+        <div style="color:var(--text-muted); font-size:0.78rem;">No events recorded.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:auto; padding-top:16px;">
+      <button onclick="copyCurrentConvId()" style="width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid var(--border-outer); color:#fff; font-family:var(--font-sans); font-size:0.82rem; cursor:pointer; font-weight:600;">
+        Copy Conversation ID
+      </button>
+    </div>
+  </aside>
+
+  <!-- TOAST FEEDBACK -->
+  <div id="toast" class="toast">Copied to clipboard</div>
+
+  <!-- CLIENT-SIDE SCRIPT -->
   <script>
+    let activeConversationId = null;
     let currentData = null;
 
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-      const target = document.getElementById('tab-' + tabId);
-      if (target) target.classList.add('active');
-      event.target.classList.add('active');
-    }
-
     function formatNumber(num) {
-      if (typeof num !== 'number') return '0';
+      if (typeof num !== 'number' || isNaN(num)) return '0';
       return num.toLocaleString();
     }
 
@@ -678,230 +1091,498 @@ export function getDashboardHtml(): string {
       if (!iso) return '--';
       try {
         const d = new Date(iso);
-        return d.toLocaleTimeString();
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       } catch {
-        return iso;
+        return '--';
       }
     }
 
-    function formatStatusBadge(status, isEstimated) {
-      const cls = status || 'idle';
-      const label = status ? status.replace('_', ' ') : 'idle';
-      const est = isEstimated ? ' (est)' : '';
-      return '<span class="badge ' + cls + '">' + label + est + '</span>';
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+
+      event.target.classList.add('active');
+      const target = document.getElementById('tab-' + tabId);
+      if (target) target.classList.add('active');
+
+      if (tabId === 'analytics' && currentData) {
+        renderSvgAnalytics(currentData.dailyUsage);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function copyCurrentConvId() {
+      if (activeConversationId) {
+        navigator.clipboard.writeText(activeConversationId);
+        showToast('Conversation ID copied!');
+      }
+    }
+
+    function openDrawer(convId) {
+      activeConversationId = convId;
+      document.getElementById('drawerId').innerText = convId;
+      document.getElementById('drawerOverlay').classList.add('open');
+      document.getElementById('drawerPanel').classList.add('open');
+
+      fetch('/api/conversations/' + convId)
+        .then(res => res.json())
+        .then(data => renderDrawerData(data))
+        .catch(() => {
+          // Fallback to local cached conversation
+          if (currentData) {
+            const found = currentData.conversations.find(c => c.conversationId === convId);
+            if (found) renderDrawerData(found);
+          }
+        });
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawerOverlay').classList.remove('open');
+      document.getElementById('drawerPanel').classList.remove('open');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDrawer();
+    });
+
+    function renderDrawerData(data) {
+      if (!data) return;
+
+      document.getElementById('drawerTitle').innerText = data.title || 'Agent Conversation';
+      document.getElementById('drawerModelBadge').innerText = data.currentModel || 'Gemini 3.8 Flash';
+
+      const statusTag = document.getElementById('drawerStatusTag');
+      statusTag.className = 'status-tag ' + (data.status || 'idle');
+      statusTag.innerText = (data.status || 'idle').replace('_', ' ');
+
+      const toolCard = document.getElementById('drawerActiveToolCard');
+      if (data.activeTool) {
+        toolCard.style.display = 'block';
+        document.getElementById('drawerActiveToolName').innerText = data.activeTool;
+      } else {
+        toolCard.style.display = 'none';
+      }
+
+      const tok = data.tokens || { inputTokens: 0, cacheReadTokens: 0, outputTokens: 0, totalTokens: 0 };
+      document.getElementById('drawerInTokens').innerText = formatNumber(tok.inputTokens);
+      document.getElementById('drawerCacheTokens').innerText = formatNumber(tok.cacheReadTokens);
+      document.getElementById('drawerOutTokens').innerText = formatNumber(tok.outputTokens);
+      document.getElementById('drawerTotalTokens').innerText = formatNumber(tok.totalTokens);
+
+      const ratio = typeof data.cacheHitRatio === 'number' ? data.cacheHitRatio : (
+        tok.inputTokens + tok.cacheReadTokens > 0
+          ? Math.round((tok.cacheReadTokens / (tok.inputTokens + tok.cacheReadTokens)) * 100)
+          : 0
+      );
+
+      document.getElementById('drawerCacheRatio').innerText = ratio + '% Cached';
+      document.getElementById('drawerCacheBar').style.width = ratio + '%';
+
+      const eventList = document.getElementById('drawerEventList');
+      if (Array.isArray(data.recentEvents) && data.recentEvents.length > 0) {
+        eventList.innerHTML = data.recentEvents
+          .map(function (e) {
+            return (
+              '<div class="event-item">' +
+              '<span class="event-type">' +
+              (e.toolName
+                ? '<span style="color:var(--emerald)">⚡ ' + e.toolName + '</span>'
+                : e.type) +
+              '</span>' +
+              '<span class="event-time">' +
+              formatTime(e.timestamp) +
+              '</span>' +
+              '</div>'
+            );
+          })
+          .join('');
+      } else {
+        eventList.innerHTML =
+          '<div style="color:var(--text-muted); font-size:0.78rem;">No recent events recorded.</div>';
+      }
     }
 
     function renderOverview(data) {
-      const activeCount = data.activeAgents.length;
-      document.getElementById('metricActiveAgents').innerText = activeCount;
-      document.getElementById('agentText').innerText = activeCount + (activeCount === 1 ? ' Active Agent' : ' Active Agents');
-      document.getElementById('agentDot').className = 'status-dot' + (activeCount > 0 ? ' active' : '');
+      document.getElementById('statActiveAgents').innerText = data.session.activeAgentCount || 0;
+      document.getElementById('agentActiveCount').innerText =
+        (data.session.activeAgentCount || 0) + ' Active Agents';
 
-      const breakdown = activeCount === 0 
-        ? 'No agents currently running' 
-        : data.activeAgents.map(a => a.status).join(', ');
-      document.getElementById('metricActiveBreakdown').innerText = breakdown;
+      const tok = data.session.tokens;
+      document.getElementById('statSessionTokens').innerText = formatNumber(tok.totalTokens);
+      document.getElementById('statTokensSub').innerText =
+        'In: ' +
+        formatNumber(tok.inputTokens) +
+        ' • Cache: ' +
+        formatNumber(tok.cacheReadTokens) +
+        ' • Out: ' +
+        formatNumber(tok.outputTokens);
 
-      // Tokens
-      const tokens = data.session.tokens;
-      document.getElementById('metricTotalTokens').innerText = formatNumber(tokens.totalTokens);
-      document.getElementById('metricTokenBreakdown').innerText = 
-        'In: ' + formatNumber(tokens.inputTokens) + 
-        ' • Cache: ' + formatNumber(tokens.cacheReadTokens) + 
-        ' • Out: ' + formatNumber(tokens.outputTokens);
+      document.getElementById('statModelsCount').innerText = data.modelStats.length;
+      document.getElementById('statModelsSub').innerText =
+        data.modelStats
+          .map(function (m) {
+            return m.model;
+          })
+          .join(', ') || 'None';
 
-      document.getElementById('metricTokenBadge').innerText = tokens.source === 'transcript_exact' ? 'EXACT' : 'UNAVAILABLE';
-      document.getElementById('metricTokenBadge').className = 'badge ' + (tokens.source === 'transcript_exact' ? 'exact' : 'idle');
+      document.getElementById('statConversations').innerText = data.conversations.length;
 
-      // Conversations & Models
-      document.getElementById('metricTotalConversations').innerText = formatNumber(data.session.totalConversations);
-      document.getElementById('metricEventsProcessed').innerText = formatNumber(data.session.totalEventsProcessed) + ' hook events processed';
-
-      // Models in active use
-      const activeModels = Array.from(new Set((data.activeAgents || []).map(a => a.model)));
-      document.getElementById('metricModelCount').innerText = activeModels.length;
-      document.getElementById('metricPrimaryModel').innerText = activeModels.length > 0 
-        ? activeModels.join(', ') 
-        : (data.modelStats && data.modelStats.length > 0 ? data.modelStats[0].model + ' (Idle)' : 'Awaiting model events');
-
-      // Active Table
-      const tbody = document.getElementById('overviewActiveTableBody');
-      if (data.activeAgents.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No active agents running</td></tr>';
-      } else {
-        tbody.innerHTML = data.activeAgents.map(a => 
-          '<tr>' +
-            '<td>' + formatStatusBadge(a.status, a.statusEstimated) + '</td>' +
-            '<td class="mono">' + a.conversationId.slice(0, 18) + '...</td>' +
-            '<td>' + a.model + '</td>' +
-            '<td>' + (a.activeTool ? '<span class="badge running_tool">' + a.activeTool + '</span>' : '--') + '</td>' +
-            '<td>' + formatTime(a.lastEventAt) + '</td>' +
-          '</tr>'
-        ).join('');
-      }
-    }
-
-    function renderAgents(data) {
-      const tbody = document.getElementById('agentsTableBody');
-      if (data.agents.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No agents recorded yet</td></tr>';
+      // Table
+      const tbody = document.getElementById('overviewTableBody');
+      if (!data.conversations || data.conversations.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No active agents detected</td></tr>';
         return;
       }
-      tbody.innerHTML = data.agents.map(a => 
-        '<tr>' +
-          '<td>' + formatStatusBadge(a.status, a.statusEstimated) + '</td>' +
-          '<td>' + (a.isSubagent ? '<span class="badge estimated">Subagent</span>' : '<span class="badge exact">Root</span>') + '</td>' +
-          '<td class="mono">' + a.conversationId.slice(0, 24) + '...</td>' +
-          '<td>' + a.model + '</td>' +
-          '<td>' + (a.activeTool || '--') + '</td>' +
-          '<td>' + formatTime(a.startedAt) + '</td>' +
-          '<td>' + formatTime(a.lastEventAt) + '</td>' +
-        '</tr>'
-      ).join('');
+
+      tbody.innerHTML = data.conversations
+        .map(function (c) {
+          return (
+            '<tr onclick="openDrawer(\'' +
+            c.conversationId +
+            '\')">' +
+            '<td><span class="status-tag ' +
+            c.status +
+            '">' +
+            c.status.replace('_', ' ') +
+            '</span></td>' +
+            '<td><div class="conv-title">' +
+            (c.title || c.conversationId.slice(0, 18) + '...') +
+            '</div></td>' +
+            '<td><span class="model-badge">' +
+            c.currentModel +
+            '</span></td>' +
+            '<td class="mono-num">' +
+            (c.activeTool ? '<span style="color:var(--emerald);">⚡ ' + c.activeTool + '</span>' : '--') +
+            '</td>' +
+            '<td class="mono-num">' +
+            c.turnCount +
+            '</td>' +
+            '<td class="mono-num">' +
+            formatNumber(c.tokens.totalTokens) +
+            '</td>' +
+            '<td>' +
+            formatTime(c.lastEventAt) +
+            '</td>' +
+            '</tr>'
+          );
+        })
+        .join('');
+
+      // Full table on Conversations tab
+      const fullTbody = document.getElementById('conversationsFullTableBody');
+      fullTbody.innerHTML = data.conversations
+        .map(function (c) {
+          return (
+            '<tr onclick="openDrawer(\'' +
+            c.conversationId +
+            '\')">' +
+            '<td style="font-family:var(--font-mono); font-size:0.75rem; color:#fff;">' +
+            c.conversationId +
+            '</td>' +
+            '<td><span class="status-tag ' +
+            c.status +
+            '">' +
+            c.status.replace('_', ' ') +
+            '</span></td>' +
+            '<td><span class="model-badge">' +
+            c.currentModel +
+            '</span></td>' +
+            '<td class="mono-num">' +
+            c.turnCount +
+            '</td>' +
+            '<td class="mono-num">' +
+            formatNumber(c.tokens.inputTokens) +
+            '</td>' +
+            '<td class="mono-num" style="color:var(--emerald);">' +
+            formatNumber(c.tokens.cacheReadTokens) +
+            '</td>' +
+            '<td class="mono-num" style="color:var(--purple);">' +
+            formatNumber(c.tokens.outputTokens) +
+            '</td>' +
+            '<td class="mono-num" style="font-weight:700;">' +
+            formatNumber(c.tokens.totalTokens) +
+            '</td>' +
+            '<td>' +
+            formatTime(c.lastEventAt) +
+            '</td>' +
+            '</tr>'
+          );
+        })
+        .join('');
     }
 
     function renderModels(data) {
-      const tbody = document.getElementById('modelsTableBody');
-      if (data.modelStats.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No models recorded yet</td></tr>';
-        return;
-      }
-      tbody.innerHTML = data.modelStats.map(m => 
-        '<tr>' +
-          '<td><strong>' + m.model + '</strong></td>' +
-          '<td>' + formatNumber(m.conversationCount) + '</td>' +
-          '<td>' + formatNumber(m.invocationCount) + '</td>' +
-          '<td>' + formatNumber(m.toolCallCount) + '</td>' +
-          '<td>' + (m.errorCount > 0 ? '<span class="badge error">' + m.errorCount + '</span>' : '0') + '</td>' +
-          '<td>' + formatNumber(m.tokens.totalTokens) + '</td>' +
-          '<td><span class="badge ' + (m.tokens.source === 'transcript_exact' ? 'exact' : 'idle') + '">' + m.tokens.source + '</span></td>' +
-          '<td>' + formatTime(m.lastUsedAt) + '</td>' +
-        '</tr>'
-      ).join('');
-    }
-
-    function renderConversations(data) {
-      const tbody = document.getElementById('conversationsTableBody');
-      if (data.conversations.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No conversations recorded yet</td></tr>';
-        return;
-      }
-      tbody.innerHTML = data.conversations.map(c => 
-        '<tr>' +
-          '<td>' +
-            '<div>' + (c.title ? '<strong>' + c.title + '</strong>' : '<span class="mono">' + c.conversationId.slice(0, 16) + '...</span>') + '</div>' +
-            (c.isSubagent ? '<span class="badge estimated" style="margin-top:4px;">Subagent</span>' : '') +
-          '</td>' +
-          '<td>' + c.currentModel + '</td>' +
-          '<td>' + formatStatusBadge(c.status, c.statusEstimated) + '</td>' +
-          '<td>' + formatNumber(c.turnCount) + '</td>' +
-          '<td>' + formatNumber(c.toolCallCount) + '</td>' +
-          '<td>' + formatNumber(c.tokens.totalTokens) + '</td>' +
-          '<td>' + formatTime(c.lastEventAt) + '</td>' +
-        '</tr>'
-      ).join('');
-    }
-
-    function renderAnalytics(data) {
-      const tbody = document.getElementById('analyticsTableBody');
-      if (data.dailyUsage.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No daily usage data yet</td></tr>';
+      const container = document.getElementById('modelCardsGrid');
+      if (!data.modelStats || data.modelStats.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted);">No models recorded yet.</div>';
         return;
       }
 
-      tbody.innerHTML = data.dailyUsage.map(d => 
-        '<tr>' +
-          '<td><strong>' + d.date + '</strong></td>' +
-          '<td>' + formatNumber(d.conversationCount) + '</td>' +
-          '<td>' + formatNumber(d.invocationCount) + '</td>' +
-          '<td>' + formatNumber(d.toolCallCount) + '</td>' +
-          '<td>' + formatNumber(d.tokens.inputTokens) + '</td>' +
-          '<td>' + formatNumber(d.tokens.cacheReadTokens) + '</td>' +
-          '<td>' + formatNumber(d.tokens.outputTokens) + '</td>' +
-          '<td>' + formatNumber(d.tokens.totalTokens) + '</td>' +
-        '</tr>'
-      ).join('');
+      const totalSessionTokens = Math.max(1, data.session.tokens.totalTokens);
 
-      renderSvgChart(data.dailyUsage);
+      container.innerHTML = data.modelStats
+        .map(function (m) {
+          const sharePct = Math.round((m.tokens.totalTokens / totalSessionTokens) * 100);
+          const inPct =
+            m.tokens.totalTokens > 0 ? Math.round((m.tokens.inputTokens / m.tokens.totalTokens) * 100) : 0;
+          const cachePct =
+            m.tokens.totalTokens > 0
+              ? Math.round((m.tokens.cacheReadTokens / m.tokens.totalTokens) * 100)
+              : 0;
+          const outPct = m.tokens.totalTokens > 0 ? Math.max(1, 100 - inPct - cachePct) : 0;
+
+          return (
+            '<div class="model-card-item">' +
+            '<div class="model-card-top">' +
+            '<span class="model-card-name">' +
+            m.model +
+            '</span>' +
+            '<span class="badge-live">' +
+            sharePct +
+            '% share</span>' +
+            '</div>' +
+            '<div style="font-family:var(--font-mono); font-size:1.4rem; font-weight:700; color:#fff; margin-bottom:8px;">' +
+            formatNumber(m.tokens.totalTokens) +
+            ' <span style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">tokens</span></div>' +
+            '<div style="font-size:0.74rem; color:var(--text-secondary); margin-bottom:12px; font-family:var(--font-mono);">' +
+            'In: ' +
+            formatNumber(m.tokens.inputTokens) +
+            ' • Cache: ' +
+            formatNumber(m.tokens.cacheReadTokens) +
+            ' • Out: ' +
+            formatNumber(m.tokens.outputTokens) +
+            '</div>' +
+            '<div style="height:6px; border-radius:9999px; background:rgba(255,255,255,0.06); display:flex; overflow:hidden;">' +
+            '<div style="width:' +
+            cachePct +
+            '%; background:var(--emerald);" title="Cache: ' +
+            cachePct +
+            '%"></div>' +
+            '<div style="width:' +
+            inPct +
+            '%; background:var(--accent);" title="Input: ' +
+            inPct +
+            '%"></div>' +
+            '<div style="width:' +
+            outPct +
+            '%; background:var(--purple);" title="Output: ' +
+            outPct +
+            '%"></div>' +
+            '</div>' +
+            '</div>'
+          );
+        })
+        .join('');
     }
 
-    function renderSvgChart(dailyList) {
-      const svg = document.getElementById('analyticsChart');
-      if (!dailyList || dailyList.length === 0) return;
+    function renderSvgAnalytics(dailyUsage) {
+      const svg = document.getElementById('tokenDailyChart');
+      if (!dailyUsage || dailyUsage.length === 0) return;
 
-      const items = [...dailyList].reverse();
-      const maxTokens = Math.max(...items.map(i => i.tokens.totalTokens), 100);
-      const width = 600;
-      const height = 150;
-      const barWidth = Math.max(16, Math.min(50, (width - 40) / items.length - 10));
+      const items = dailyUsage.slice(-14);
+      const maxTokens = Math.max.apply(
+        null,
+        items.map(function (i) {
+          return i.tokens.totalTokens;
+        }).concat([1000])
+      );
+      const width = svg.clientWidth || 800;
+      const height = 220;
+      const padding = 40;
+      const barWidth = Math.max(20, Math.min(48, (width - padding * 2) / items.length - 12));
 
-      let content = '<line x1="30" y1="130" x2="580" y2="130" stroke="rgba(255,255,255,0.1)" />';
+      let content =
+        '<line x1="' +
+        padding +
+        '" y1="' +
+        (height - 30) +
+        '" x2="' +
+        (width - padding) +
+        '" y2="' +
+        (height - 30) +
+        '" stroke="rgba(255,255,255,0.1)" />';
 
-      items.forEach((item, idx) => {
-        const x = 50 + idx * (barWidth + 16);
-        const barHeight = Math.round((item.tokens.totalTokens / maxTokens) * 100);
-        const y = 130 - barHeight;
+      items.forEach(function (item, idx) {
+        const x = padding + 16 + idx * (barWidth + 16);
+        const totalHeight = Math.round((item.tokens.totalTokens / maxTokens) * (height - 70));
+        const cacheHeight = Math.round((item.tokens.cacheReadTokens / maxTokens) * (height - 70));
+        const inHeight = Math.round((item.tokens.inputTokens / maxTokens) * (height - 70));
+        const outHeight = Math.max(2, totalHeight - cacheHeight - inHeight);
 
-        content += '<rect x="' + x + '" y="' + y + '" width="' + barWidth + '" height="' + barHeight + '" rx="4" fill="#58a6ff" opacity="0.85" />';
-        content += '<text x="' + (x + barWidth/2) + '" y="145" fill="#8b949e" font-size="9" text-anchor="middle">' + item.date.slice(5) + '</text>';
-        content += '<text x="' + (x + barWidth/2) + '" y="' + (y - 5) + '" fill="#f0f6fc" font-size="8" text-anchor="middle">' + Math.round(item.tokens.totalTokens/1000) + 'k</text>';
+        const yBase = height - 30;
+        const yCache = yBase - cacheHeight;
+        const yIn = yCache - inHeight;
+        const yOut = yIn - outHeight;
+
+        const tooltipData =
+          item.date +
+          ' • Total: ' +
+          formatNumber(item.tokens.totalTokens) +
+          ' (Cache: ' +
+          formatNumber(item.tokens.cacheReadTokens) +
+          ', In: ' +
+          formatNumber(item.tokens.inputTokens) +
+          ', Out: ' +
+          formatNumber(item.tokens.outputTokens) +
+          ')';
+
+        content +=
+          '<g class="chart-bar" onmousemove="showChartTooltip(event, \'' +
+          tooltipData +
+          '\')" onmouseleave="hideChartTooltip()">' +
+          '<rect x="' +
+          x +
+          '" y="' +
+          yCache +
+          '" width="' +
+          barWidth +
+          '" height="' +
+          cacheHeight +
+          '" fill="#10b981" opacity="0.85" rx="2" />' +
+          '<rect x="' +
+          x +
+          '" y="' +
+          yIn +
+          '" width="' +
+          barWidth +
+          '" height="' +
+          inHeight +
+          '" fill="#38bdf8" opacity="0.85" rx="2" />' +
+          '<rect x="' +
+          x +
+          '" y="' +
+          yOut +
+          '" width="' +
+          barWidth +
+          '" height="' +
+          outHeight +
+          '" fill="#a855f7" opacity="0.85" rx="2" />' +
+          '<text x="' +
+          (x + barWidth / 2) +
+          '" y="' +
+          (height - 12) +
+          '" fill="#64748b" font-size="10" text-anchor="middle" font-family="var(--font-mono)">' +
+          item.date.slice(5) +
+          '</text>' +
+          '<text x="' +
+          (x + barWidth / 2) +
+          '" y="' +
+          (yOut - 6) +
+          '" fill="#f8fafc" font-size="9" text-anchor="middle" font-family="var(--font-mono)">' +
+          Math.round(item.tokens.totalTokens / 1000) +
+          'k</text>' +
+          '</g>';
       });
 
       svg.innerHTML = content;
     }
 
-    function renderManualEditor(editor) {
+    function showChartTooltip(e, text) {
+      const tip = document.getElementById('chartTooltip');
+      tip.innerText = text;
+      tip.style.display = 'block';
+      const rect = e.currentTarget.getBoundingClientRect();
+      const parentRect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+      tip.style.left = (e.clientX - parentRect.left + 10) + 'px';
+      tip.style.top = (e.clientY - parentRect.top - 30) + 'px';
+    }
+
+    function hideChartTooltip() {
+      document.getElementById('chartTooltip').style.display = 'none';
+    }
+
+    function renderEditor(editor) {
       if (!editor || !editor.fileName) {
-        document.getElementById('manualEditorFile').innerText = 'No active file in editor';
-        document.getElementById('manualEditorDetails').innerText = 'Waiting for Antigravity IDE focus';
-        document.getElementById('manualPresenceBadge').innerText = 'IDLE';
-        document.getElementById('manualPresenceBadge').className = 'badge idle';
+        document.getElementById('editorFile').innerText = 'No active file in editor';
+        document.getElementById('editorDetails').innerText = 'Waiting for Antigravity IDE focus';
+        document.getElementById('editorBadge').innerText = 'IDLE';
+        document.getElementById('editorBadge').className = 'status-tag idle';
         return;
       }
 
-      document.getElementById('manualEditorFile').innerText = 'Editing ' + editor.fileName;
-      document.getElementById('manualEditorDetails').innerText = 
+      document.getElementById('editorFile').innerText = 'Editing ' + editor.fileName;
+      document.getElementById('editorDetails').innerText = 
         editor.language + ' • Line ' + editor.currentLine + ' of ' + editor.totalLines + 
         (editor.workspaceName ? ' (' + editor.workspaceName + ')' : '');
-      document.getElementById('manualEditorTime').innerText = formatTime(editor.updatedAt);
-      document.getElementById('manualPresenceBadge').innerText = 'ACTIVE';
-      document.getElementById('manualPresenceBadge').className = 'badge exact';
+      document.getElementById('editorBadge').innerText = 'ACTIVE';
+      document.getElementById('editorBadge').className = 'status-tag running_tool';
     }
 
-    function renderDiscordStatus(status) {
+    function renderDiscord(discord) {
       const dot = document.getElementById('discordDot');
       const text = document.getElementById('discordText');
 
-      if (status.connected) {
+      if (discord && discord.connected) {
         dot.className = 'status-dot active';
         text.innerText = 'Discord: Connected';
       } else {
         dot.className = 'status-dot amber';
-        text.innerText = 'Discord: Disconnected';
+        text.innerText = 'Discord: Offline';
       }
     }
 
-    function renderSettings(settings) {
-      document.getElementById('settingDisableRichPresence').checked = settings.disableRichPresence;
-      document.getElementById('settingPauseTracking').checked = settings.pauseTracking;
-      document.getElementById('settingHideModels').checked = settings.hideModels;
-      document.getElementById('settingHideTokens').checked = settings.hideTokens;
-      document.getElementById('settingEnableManualEditsPresence').checked = settings.enableManualEditsPresence;
-      document.getElementById('settingHideFileNamesInManualEdits').checked = settings.hideFileNamesInManualEdits;
+    function renderAgents(data) {
+      const tbody = document.getElementById('agentsTableBody');
+      if (!tbody) return;
+      if (!data.agents || data.agents.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No agents discovered</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.agents
+        .map(function (a) {
+          return (
+            '<tr onclick="openDrawer(\'' +
+            a.conversationId +
+            '\')">' +
+            '<td><span class="status-tag ' +
+            a.status +
+            '">' +
+            a.status.replace('_', ' ') +
+            '</span></td>' +
+            '<td style="font-family:var(--font-mono); font-size:0.75rem; color:#fff;">' +
+            a.conversationId +
+            '</td>' +
+            '<td><span class="model-badge">' +
+            a.model +
+            '</span></td>' +
+            '<td class="mono-num">' +
+            (a.activeTool ? '<span style="color:var(--emerald);">⚡ ' + a.activeTool + '</span>' : '--') +
+            '</td>' +
+            '<td>' +
+            formatTime(a.startedAt) +
+            '</td>' +
+            '<td>' +
+            formatTime(a.lastEventAt) +
+            '</td>' +
+            '</tr>'
+          );
+        })
+        .join('');
+    }
+
+    function renderSettings(s) {
+      document.getElementById('settingDisablePresence').checked = !!s.disableRichPresence;
+      document.getElementById('settingHideModels').checked = !!s.hideModels;
+      document.getElementById('settingHideFileNames').checked = !!s.hideFileNamesInManualEdits;
+      document.getElementById('settingEnableManualPresence').checked = !!s.enableManualEditsPresence;
     }
 
     async function updateSetting(key, val) {
-      try {
-        const body = {};
-        body[key] = val;
-        await fetch('/api/settings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-      } catch (err) {
-        console.error('Failed updating setting', err);
-      }
+      const body = {};
+      body[key] = val;
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
     }
 
     function updateAll(data) {
@@ -909,37 +1590,35 @@ export function getDashboardHtml(): string {
       renderOverview(data);
       renderAgents(data);
       renderModels(data);
-      renderConversations(data);
-      renderAnalytics(data);
-      if (data.editor) renderManualEditor(data.editor);
-      if (data.discord) renderDiscordStatus(data.discord);
+      if (data.editor) renderEditor(data.editor);
+      if (data.discord) renderDiscord(data.discord);
       if (data.settings) renderSettings(data.settings);
+
+      // If drawer is open, keep it refreshed
+      if (activeConversationId) {
+        const activeConv = data.conversations.find(c => c.conversationId === activeConversationId);
+        if (activeConv) renderDrawerData(activeConv);
+      }
     }
 
-    // Connect to Server-Sent Events (SSE)
     function startSSE() {
       const es = new EventSource('/api/stream');
       es.onmessage = (e) => {
         try {
           const payload = JSON.parse(e.data);
           updateAll(payload);
-        } catch (err) {
-          console.error('SSE JSON error', err);
-        }
+        } catch {}
       };
-      es.onerror = () => {
-        setTimeout(startSSE, 3000);
-      };
+      es.onerror = () => setTimeout(startSSE, 3000);
     }
 
-    // Initial Fetch
     async function init() {
       try {
         const res = await fetch('/api/overview');
         const json = await res.json();
         updateAll(json);
-      } catch (e) {
-        console.error('Initial fetch failed', e);
+      } catch (err) {
+        console.error('Fetch overview failed', err);
       }
       startSSE();
     }
@@ -949,4 +1628,3 @@ export function getDashboardHtml(): string {
 </body>
 </html>`;
 }
-

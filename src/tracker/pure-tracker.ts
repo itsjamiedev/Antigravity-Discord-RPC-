@@ -13,12 +13,14 @@ import type {
   Session,
   Agent,
   Conversation,
+  ConversationDetail,
   ModelStats,
   DailyUsage,
   WhitelistedHookPayload,
   TokenUsageRecord,
 } from '../shared/types.js';
 import type { AgentWatcherState } from '../extension/agent-watcher.js';
+import { TokenStore } from './token-store.js';
 
 function getSessionStateFilePath(): string {
   return path.join(os.homedir(), '.gemini', 'antigravity', 'presence-session.json');
@@ -65,17 +67,21 @@ export class PureTracker {
   private session: Session;
   private agents: Map<string, Agent> = new Map();
   private conversations: Map<string, Conversation> = new Map();
+  private conversationDetails: Map<string, ConversationDetail> = new Map();
   private modelStats: Map<string, ModelStats> = new Map();
   private listeners: Set<(snapshot: TrackerSnapshot) => void> = new Set();
   private isPaused = false;
   private startTime: string;
   private heartbeatTimer: NodeJS.Timeout | null = null;
+  private tokenStore: TokenStore;
 
-  constructor(isLeader: boolean = false) {
+  constructor(isLeader: boolean = false, customTokenStorePath?: string) {
     this.startTime = loadOrCreatePersistentStartTime();
+    this.tokenStore = new TokenStore(customTokenStorePath);
     if (isLeader) {
       this.startHeartbeat();
     }
+    const initialTokens = this.tokenStore.getTotalCumulativeTokens();
     this.session = {
       sessionId: 'ext-session-' + Date.now(),
       startedAt: this.startTime,
@@ -83,14 +89,7 @@ export class PureTracker {
       activeAgentCount: 0,
       totalConversations: 0,
       totalEventsProcessed: 0,
-      tokens: {
-        inputTokens: 0,
-        cacheReadTokens: 0,
-        outputTokens: 0,
-        totalTokens: 0,
-        estimated: false,
-        source: 'unavailable',
-      },
+      tokens: initialTokens,
     };
   }
 
@@ -133,11 +132,11 @@ export class PureTracker {
 
     const nowMs = Date.now();
     const now = new Date(nowMs).toISOString();
+    const dateStr = now.slice(0, 10);
     savePersistentHeartbeat(this.startTime, nowMs);
 
     this.session.lastActivityAt = now;
     this.session.activeAgentCount = state.activeAgentCount;
-    this.session.tokens = state.totalTokens;
 
     const activeIds = new Set(state.agents.map((a) => a.conversationId));
 
@@ -145,17 +144,73 @@ export class PureTracker {
     for (const [id, agent] of this.agents.entries()) {
       if (!activeIds.has(id)) {
         agent.status = 'idle';
+        agent.activeTool = null;
       }
     }
 
-    // 2. Update active agents and models
+    // 2. Process all discovered conversations into persistent token store
+    const conversationList =
+      state.allConversations && state.allConversations.length > 0
+        ? state.allConversations
+        : state.agents;
+
+    for (const item of conversationList) {
+      if (item.tokens && item.tokens.totalTokens > 0) {
+        this.tokenStore.recordConversationTokens(
+          item.conversationId,
+          item.model,
+          item.tokens,
+          item.stepIndex ?? 1,
+          dateStr
+        );
+      }
+
+      const isActive = activeIds.has(item.conversationId);
+      const convStatus = isActive
+        ? (item.activeTool ? 'running_tool' : 'thinking')
+        : 'idle';
+
+      // Conversation summary
+      const conv: Conversation = {
+        conversationId: item.conversationId,
+        title: null,
+        currentModel: item.model,
+        modelsUsed: [item.model],
+        status: convStatus,
+        statusEstimated: false,
+        activeTool: isActive ? (item.activeTool ?? null) : null,
+        startedAt: new Date(item.lastActiveMs).toISOString(),
+        lastEventAt: now,
+        turnCount: item.stepIndex ?? 1,
+        toolCallCount: item.recentEvents?.filter((e) => e.toolName).length ?? 0,
+        errorCount: 0,
+        parentConversationId: null,
+        isSubagent: false,
+        tokens: item.tokens,
+      };
+      this.conversations.set(item.conversationId, conv);
+
+      // Detailed metadata for drawer inspection
+      const inTok = item.tokens.inputTokens;
+      const cacheTok = item.tokens.cacheReadTokens;
+      const ratio = inTok + cacheTok > 0 ? Math.round((cacheTok / (inTok + cacheTok)) * 100) : 0;
+
+      const detail: ConversationDetail = {
+        ...conv,
+        cacheHitRatio: ratio,
+        recentEvents: item.recentEvents ?? [],
+      };
+      this.conversationDetails.set(item.conversationId, detail);
+    }
+
+    // 3. Update active agents
     for (const active of state.agents) {
       const agent: Agent = {
         conversationId: active.conversationId,
         model: active.model,
-        status: 'thinking',
+        status: active.activeTool ? 'running_tool' : 'thinking',
         statusEstimated: false,
-        activeTool: null,
+        activeTool: active.activeTool ?? null,
         startedAt: new Date(active.lastActiveMs).toISOString(),
         lastEventAt: new Date(active.lastActiveMs).toISOString(),
         lastEventType: 'SessionStart',
@@ -164,50 +219,16 @@ export class PureTracker {
         hasError: false,
       };
       this.agents.set(active.conversationId, agent);
-
-      // Model stats
-      const existingModel = this.modelStats.get(active.model) ?? {
-        model: active.model,
-        conversationCount: 1,
-        invocationCount: 1,
-        toolCallCount: 0,
-        errorCount: 0,
-        lastUsedAt: now,
-        tokens: active.tokens,
-      };
-      existingModel.lastUsedAt = now;
-      existingModel.tokens = active.tokens;
-      this.modelStats.set(active.model, existingModel);
-
-      // Conversation
-      const conv: Conversation = {
-        conversationId: active.conversationId,
-        title: null,
-        currentModel: active.model,
-        modelsUsed: [active.model],
-        status: 'thinking',
-        statusEstimated: false,
-        startedAt: new Date(active.lastActiveMs).toISOString(),
-        lastEventAt: now,
-        turnCount: active.stepIndex ?? 1,
-        toolCallCount: 0,
-        errorCount: 0,
-        parentConversationId: null,
-        isSubagent: false,
-        tokens: active.tokens,
-      };
-      this.conversations.set(active.conversationId, conv);
     }
 
-    // Also update conversations that became idle
-    for (const [id, conv] of this.conversations.entries()) {
-      if (!activeIds.has(id)) {
-        conv.status = 'idle';
-      }
-    }
-
+    // Synchronize session tokens from persistent store
+    this.session.tokens = this.tokenStore.getTotalCumulativeTokens();
     this.session.totalConversations = this.conversations.size;
     this.notify();
+  }
+
+  public getConversationDetail(conversationId: string): ConversationDetail | null {
+    return this.conversationDetails.get(conversationId) ?? null;
   }
 
   public processEvent(payload: WhitelistedHookPayload): void {
@@ -219,34 +240,37 @@ export class PureTracker {
 
   public getSnapshot(): TrackerSnapshot {
     const agentsList = Array.from(this.agents.values());
-    const activeAgentsList = agentsList.filter((a) => a.status === 'thinking');
-
-    // Only active models for currently active agents
-    const activeModelsList = Array.from(
-      new Set(activeAgentsList.map((a) => a.model))
+    const activeAgentsList = agentsList.filter(
+      (a) => a.status === 'thinking' || a.status === 'running_tool'
     );
 
-    const modelStatsList = Array.from(this.modelStats.values());
-
-    const dailyUsage: DailyUsage[] = [
-      {
-        date: new Date().toISOString().slice(0, 10),
-        conversationCount: this.conversations.size,
-        invocationCount: 0,
-        toolCallCount: 0,
-        errorCount: 0,
-        modelsUsed: activeModelsList.length > 0 ? activeModelsList : Array.from(this.modelStats.keys()),
-        tokens: this.session.tokens,
-      },
-    ];
+    const modelStatsList = this.tokenStore.getModelStats();
+    const dailyUsage = this.tokenStore.getDailyUsage();
 
     return {
-      session: { ...this.session, activeAgentCount: activeAgentsList.length },
+      session: {
+        ...this.session,
+        activeAgentCount: activeAgentsList.length,
+        tokens: this.tokenStore.getTotalCumulativeTokens(),
+      },
       agents: agentsList,
       activeAgents: activeAgentsList,
       conversations: Array.from(this.conversations.values()),
       modelStats: modelStatsList,
-      dailyUsage,
+      dailyUsage:
+        dailyUsage.length > 0
+          ? dailyUsage
+          : [
+              {
+                date: new Date().toISOString().slice(0, 10),
+                conversationCount: this.conversations.size,
+                invocationCount: 0,
+                toolCallCount: 0,
+                errorCount: 0,
+                modelsUsed: modelStatsList.map((m) => m.model),
+                tokens: this.session.tokens,
+              },
+            ],
     };
   }
 
@@ -255,6 +279,7 @@ export class PureTracker {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = null;
     }
+    this.tokenStore.close();
     this.listeners.clear();
   }
 }

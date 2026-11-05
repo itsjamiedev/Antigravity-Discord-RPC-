@@ -197,6 +197,46 @@ export class DashboardServer {
           return;
         }
 
+        // REST API: Conversation Detail
+        if (method === 'GET' && url && url.startsWith('/api/conversations/')) {
+          const convId = url.slice('/api/conversations/'.length);
+          const detail =
+            typeof (this.tracker as unknown as { getConversationDetail?: (id: string) => unknown })
+              .getConversationDetail === 'function'
+              ? (
+                  this.tracker as unknown as {
+                    getConversationDetail: (id: string) => unknown;
+                  }
+                ).getConversationDetail(convId)
+              : null;
+
+          if (detail) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(detail));
+          } else {
+            const snap = this.tracker.getSnapshot();
+            const found = snap.conversations.find((c) => c.conversationId === convId);
+            if (found) {
+              const inTok = found.tokens.inputTokens;
+              const cacheTok = found.tokens.cacheReadTokens;
+              const ratio =
+                inTok + cacheTok > 0 ? Math.round((cacheTok / (inTok + cacheTok)) * 100) : 0;
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(
+                JSON.stringify({
+                  ...found,
+                  cacheHitRatio: ratio,
+                  recentEvents: [],
+                })
+              );
+            } else {
+              res.writeHead(404, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Conversation not found' }));
+            }
+          }
+          return;
+        }
+
         // REST API: Analytics
         if (method === 'GET' && url === '/api/analytics') {
           const snap = this.tracker.getSnapshot();

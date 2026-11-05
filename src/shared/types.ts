@@ -101,6 +101,7 @@ export interface Conversation {
   modelsUsed: string[];
   status: AgentStatus;
   statusEstimated: boolean;
+  activeTool?: string | null;
   startedAt: string;
   lastEventAt: string;
   turnCount: number;
@@ -109,6 +110,46 @@ export interface Conversation {
   parentConversationId: string | null;
   isSubagent: boolean;
   tokens: TokenUsageRecord;
+}
+
+export interface ConversationDetail {
+  conversationId: string;
+  title: string | null;
+  currentModel: string;
+  modelsUsed: string[];
+  status: AgentStatus;
+  statusEstimated: boolean;
+  activeTool: string | null;
+  startedAt: string;
+  lastEventAt: string;
+  turnCount: number;
+  toolCallCount: number;
+  errorCount: number;
+  isSubagent: boolean;
+  parentConversationId: string | null;
+  tokens: TokenUsageRecord;
+  cacheHitRatio: number;
+  recentEvents: Array<{
+    type: string;
+    toolName?: string | null;
+    timestamp: string;
+  }>;
+}
+
+export interface PersistentTokenStoreData {
+  version: number;
+  lastSavedAt: string;
+  cumulativeTokensByModel: Record<string, TokenUsageRecord>;
+  cumulativeDailyUsage: Record<string, DailyUsage>;
+  conversationWatermarks: Record<
+    string,
+    {
+      maxStepIndex: number;
+      model: string;
+      tokens: TokenUsageRecord;
+      lastUpdated: string;
+    }
+  >;
 }
 
 export interface ModelStats {

@@ -18,6 +18,13 @@ export interface ActiveAgentInfo {
   model: string;
   stepIndex?: number;
   tokens: TokenUsageRecord;
+  activeTool?: string | null;
+  status?: 'thinking' | 'running_tool' | 'idle' | 'error';
+  recentEvents?: Array<{
+    type: string;
+    toolName?: string | null;
+    timestamp: string;
+  }>;
 }
 
 export interface AgentWatcherState {
@@ -26,6 +33,7 @@ export interface AgentWatcherState {
   totalTokens: TokenUsageRecord;
   isAgentActive: boolean;
   agents: ActiveAgentInfo[];
+  allConversations?: ActiveAgentInfo[];
 }
 
 export interface AgentWatcherOptions {
@@ -383,10 +391,26 @@ export function extractModelForConversation(conversationId: string): string {
   return 'Gemini 3.8 Flash';
 }
 
+interface TranscriptCacheEntry {
+  fileSize: number;
+  mtimeMs: number;
+  model: string | null;
+  stepIndex?: number;
+  tokens: TokenUsageRecord;
+  isExecuting: boolean;
+  activeTool: string | null;
+  recentEvents: Array<{
+    type: string;
+    toolName?: string | null;
+    timestamp: string;
+  }>;
+}
+
 export class AgentWatcher extends EventEmitter {
   private brainDir: string;
   private intervalTimer: NodeJS.Timeout | null = null;
   private watcher: fs.FSWatcher | null = null;
+  private transcriptCache: Map<string, TranscriptCacheEntry> = new Map();
   private state: AgentWatcherState = {
     activeAgentCount: 0,
     activeModels: [],
@@ -400,6 +424,7 @@ export class AgentWatcher extends EventEmitter {
     },
     isAgentActive: false,
     agents: [],
+    allConversations: [],
   };
   private pollIntervalMs: number;
   private activeThresholdMs: number;
@@ -476,6 +501,7 @@ export class AgentWatcher extends EventEmitter {
       const groundTruthStatuses = getGroundTruthConversationStatuses(this.summariesDbDir);
       const now = Date.now();
       const activeAgents: ActiveAgentInfo[] = [];
+      const allConversations: ActiveAgentInfo[] = [];
       const modelsSet = new Set<string>();
 
       let aggInput = 0;
@@ -513,8 +539,11 @@ export class AgentWatcher extends EventEmitter {
             }
           }
 
-          // Read the tail of the transcript for tokens and execution state
-          const parsedTail = transcriptExists ? this.readTranscriptTail(transcriptPath, statSize, dir) : null;
+          // Read the transcript for accurate token summation and execution state
+          const parsedTail = transcriptExists
+            ? this.readTranscriptTail(transcriptPath, statSize, lastActiveMs, dir)
+            : null;
+
           if (parsedTail && parsedTail.tokens.totalTokens > 0) {
             hasTokens = true;
             aggInput += parsedTail.tokens.inputTokens;
@@ -536,23 +565,34 @@ export class AgentWatcher extends EventEmitter {
             isActive = true;
           }
 
+          const model = parsedTail?.model ?? extractModelForConversation(dir);
+          const agentStatus: 'thinking' | 'running_tool' | 'idle' | 'error' = isActive
+            ? (parsedTail?.activeTool ? 'running_tool' : 'thinking')
+            : 'idle';
+
+          const convInfo: ActiveAgentInfo = {
+            conversationId: dir,
+            lastActiveMs: lastActiveMs || now,
+            model,
+            stepIndex: parsedTail?.stepIndex,
+            tokens: parsedTail?.tokens ?? {
+              inputTokens: 0,
+              cacheReadTokens: 0,
+              outputTokens: 0,
+              totalTokens: 0,
+              estimated: false,
+              source: 'unavailable',
+            },
+            activeTool: parsedTail?.activeTool ?? null,
+            status: agentStatus,
+            recentEvents: parsedTail?.recentEvents ?? [],
+          };
+
+          allConversations.push(convInfo);
+
           if (isActive) {
-            const model = parsedTail?.model ?? extractModelForConversation(dir);
             modelsSet.add(model);
-            activeAgents.push({
-              conversationId: dir,
-              lastActiveMs: lastActiveMs || now,
-              model,
-              stepIndex: parsedTail?.stepIndex,
-              tokens: parsedTail?.tokens ?? {
-                inputTokens: 0,
-                cacheReadTokens: 0,
-                outputTokens: 0,
-                totalTokens: 0,
-                estimated: false,
-                source: 'unavailable',
-              },
-            });
+            activeAgents.push(convInfo);
           }
         } catch {
           // ignore individual conversation read failures
@@ -580,6 +620,7 @@ export class AgentWatcher extends EventEmitter {
         totalTokens,
         isAgentActive,
         agents: activeAgents,
+        allConversations,
       };
 
       // Emit if state changed (active state, agent count, active models, or per-agent model)
@@ -601,13 +642,30 @@ export class AgentWatcher extends EventEmitter {
   private readTranscriptTail(
     filePath: string,
     fileSize: number,
+    mtimeMs: number,
     _conversationId: string
-  ): { model: string | null; stepIndex?: number; tokens: TokenUsageRecord; isExecuting: boolean } | null {
+  ): {
+    model: string | null;
+    stepIndex?: number;
+    tokens: TokenUsageRecord;
+    isExecuting: boolean;
+    activeTool: string | null;
+    recentEvents: Array<{
+      type: string;
+      toolName?: string | null;
+      timestamp: string;
+    }>;
+  } | null {
     if (fileSize <= 0) return null;
 
+    const cached = this.transcriptCache.get(filePath);
+    if (cached && cached.fileSize === fileSize && cached.mtimeMs === mtimeMs) {
+      return cached;
+    }
+
     try {
-      // Use 128 KB buffer to safely handle large tool outputs, code diffs, and responses
-      const readLength = Math.min(fileSize, 131072);
+      // Read up to 2MB to sum tokens accurately across turns
+      const readLength = Math.min(fileSize, 2097152);
       const buffer = Buffer.alloc(readLength);
       const fd = fs.openSync(filePath, 'r');
       try {
@@ -618,24 +676,20 @@ export class AgentWatcher extends EventEmitter {
 
       const text = buffer.toString('utf8');
       const allLines = text.trim().split('\n');
-      // If we read from the middle of the file (fileSize > readLength), the first line
-      // may be truncated; discard it if there are multiple lines.
       const lines = fileSize > readLength && allLines.length > 1 ? allLines.slice(1) : allLines;
 
       let model: string | null = null;
-      let stepIndex: number | undefined;
-      let isExecuting = true;
-      let tokens: TokenUsageRecord = {
-        inputTokens: 0,
-        cacheReadTokens: 0,
-        outputTokens: 0,
-        totalTokens: 0,
-        estimated: false,
-        source: 'unavailable',
-      };
+      let maxStepIndex: number | undefined;
+      let isExecuting = false;
+      let activeTool: string | null = null;
+      let sumInput = 0;
+      let sumCache = 0;
+      let sumOutput = 0;
+      let hasTokens = false;
+      const seenSteps = new Set<number>();
+      const allEvents: Array<{ type: string; toolName?: string | null; timestamp: string }> = [];
 
-      // Check steps from newest to oldest
-      for (let i = lines.length - 1; i >= 0; i--) {
+      for (let i = 0; i < lines.length; i++) {
         const rawLine = lines[i];
         if (!rawLine) continue;
         const line = rawLine.trim();
@@ -643,69 +697,108 @@ export class AgentWatcher extends EventEmitter {
 
         try {
           const parsed = JSON.parse(line);
-          if (typeof parsed === 'object' && parsed !== null) {
-            // Skip SYSTEM_MESSAGE when determining if agent is executing,
-            // because SYSTEM_MESSAGE can be injected asynchronously by background tasks while agent is idle
-            if (stepIndex === undefined && parsed.type !== 'SYSTEM_MESSAGE' && typeof parsed.step_index === 'number') {
-              stepIndex = parsed.step_index;
+          if (typeof parsed !== 'object' || parsed === null) continue;
 
-              // If the latest step is a completed PLANNER_RESPONSE with no tool calls,
-              // the agent has finished answering and is waiting for user input.
-              if (
-                parsed.type === 'PLANNER_RESPONSE' &&
-                (!Array.isArray(parsed.tool_calls) || parsed.tool_calls.length === 0)
-              ) {
-                isExecuting = false;
-              } else if (
-                parsed.type === 'USER_INPUT' ||
-                parsed.type === 'GENERIC' ||
-                (parsed.type === 'PLANNER_RESPONSE' && Array.isArray(parsed.tool_calls) && parsed.tool_calls.length > 0)
-              ) {
-                isExecuting = true;
-              }
-            }
-
-            // Extract model override if explicitly embedded in JSON
-            if (typeof parsed.model === 'string' && parsed.model) {
-              const lower = parsed.model.toLowerCase();
-              if (lower.includes('flash-lite')) model = 'Gemini 3.5 Flash Lite';
-              else if (lower.includes('flash')) model = 'Gemini 3.8 Flash';
-              else if (lower.includes('argon')) model = 'Gemini 4 Argon';
-              else if (lower.includes('sonnet')) model = 'Claude Sonnet 3.5';
-              else if (lower.includes('opus')) model = 'Claude Opus 3.5';
-              else model = parsed.model;
-            }
-
-            // Extract tokens
-            if (
-              tokens.source === 'unavailable' &&
-              (typeof parsed.input_tokens === 'number' ||
-                typeof parsed.cache_read_tokens === 'number' ||
-                typeof parsed.output_tokens === 'number')
-            ) {
-              const inTok = parsed.input_tokens ?? 0;
-              const cacheTok = parsed.cache_read_tokens ?? 0;
-              const outTok = parsed.output_tokens ?? 0;
-              tokens = {
-                inputTokens: inTok,
-                cacheReadTokens: cacheTok,
-                outputTokens: outTok,
-                totalTokens: inTok + cacheTok + outTok,
-                estimated: false,
-                source: 'transcript_exact',
-              };
-            }
-
-            if (stepIndex !== undefined && tokens.source === 'transcript_exact') {
-              break;
+          if (typeof parsed.step_index === 'number') {
+            const idx = parsed.step_index;
+            if (maxStepIndex === undefined || idx > maxStepIndex) {
+              maxStepIndex = idx;
             }
           }
+
+          if (parsed.type === 'PLANNER_RESPONSE') {
+            const stepKey = typeof parsed.step_index === 'number' ? parsed.step_index : seenSteps.size;
+            if (!seenSteps.has(stepKey)) {
+              seenSteps.add(stepKey);
+              if (typeof parsed.input_tokens === 'number') {
+                sumInput += parsed.input_tokens;
+                hasTokens = true;
+              }
+              if (typeof parsed.cache_read_tokens === 'number') {
+                sumCache += parsed.cache_read_tokens;
+                hasTokens = true;
+              }
+              if (typeof parsed.output_tokens === 'number') {
+                sumOutput += parsed.output_tokens;
+                hasTokens = true;
+              }
+            }
+          }
+
+          if (typeof parsed.model === 'string' && parsed.model) {
+            const lower = parsed.model.toLowerCase();
+            if (lower.includes('flash-lite')) model = 'Gemini 3.5 Flash Lite';
+            else if (lower.includes('flash')) model = 'Gemini 3.8 Flash';
+            else if (lower.includes('argon')) model = 'Gemini 4 Argon';
+            else if (lower.includes('sonnet')) model = 'Claude Sonnet 3.5';
+            else if (lower.includes('opus')) model = 'Claude Opus 3.5';
+            else model = parsed.model;
+          }
+
+          const eventType = typeof parsed.type === 'string' ? parsed.type : 'UNKNOWN';
+          const toolCallName =
+            Array.isArray(parsed.tool_calls) &&
+            parsed.tool_calls.length > 0 &&
+            typeof parsed.tool_calls[0]?.name === 'string'
+              ? parsed.tool_calls[0].name
+              : null;
+          const eventTs =
+            typeof parsed.created_at === 'string' ? parsed.created_at : new Date().toISOString();
+
+          allEvents.push({
+            type: eventType,
+            toolName: toolCallName,
+            timestamp: eventTs,
+          });
         } catch {
-          // not JSON or partial line, continue
+          // ignore partial line
         }
       }
 
-      return { model, stepIndex, tokens, isExecuting };
+      // Determine active execution and tool name from recent non-system steps
+      for (let i = allEvents.length - 1; i >= 0; i--) {
+        const ev = allEvents[i];
+        if (ev.type === 'SYSTEM_MESSAGE') continue;
+        if (ev.type === 'PLANNER_RESPONSE') {
+          if (ev.toolName) {
+            isExecuting = true;
+            activeTool = ev.toolName;
+          } else {
+            isExecuting = false;
+            activeTool = null;
+          }
+          break;
+        } else if (ev.type === 'USER_INPUT' || ev.type === 'GENERIC') {
+          isExecuting = true;
+          activeTool = null;
+          break;
+        }
+      }
+
+      const tokens: TokenUsageRecord = {
+        inputTokens: sumInput,
+        cacheReadTokens: sumCache,
+        outputTokens: sumOutput,
+        totalTokens: sumInput + sumCache + sumOutput,
+        estimated: false,
+        source: hasTokens ? 'transcript_exact' : 'unavailable',
+      };
+
+      const recentEvents = allEvents.slice(-10).reverse();
+
+      const result: TranscriptCacheEntry = {
+        fileSize,
+        mtimeMs,
+        model,
+        stepIndex: maxStepIndex,
+        tokens,
+        isExecuting,
+        activeTool,
+        recentEvents,
+      };
+
+      this.transcriptCache.set(filePath, result);
+      return result;
     } catch {
       return null;
     }
