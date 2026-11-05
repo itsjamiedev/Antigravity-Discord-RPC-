@@ -69,9 +69,13 @@ export class PureTracker {
   private listeners: Set<(snapshot: TrackerSnapshot) => void> = new Set();
   private isPaused = false;
   private startTime: string;
+  private heartbeatTimer: NodeJS.Timeout | null = null;
 
-  constructor() {
+  constructor(isLeader: boolean = false) {
     this.startTime = loadOrCreatePersistentStartTime();
+    if (isLeader) {
+      this.startHeartbeat();
+    }
     this.session = {
       sessionId: 'ext-session-' + Date.now(),
       startedAt: this.startTime,
@@ -107,6 +111,21 @@ export class PureTracker {
         fn(snap);
       } catch {}
     }
+  }
+
+  public startHeartbeat(): void {
+    if (this.heartbeatTimer) return;
+    this.heartbeatTimer = setInterval(() => {
+      savePersistentHeartbeat(this.startTime, Date.now());
+    }, 10_000);
+    this.heartbeatTimer.unref?.();
+  }
+
+  public refreshPersistentStartTime(): void {
+    this.startTime = loadOrCreatePersistentStartTime();
+    this.session.startedAt = this.startTime;
+    savePersistentHeartbeat(this.startTime, Date.now());
+    this.startHeartbeat();
   }
 
   public updateFromAgentWatcher(state: AgentWatcherState): void {
@@ -232,6 +251,10 @@ export class PureTracker {
   }
 
   public close(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
     this.listeners.clear();
   }
 }

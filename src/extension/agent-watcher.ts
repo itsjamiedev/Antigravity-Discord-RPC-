@@ -199,6 +199,7 @@ export function extractModelForConversation(conversationId: string): string {
     'transcript_full.jsonl'
   );
   let settingsChangeModel: string | null = null;
+  let lastUserInputHadSettingsChange = false;
   if (fs.existsSync(fullTranscript)) {
     try {
       const fStat = fs.statSync(fullTranscript);
@@ -216,7 +217,7 @@ export function extractModelForConversation(conversationId: string): string {
           /<USER_SETTINGS_CHANGE>[\s\S]*?The user changed setting `Model Selection` from [^\r\n]+? to ([^\r\n]+?)\. No need to comment[\s\S]*?<\/USER_SETTINGS_CHANGE>/;
         for (const rawLine of lines) {
           const line = rawLine.trim();
-          if (!line || !line.includes('USER_INPUT') || !line.includes('USER_SETTINGS_CHANGE')) {
+          if (!line || !line.includes('USER_INPUT')) {
             continue;
           }
           try {
@@ -229,6 +230,9 @@ export function extractModelForConversation(conversationId: string): string {
               const m = changeRegex.exec(parsed.content);
               if (m && m[1]) {
                 settingsChangeModel = normalizeModelName(m[1]);
+                lastUserInputHadSettingsChange = true;
+              } else {
+                lastUserInputHadSettingsChange = false;
               }
             }
           } catch {
@@ -241,7 +245,8 @@ export function extractModelForConversation(conversationId: string): string {
     }
   }
 
-  if (settingsChangeModel) {
+  // If the latest USER_INPUT explicitly changed the model, return it immediately (t = 0ms)
+  if (lastUserInputHadSettingsChange && settingsChangeModel) {
     return settingsChangeModel;
   }
 

@@ -250,6 +250,12 @@ export class DashboardServer {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: true, shuttingDown: true }));
           setTimeout(() => {
+            try {
+              this.presenceManager?.destroy();
+              this.discordClient?.destroy();
+            } catch {
+              // ignore cleanup errors
+            }
             void this.stop();
           }, 100);
           return;

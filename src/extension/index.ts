@@ -141,6 +141,7 @@ async function tryAcquireLeaderRole(): Promise<boolean> {
     await server.start();
     dashboardServer = server;
     isLeader = true;
+    tracker.refreshPersistentStartTime();
     console.log('[Antigravity Presence] Acquired Leader role on port 41177.');
 
     // Leader manages the Discord IPC pipe
