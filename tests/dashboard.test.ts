@@ -79,7 +79,7 @@ describe('Phase 5: Local Usage Dashboard (127.0.0.1)', () => {
       terminationReason: null,
       fullyIdle: null,
       hasError: false,
-      timestamp: '2026-11-05T04:30:00.000Z',
+      timestamp: new Date().toISOString(),
     };
     tracker.processEvent(sampleEvent);
 

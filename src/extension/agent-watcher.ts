@@ -102,7 +102,7 @@ export class AgentWatcher extends EventEmitter {
     super();
     this.brainDir = options?.brainDir ?? path.join(os.homedir(), '.gemini', 'antigravity', 'brain');
     this.pollIntervalMs = options?.pollIntervalMs ?? 1500; // Poll every 1.5s
-    this.activeThresholdMs = options?.activeThresholdMs ?? 8000; // 8s idle threshold
+    this.activeThresholdMs = options?.activeThresholdMs ?? 120000; // 120s active turn threshold (no false idles)
   }
 
   public start(): void {
@@ -181,6 +181,23 @@ export class AgentWatcher extends EventEmitter {
         try {
           const stat = fs.statSync(transcriptPath);
 
+          // Track multi-file activity across transcript, database WAL, and steps
+          let lastActiveMs = stat.mtimeMs;
+          const convDir = path.join(os.homedir(), '.gemini', 'antigravity', 'conversations');
+          const walFile = path.join(convDir, `${dir}.db-wal`);
+          const dbFile = path.join(convDir, `${dir}.db`);
+
+          for (const f of [walFile, dbFile]) {
+            if (fs.existsSync(f)) {
+              try {
+                const fStat = fs.statSync(f);
+                if (fStat.mtimeMs > lastActiveMs) {
+                  lastActiveMs = fStat.mtimeMs;
+                }
+              } catch {}
+            }
+          }
+
           // Read the tail of the transcript for tokens and execution state
           const parsedTail = this.readTranscriptTail(transcriptPath, stat.size, dir);
           if (parsedTail) {
@@ -192,20 +209,39 @@ export class AgentWatcher extends EventEmitter {
             }
 
             // An agent is active ONLY if:
-            // 1. Transcript was modified within the active threshold (8s)
-            // 2. AND the last step indicates an active execution (not finished with text response)
-            const isRecent = (now - stat.mtimeMs < this.activeThresholdMs) && parsedTail.isExecuting;
+            // 1. The turn is in-progress (parsedTail.isExecuting is true)
+            // 2. AND the conversation was touched within activeThresholdMs (120s)
+            // NOTE: If isExecuting is false (completed answer with no tools),
+            // isRecent is FALSE IMMEDIATELY (0s delay), making it idle without waiting!
+            const isRecent = parsedTail.isExecuting && (now - lastActiveMs < this.activeThresholdMs);
 
             if (isRecent) {
               modelsSet.add(parsedTail.model);
               activeAgents.push({
                 conversationId: dir,
-                lastActiveMs: stat.mtimeMs,
+                lastActiveMs,
                 model: parsedTail.model,
                 stepIndex: parsedTail.stepIndex,
                 tokens: parsedTail.tokens,
               });
             }
+          } else if (now - lastActiveMs < 5000) {
+            // File was modified within 5 seconds but was transiently locked/being written; keep active
+            const model = extractModelForConversation(dir);
+            modelsSet.add(model);
+            activeAgents.push({
+              conversationId: dir,
+              lastActiveMs,
+              model,
+              tokens: {
+                inputTokens: 0,
+                cacheReadTokens: 0,
+                outputTokens: 0,
+                totalTokens: 0,
+                estimated: false,
+                source: 'unavailable',
+              },
+            });
           }
         } catch {
           // ignore individual transcript read failures
@@ -256,7 +292,8 @@ export class AgentWatcher extends EventEmitter {
     if (fileSize <= 0) return null;
 
     try {
-      const readLength = Math.min(fileSize, 8192);
+      // Use 128 KB buffer to safely handle large tool outputs, code diffs, and responses
+      const readLength = Math.min(fileSize, 131072);
       const buffer = Buffer.alloc(readLength);
       const fd = fs.openSync(filePath, 'r');
       try {
@@ -266,9 +303,11 @@ export class AgentWatcher extends EventEmitter {
       }
 
       const text = buffer.toString('utf8');
-      const lines = text.trim().split('\n');
+      const allLines = text.trim().split('\n');
+      // If we read from the middle of the file (fileSize > readLength), the first line
+      // may be truncated; discard it if there are multiple lines.
+      const lines = fileSize > readLength && allLines.length > 1 ? allLines.slice(1) : allLines;
 
-      // 1. Extract the real model from the conversation metadata
       let model = extractModelForConversation(conversationId);
       let stepIndex: number | undefined;
       let isExecuting = true;
@@ -281,7 +320,7 @@ export class AgentWatcher extends EventEmitter {
         source: 'unavailable',
       };
 
-      // Check the very last step in the transcript
+      // Check steps from newest to oldest
       for (let i = lines.length - 1; i >= 0; i--) {
         const rawLine = lines[i];
         if (!rawLine) continue;
@@ -291,8 +330,9 @@ export class AgentWatcher extends EventEmitter {
         try {
           const parsed = JSON.parse(line);
           if (typeof parsed === 'object' && parsed !== null) {
-            // First valid step encountered from the end is the latest step
-            if (stepIndex === undefined && typeof parsed.step_index === 'number') {
+            // Skip SYSTEM_MESSAGE when determining if agent is executing,
+            // because SYSTEM_MESSAGE can be injected asynchronously by background tasks while agent is idle
+            if (stepIndex === undefined && parsed.type !== 'SYSTEM_MESSAGE' && typeof parsed.step_index === 'number') {
               stepIndex = parsed.step_index;
 
               // If the latest step is a completed PLANNER_RESPONSE with no tool calls,
@@ -302,6 +342,12 @@ export class AgentWatcher extends EventEmitter {
                 (!Array.isArray(parsed.tool_calls) || parsed.tool_calls.length === 0)
               ) {
                 isExecuting = false;
+              } else if (
+                parsed.type === 'USER_INPUT' ||
+                parsed.type === 'GENERIC' ||
+                (parsed.type === 'PLANNER_RESPONSE' && Array.isArray(parsed.tool_calls) && parsed.tool_calls.length > 0)
+              ) {
+                isExecuting = true;
               }
             }
 
@@ -318,9 +364,10 @@ export class AgentWatcher extends EventEmitter {
 
             // Extract tokens
             if (
-              typeof parsed.input_tokens === 'number' ||
-              typeof parsed.cache_read_tokens === 'number' ||
-              typeof parsed.output_tokens === 'number'
+              tokens.source === 'unavailable' &&
+              (typeof parsed.input_tokens === 'number' ||
+                typeof parsed.cache_read_tokens === 'number' ||
+                typeof parsed.output_tokens === 'number')
             ) {
               const inTok = parsed.input_tokens ?? 0;
               const cacheTok = parsed.cache_read_tokens ?? 0;
@@ -333,6 +380,9 @@ export class AgentWatcher extends EventEmitter {
                 estimated: false,
                 source: 'transcript_exact',
               };
+            }
+
+            if (stepIndex !== undefined && tokens.source === 'transcript_exact') {
               break;
             }
           }

@@ -75,13 +75,113 @@ describe('Hookless AgentWatcher & PureTracker', () => {
     const transcriptFile = path.join(convDir, 'transcript.jsonl');
     fs.writeFileSync(transcriptFile, '{"step_index":0,"input_tokens":100}\n', 'utf8');
 
-    // Artificially age the file by 60 seconds
-    const oldTime = (Date.now() - 60000) / 1000;
+    // Artificially age the file by 150 seconds (exceeding default 120s)
+    const oldTime = (Date.now() - 150000) / 1000;
     fs.utimesSync(transcriptFile, oldTime, oldTime);
 
     const watcher = new AgentWatcher({
       brainDir: tempBrainDir,
       activeThresholdMs: 20000, // 20s threshold
+    });
+    watcher.scan();
+    const state = watcher.getState();
+
+    expect(state.activeAgentCount).toBe(0);
+    expect(state.isAgentActive).toBe(false);
+    watcher.stop();
+  });
+
+  it('keeps agent active during long thinking or tool runs (> 8s) when turn is in-progress', () => {
+    const convId = '11223344-5566-7788-99aa-bbccddeeff00';
+    const convDir = path.join(tempBrainDir, convId, '.system_generated', 'logs');
+    fs.mkdirSync(convDir, { recursive: true });
+
+    const transcriptFile = path.join(convDir, 'transcript.jsonl');
+    // Last step is a tool result (GENERIC) - agent is thinking about the result
+    const step1 = JSON.stringify({
+      step_index: 5,
+      source: 'MODEL',
+      type: 'GENERIC',
+      model: 'Gemini 3.8 Flash',
+      content: 'Tool execution output',
+      input_tokens: 3000,
+    });
+    fs.writeFileSync(transcriptFile, step1 + '\n', 'utf8');
+
+    // Age file by 25 seconds (which would have failed with the old 8s threshold!)
+    const age25s = (Date.now() - 25000) / 1000;
+    fs.utimesSync(transcriptFile, age25s, age25s);
+
+    const watcher = new AgentWatcher({
+      brainDir: tempBrainDir,
+      activeThresholdMs: 120000, // 120s active turn threshold
+    });
+    watcher.scan();
+    const state = watcher.getState();
+
+    // Must still be active!
+    expect(state.activeAgentCount).toBe(1);
+    expect(state.isAgentActive).toBe(true);
+    watcher.stop();
+  });
+
+  it('correctly parses large transcript lines (> 8 KB) without truncating or false-idling', () => {
+    const convId = '99887766-5544-3322-1100-ffeeddccbbaa';
+    const convDir = path.join(tempBrainDir, convId, '.system_generated', 'logs');
+    fs.mkdirSync(convDir, { recursive: true });
+
+    const transcriptFile = path.join(convDir, 'transcript.jsonl');
+    // Create a 20 KB step (larger than the old 8 KB buffer)
+    const largeContent = 'A'.repeat(20000);
+    const step = JSON.stringify({
+      step_index: 42,
+      source: 'MODEL',
+      type: 'PLANNER_RESPONSE',
+      model: 'Gemini 4 Argon',
+      tool_calls: [{ name: 'run_command', args: { cmd: 'test' } }],
+      content: largeContent,
+      input_tokens: 5000,
+      cache_read_tokens: 10000,
+      output_tokens: 200,
+    });
+    fs.writeFileSync(transcriptFile, step + '\n', 'utf8');
+
+    const watcher = new AgentWatcher({
+      brainDir: tempBrainDir,
+      activeThresholdMs: 120000,
+    });
+    watcher.scan();
+    const state = watcher.getState();
+
+    expect(state.activeAgentCount).toBe(1);
+    expect(state.isAgentActive).toBe(true);
+    expect(state.totalTokens.totalTokens).toBe(15200);
+    watcher.stop();
+  });
+
+  it('immediately transitions to idle (0s delay) when PLANNER_RESPONSE has no tool calls', () => {
+    const convId = 'aabbccdd-eeff-0011-2233-445566778899';
+    const convDir = path.join(tempBrainDir, convId, '.system_generated', 'logs');
+    fs.mkdirSync(convDir, { recursive: true });
+
+    const transcriptFile = path.join(convDir, 'transcript.jsonl');
+    // Completed answer step
+    const finalStep = JSON.stringify({
+      step_index: 10,
+      source: 'MODEL',
+      type: 'PLANNER_RESPONSE',
+      model: 'Gemini 3.8 Flash',
+      content: 'Here is your completed answer.',
+      tool_calls: [],
+      input_tokens: 1000,
+      output_tokens: 200,
+    });
+    fs.writeFileSync(transcriptFile, finalStep + '\n', 'utf8');
+
+    // Even if written 1 millisecond ago, agent is done so must be reported idle immediately!
+    const watcher = new AgentWatcher({
+      brainDir: tempBrainDir,
+      activeThresholdMs: 120000,
     });
     watcher.scan();
     const state = watcher.getState();
