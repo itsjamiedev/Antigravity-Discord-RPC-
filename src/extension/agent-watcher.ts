@@ -253,8 +253,8 @@ export function extractModelForConversation(conversationId: string): string {
     }
   }
 
-  // If the latest USER_INPUT explicitly changed the model, return it immediately (t = 0ms)
-  if (lastUserInputHadSettingsChange && settingsChangeModel) {
+  // If a model selection change was ever recorded in this conversation, return the latest one immediately
+  if (settingsChangeModel) {
     return settingsChangeModel;
   }
 
@@ -429,6 +429,7 @@ export class AgentWatcher extends EventEmitter {
   private pollIntervalMs: number;
   private activeThresholdMs: number;
   private summariesDbDir?: string;
+  private activeAgentsGrace = new Map<string, number>();
 
   constructor(options?: AgentWatcherOptions) {
     super();
@@ -552,17 +553,32 @@ export class AgentWatcher extends EventEmitter {
           }
 
           // Ground-Truth Active State:
-          // 1. If conversation_summaries.db contains this conversation:
-          //    - CASCADE_RUN_STATUS_RUNNING => ALWAYS ACTIVE (immune to slow thinking/tool runs!)
-          //    - CASCADE_RUN_STATUS_IDLE => ALWAYS IDLE (instant 0s stop!)
-          // 2. Otherwise fall back to transcript turn heuristic:
+          // 1. If conversation_summaries.db indicates CASCADE_RUN_STATUS_RUNNING => ALWAYS ACTIVE
+          // 2. If parsedTail exists:
+          //    - isExecuting = true (USER_INPUT, tool running, tool result) => ACTIVE
+          //    - isExecuting = false (PLANNER_RESPONSE with no tool calls, completed response) => INSTANT IDLE (0s delay)
+          // 3. Fall back to active grace period (5s) only when in-progress turn has brief file system delay
           let isActive = false;
-          if (groundTruthStatuses.has(dir)) {
-            isActive = groundTruthStatuses.get(dir) === 'CASCADE_RUN_STATUS_RUNNING';
-          } else if (parsedTail) {
-            isActive = parsedTail.isExecuting && (now - lastActiveMs < this.activeThresholdMs);
-          } else if (lastActiveMs > 0 && now - lastActiveMs < 5000) {
+          const isGroundTruthRunning = groundTruthStatuses.get(dir) === 'CASCADE_RUN_STATUS_RUNNING';
+          const isGroundTruthIdle = groundTruthStatuses.get(dir) === 'CASCADE_RUN_STATUS_IDLE';
+
+          if (isGroundTruthRunning) {
             isActive = true;
+          } else if (parsedTail) {
+            if (parsedTail.isExecuting) {
+              isActive = now - lastActiveMs < this.activeThresholdMs;
+            } else {
+              // Turn explicitly finished (PLANNER_RESPONSE with 0 tool calls) => instant 0s idle!
+              isActive = false;
+            }
+          } else if (lastActiveMs > 0 && now - lastActiveMs < 5000 && !isGroundTruthIdle) {
+            isActive = true;
+          }
+
+          if (isActive) {
+            this.activeAgentsGrace.set(dir, now);
+          } else {
+            this.activeAgentsGrace.delete(dir);
           }
 
           const model = parsedTail?.model ?? extractModelForConversation(dir);

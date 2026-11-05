@@ -35,9 +35,9 @@ function loadOrCreatePersistentStartTime(): string {
       if (
         typeof raw?.startedAt === 'string' &&
         typeof raw?.lastHeartbeatMs === 'number' &&
-        nowMs - raw.lastHeartbeatMs < 60_000
+        nowMs - raw.lastHeartbeatMs < 600_000 // Preserved across window reloads, handoffs, and idle spans
       ) {
-        // Antigravity IDE is still running (window reload or leader handoff)
+        // Antigravity IDE is still running
         return raw.startedAt;
       }
     }
@@ -75,12 +75,10 @@ export class PureTracker {
   private heartbeatTimer: NodeJS.Timeout | null = null;
   private tokenStore: TokenStore;
 
-  constructor(isLeader: boolean = false, customTokenStorePath?: string) {
+  constructor(_isLeader: boolean = false, customTokenStorePath?: string) {
     this.startTime = loadOrCreatePersistentStartTime();
     this.tokenStore = new TokenStore(customTokenStorePath);
-    if (isLeader) {
-      this.startHeartbeat();
-    }
+    this.startHeartbeat();
     const initialTokens = this.tokenStore.getTotalCumulativeTokens();
     this.session = {
       sessionId: 'ext-session-' + Date.now(),

@@ -308,16 +308,37 @@ export class DiscordIpcClient {
       return false;
     }
 
+    let safeActivity: Record<string, unknown> | null = null;
+    if (activity) {
+      const timestamps = activity.timestamps
+        ? {
+            start:
+              activity.timestamps.start > 10_000_000_000
+                ? Math.floor(activity.timestamps.start / 1000)
+                : activity.timestamps.start,
+            ...(activity.timestamps.end
+              ? {
+                  end:
+                    activity.timestamps.end > 10_000_000_000
+                      ? Math.floor(activity.timestamps.end / 1000)
+                      : activity.timestamps.end,
+                }
+              : {}),
+          }
+        : undefined;
+
+      safeActivity = {
+        name: 'Antigravity',
+        ...activity,
+        ...(timestamps ? { timestamps } : {}),
+      };
+    }
+
     const payload = {
       cmd: 'SET_ACTIVITY',
       args: {
         pid: process.pid,
-        activity: activity
-          ? {
-              name: 'Antigravity',
-              ...activity,
-            }
-          : null,
+        activity: safeActivity,
       },
       nonce: crypto.randomUUID(),
     };

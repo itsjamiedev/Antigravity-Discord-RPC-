@@ -53,12 +53,14 @@ export function buildDiscordActivity(
   }
 
   // Persistent Antigravity IDE session start timestamp:
+  // Must be in Unix SECONDS (10 digits) for Discord RPC protocol.
   // Never resets to 0:00 across AI Mode, Manual Coding Mode, or Idle Mode
   // until Google Antigravity is completely shut down.
   let sessionStartMs = Date.parse(snapshot.session.startedAt);
   if (Number.isNaN(sessionStartMs) || sessionStartMs <= 0) {
     sessionStartMs = nowMs;
   }
+  const sessionStartSec = Math.floor(sessionStartMs / 1000);
 
   // MODE 1: AI Agent Mode (Active whenever agents are running)
   if (snapshot.activeAgents.length > 0) {
@@ -87,7 +89,7 @@ export function buildDiscordActivity(
       details,
       state,
       timestamps: {
-        start: sessionStartMs,
+        start: sessionStartSec,
       },
       assets: {
         large_image: 'antigravity_logo',
@@ -116,7 +118,7 @@ export function buildDiscordActivity(
         details,
         state,
         timestamps: {
-          start: sessionStartMs,
+          start: sessionStartSec,
         },
         assets: {
           large_image: 'antigravity_logo',
@@ -135,7 +137,7 @@ export function buildDiscordActivity(
     details: 'Idle',
     state: 'In Antigravity',
     timestamps: {
-      start: sessionStartMs,
+      start: sessionStartSec,
     },
     assets: {
       large_image: 'antigravity_logo',

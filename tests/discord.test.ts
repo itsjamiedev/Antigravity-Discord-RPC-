@@ -253,10 +253,10 @@ describe('Phase 4: Discord Rich Presence (IPC)', () => {
       const settings = configManager.getSettings();
       const activeSnapshot = makeMockSnapshot([{ model: 'gemini-4-argon-medium' }]);
       const idleSnapshot = makeMockSnapshot([]);
-      const expectedStartMs = Date.parse(activeSnapshot.session.startedAt);
+      const expectedStartSec = Math.floor(Date.parse(activeSnapshot.session.startedAt) / 1000);
 
       const aiActivity = buildDiscordActivity(activeSnapshot, null, settings);
-      expect(aiActivity?.timestamps?.start).toBe(expectedStartMs);
+      expect(aiActivity?.timestamps?.start).toBe(expectedStartSec);
 
       const manualState: ManualEditorState = {
         fileName: 'index.ts',
@@ -267,11 +267,11 @@ describe('Phase 4: Discord Rich Presence (IPC)', () => {
         updatedAt: new Date().toISOString(),
       };
       const manualActivity = buildDiscordActivity(idleSnapshot, manualState, settings);
-      expect(manualActivity?.timestamps?.start).toBe(expectedStartMs);
+      expect(manualActivity?.timestamps?.start).toBe(expectedStartSec);
 
       const idleActivity = buildDiscordActivity(idleSnapshot, null, settings);
       expect(idleActivity?.details).toBe('Idle');
-      expect(idleActivity?.timestamps?.start).toBe(expectedStartMs);
+      expect(idleActivity?.timestamps?.start).toBe(expectedStartSec);
     });
   });
 
