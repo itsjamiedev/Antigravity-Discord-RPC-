@@ -55,14 +55,30 @@ export class SessionManager {
     try {
       if (fs.existsSync(this.filePath)) {
         const raw = JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
-        if (
-          raw &&
-          typeof raw.version === 'number' &&
-          typeof raw.startedAt === 'string' &&
-          typeof raw.elapsedSeconds === 'number' &&
-          typeof raw.lastHeartbeatMs === 'number'
-        ) {
-          return raw as PersistentSessionState;
+        if (raw && typeof raw.startedAt === 'string') {
+          const now = Date.now();
+          const startMs = Date.parse(raw.startedAt) || now;
+          const lastHeartbeatMs =
+            typeof raw.lastHeartbeatMs === 'number' ? raw.lastHeartbeatMs : now;
+          const elapsedSeconds =
+            typeof raw.elapsedSeconds === 'number'
+              ? raw.elapsedSeconds
+              : Math.max(0, Math.floor((now - startMs) / 1000));
+
+          return {
+            version: 1,
+            sessionId:
+              typeof raw.sessionId === 'string'
+                ? raw.sessionId
+                : 'session-' + startMs,
+            startedAt: raw.startedAt,
+            elapsedSeconds,
+            lastHeartbeatMs,
+            isPaused: !!raw.isPaused,
+            pausedAt: raw.pausedAt,
+            savedAt: raw.savedAt || new Date().toISOString(),
+            savedTokens: raw.savedTokens,
+          };
         }
       }
     } catch {
@@ -206,3 +222,4 @@ export class SessionManager {
     this.saveToDisk(this.state);
   }
 }
+

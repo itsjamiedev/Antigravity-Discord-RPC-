@@ -44,3 +44,4 @@ export function openDashboardWebview(context: vscode.ExtensionContext): vscode.W
   currentPanel = panel;
   return panel;
 }
+

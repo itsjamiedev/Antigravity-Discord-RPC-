@@ -138,4 +138,23 @@ describe('SessionManager (24-Hour Pause & Leave Resumption)', () => {
     expect(state!.elapsedSeconds).toBe(0);
     expect(state!.isPaused).toBe(false);
   });
+
+  it('seamlessly loads legacy presence-session.json without losing timer or startedAt', () => {
+    const legacyStart = new Date(Date.now() - 5800 * 1000).toISOString();
+    const legacyState = {
+      startedAt: legacyStart,
+      lastHeartbeatMs: Date.now() - 2000,
+    };
+    fs.writeFileSync(sessionFilePath, JSON.stringify(legacyState), 'utf8');
+
+    const manager = new SessionManager(sessionFilePath);
+    const state = manager.getSessionState();
+
+    expect(state).not.toBeNull();
+    expect(state!.version).toBe(1);
+    expect(state!.startedAt).toBe(legacyStart);
+    expect(state!.elapsedSeconds).toBeGreaterThanOrEqual(5790);
+    expect(state!.isPaused).toBe(false);
+  });
 });
+
