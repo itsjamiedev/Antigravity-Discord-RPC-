@@ -147,6 +147,7 @@ export interface PersistentTokenStoreData {
       maxStepIndex: number;
       model: string;
       tokens: TokenUsageRecord;
+      modelTokens?: Record<string, TokenUsageRecord>;
       lastUpdated: string;
     }
   >;

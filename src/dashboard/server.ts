@@ -50,6 +50,10 @@ export interface DashboardFullState extends TrackerSnapshot {
     state: string;
   };
   settings: PrivacySettings;
+  workspaces?: {
+    count: number;
+    names: string[];
+  };
 }
 
 export class DashboardServer {
@@ -63,6 +67,10 @@ export class DashboardServer {
   private readonly configManager: ConfigManager;
   private readonly sseClients = new Set<http.ServerResponse>();
   private unsubscribeTracker?: () => void;
+  private activeWindows = new Map<
+    string,
+    { windowId: string; workspaceNames: string[]; lastSeen: number }
+  >();
 
   constructor(options: DashboardServerOptions) {
     this.host = options.host ?? DEFAULT_DAEMON_HOST;
@@ -74,11 +82,48 @@ export class DashboardServer {
     this.configManager = options.configManager;
   }
 
+  public registerWindowWorkspaces(windowId: string, workspaceFolders: string[]): void {
+    this.activeWindows.set(windowId, {
+      windowId,
+      workspaceNames: workspaceFolders,
+      lastSeen: Date.now(),
+    });
+
+    this.pruneStaleWindows();
+    const info = this.getWorkspaceInfo();
+    this.presenceManager?.setWorkspaceInfo(info.count, info.names);
+    this.presenceManager?.updateFromSnapshot(this.tracker.getSnapshot());
+    this.broadcastUpdate();
+  }
+
+  public getWorkspaceInfo(): { count: number; names: string[] } {
+    this.pruneStaleWindows();
+    const allNames = new Set<string>();
+    for (const win of this.activeWindows.values()) {
+      for (const name of win.workspaceNames) {
+        if (name) allNames.add(name);
+      }
+    }
+    const names = Array.from(allNames);
+    const count = Math.max(names.length, this.activeWindows.size, 1);
+    return { count, names };
+  }
+
+  private pruneStaleWindows(): void {
+    const now = Date.now();
+    for (const [winId, win] of this.activeWindows.entries()) {
+      if (now - win.lastSeen > 35000) {
+        this.activeWindows.delete(winId);
+      }
+    }
+  }
+
   public getFullState(): DashboardFullState {
     const snapshot = this.tracker.getSnapshot();
     const editor = this.presenceManager?.getManualEditorState() ?? null;
     const discordState = this.discordClient?.getState() ?? 'disconnected';
     const settings = this.configManager.getSettings();
+    const workspaces = this.getWorkspaceInfo();
 
     return {
       ...snapshot,
@@ -88,6 +133,7 @@ export class DashboardServer {
         state: discordState,
       },
       settings,
+      workspaces,
     };
   }
 
@@ -324,6 +370,26 @@ export class DashboardServer {
             } catch {
               res.writeHead(400, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: 'Invalid JSON' }));
+            }
+          });
+          return;
+        }
+
+        // Ingest: Workspace Heartbeat / Multi-Window Sync
+        if (method === 'POST' && url === '/api/workspaces') {
+          this.readBody(req, res, 8192, (body) => {
+            try {
+              const raw = JSON.parse(body) as { windowId?: string; workspaceFolders?: string[] };
+              const winId = raw.windowId || 'default-window';
+              const folders = Array.isArray(raw.workspaceFolders) ? raw.workspaceFolders : [];
+
+              this.registerWindowWorkspaces(winId, folders);
+
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: true, workspaces: this.getWorkspaceInfo() }));
+            } catch {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Invalid workspace payload' }));
             }
           });
           return;

@@ -32,6 +32,52 @@ let statusBarItem: vscode.StatusBarItem | null = null;
 
 let isLeader = false;
 let leaderCheckTimer: NodeJS.Timeout | null = null;
+let workspaceHeartbeatTimer: NodeJS.Timeout | null = null;
+const windowSessionId = 'win-' + Math.random().toString(36).slice(2, 9);
+
+function getCurrentWorkspaceFolders(): string[] {
+  return (vscode.workspace.workspaceFolders || []).map((f) => f.name).filter(Boolean);
+}
+
+function syncWorkspaces(): void {
+  const folders = getCurrentWorkspaceFolders();
+  if (isLeader && dashboardServer) {
+    dashboardServer.registerWindowWorkspaces(windowSessionId, folders);
+  } else {
+    forwardWorkspaceStateToLeader(windowSessionId, folders);
+  }
+}
+
+function forwardWorkspaceStateToLeader(winId: string, folders: string[]): void {
+  try {
+    const payload = JSON.stringify({
+      windowId: winId,
+      workspaceFolders: folders,
+    });
+
+    const req = http.request(
+      {
+        hostname: '127.0.0.1',
+        port: 41177,
+        path: '/api/workspaces',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload),
+        },
+        timeout: 1000,
+      },
+      (res) => {
+        res.resume();
+      }
+    );
+    req.on('error', () => {});
+    req.write(payload);
+    req.end();
+  } catch {
+    // Fail-open
+  }
+}
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   console.log('[Antigravity Presence] Native Extension activating in Antigravity IDE...');
@@ -73,6 +119,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const wonElection = await tryAcquireLeaderRole();
   if (!wonElection) {
     console.log('[Antigravity Presence] Operating in Follower mode (another IDE window is Leader).');
+    syncWorkspaces();
+    workspaceHeartbeatTimer = setInterval(() => {
+      syncWorkspaces();
+    }, 10000);
+
     // Periodically check if Leader closed, to take over seamlessly
     leaderCheckTimer = setInterval(async () => {
       if (!isLeader) {
@@ -85,6 +136,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(() => onEditorChanged()),
     vscode.window.onDidChangeTextEditorSelection(() => onEditorChanged()),
+    vscode.workspace.onDidChangeWorkspaceFolders(() => syncWorkspaces()),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('antigravityPresence')) {
         syncConfigFromVsCode();
@@ -160,6 +212,13 @@ async function tryAcquireLeaderRole(): Promise<boolean> {
       clearInterval(leaderCheckTimer);
       leaderCheckTimer = null;
     }
+    if (workspaceHeartbeatTimer) {
+      clearInterval(workspaceHeartbeatTimer);
+      workspaceHeartbeatTimer = null;
+    }
+
+    // Leader registers its own open workspace folders
+    dashboardServer.registerWindowWorkspaces(windowSessionId, getCurrentWorkspaceFolders());
 
     updateStatusBar();
     return true;
@@ -175,6 +234,10 @@ export function deactivate(): void {
   if (leaderCheckTimer) {
     clearInterval(leaderCheckTimer);
     leaderCheckTimer = null;
+  }
+  if (workspaceHeartbeatTimer) {
+    clearInterval(workspaceHeartbeatTimer);
+    workspaceHeartbeatTimer = null;
   }
   if (agentWatcher) {
     agentWatcher.stop();

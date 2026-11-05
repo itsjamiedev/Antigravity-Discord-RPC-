@@ -24,17 +24,17 @@ export function formatModelDisplayName(model: string): string {
 
   // If already contains spaces, it's a human-readable display name (e.g. 'Claude Sonnet 5.5 (Medium)' or 'Gemini 3.8 Flash (High)')
   if (str.includes(' ')) {
-    str = str.replace(/\s*\((?:High|Medium|Low|Thinking|Default|Trial|Preview|Exp)\)/gi, '').trim();
+    str = str.replace(/\s*\((?:High|Medium|Low|Thinking|Default|Trial|Preview|Exp|Tiered)\)/gi, '').trim();
     if (/claude\s+sonnet\s+3\.5/i.test(str)) {
       str = str.replace(/claude\s+sonnet\s+3\.5/gi, 'Claude Sonnet 5.5');
     }
     return str;
   }
 
-  // Strip trailing tier / variant suffixes from slugs
-  str = str.replace(/-(?:high|medium|low|trial|preview|exp|thinking|n)$/i, '');
+  // Strip trailing tier / variant / trial / preview suffixes from slugs
+  str = str.replace(/-(?:high|medium|low|trial|preview|exp|thinking|tiered|custom|default|n|a|b)$/i, '');
 
-  // Convert version hyphens between numbers like '5-5' or '3-8' to '5.5' or '3.8'
+  // Convert version hyphens between numbers like '5-5' or '4-6' or '3-8' to '5.5' or '4.6' or '3.8'
   str = str.replace(/(\d+)-(\d+)/g, (_m, a, b) => a + '.' + b);
 
   if (/claude-sonnet-3\.5/i.test(str)) {
@@ -63,11 +63,26 @@ export function formatModelDisplayName(model: string): string {
   return parts.join(' ');
 }
 
+export function formatTokenVolumeShort(tokens: number): string {
+  if (tokens <= 0 || !Number.isFinite(tokens)) return '0 tokens';
+  if (tokens >= 1_000_000_000) {
+    return (tokens / 1_000_000_000).toFixed(2).replace(/\.00$/, '') + 'B tokens';
+  }
+  if (tokens >= 1_000_000) {
+    return (tokens / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M tokens';
+  }
+  if (tokens >= 1_000) {
+    return (tokens / 1_000).toFixed(1).replace(/\.0$/, '') + 'K tokens';
+  }
+  return `${tokens} tokens`;
+}
+
 export function buildDiscordActivity(
   snapshot: TrackerSnapshot,
   manualState: ManualEditorState | null,
   settings: PrivacySettings,
-  nowMs: number = Date.now()
+  nowMs: number = Date.now(),
+  workspaceInfo?: { count: number; names?: string[] }
 ): DiscordActivity | null {
   if (settings.disableRichPresence || settings.pauseTracking) {
     return null;
@@ -83,10 +98,22 @@ export function buildDiscordActivity(
   }
   const sessionStartSec = Math.floor(sessionStartMs / 1000);
 
+  const wsCount = workspaceInfo?.count && workspaceInfo.count > 0 ? workspaceInfo.count : 1;
+  const wsSuffix = wsCount > 1 ? ` • ${wsCount} Workspaces` : '';
+  const wsText = wsCount === 1 ? '1 Workspace' : `${wsCount} Workspaces`;
+
+  const totalTokens = snapshot.session.tokens.totalTokens;
+  const tokenStr = formatTokenVolumeShort(totalTokens);
+  const isTokenmaxxing = totalTokens > 0;
+  const tokenmaxxingHover = isTokenmaxxing
+    ? `Tokenmaxxing & AI Maxxing • ${tokenStr} spent in Antigravity (${wsText})`
+    : `Antigravity • ${wsText}`;
+
   // MODE 1: AI Agent Mode (Active whenever agents are running)
   if (snapshot.activeAgents.length > 0) {
     const activeCount = snapshot.activeAgents.length;
-    const details = activeCount === 1 ? '1 AI agent active' : `${activeCount} AI agents active`;
+    const agentLabel = activeCount === 1 ? '1 AI agent active' : `${activeCount} AI agents active`;
+    const details = `${agentLabel}${wsSuffix}`;
 
     const parts: string[] = [];
     if (!settings.hideModels) {
@@ -98,9 +125,8 @@ export function buildDiscordActivity(
       }
     }
 
-    if (!settings.hideTokens && snapshot.session.tokens.source === 'transcript_exact') {
-      const tokensK = (snapshot.session.tokens.totalTokens / 1000).toFixed(1);
-      parts.push(`${tokensK}k tokens`);
+    if (!settings.hideTokens && isTokenmaxxing) {
+      parts.push(`⚡ ${tokenStr}`);
     }
 
     const state = parts.length > 0 ? parts.join(' • ') : undefined;
@@ -114,9 +140,9 @@ export function buildDiscordActivity(
       },
       assets: {
         large_image: 'antigravity_logo',
-        large_text: 'Antigravity',
+        large_text: tokenmaxxingHover,
         small_image: 'robot',
-        small_text: 'AI Agent Working',
+        small_text: `AI Agent Working • ${wsText}`,
       },
       instance: false,
     };
@@ -128,24 +154,28 @@ export function buildDiscordActivity(
     const isRecent = !Number.isNaN(updatedMs) && nowMs - updatedMs < 120_000;
 
     if (isRecent) {
-      const details = settings.hideFileNamesInManualEdits
+      const baseDetails = settings.hideFileNamesInManualEdits
         ? `Coding in ${manualState.language}`
         : `Editing ${manualState.fileName}`;
+      const details = `${baseDetails}${wsSuffix}`;
 
-      const state = `${manualState.language} — Line ${manualState.currentLine} of ${manualState.totalLines}`;
+      const stateParts = [`${manualState.language} — Line ${manualState.currentLine} of ${manualState.totalLines}`];
+      if (!settings.hideTokens && isTokenmaxxing) {
+        stateParts.push(`⚡ ${tokenStr}`);
+      }
 
       return {
         name: 'Antigravity',
         details,
-        state,
+        state: stateParts.join(' • '),
         timestamps: {
           start: sessionStartSec,
         },
         assets: {
           large_image: 'antigravity_logo',
-          large_text: 'Antigravity',
+          large_text: tokenmaxxingHover,
           small_image: 'pencil',
-          small_text: 'Manual Editing',
+          small_text: `Manual Editing • ${wsText}`,
         },
         instance: false,
       };
@@ -153,16 +183,22 @@ export function buildDiscordActivity(
   }
 
   // MODE 3: Idle in Antigravity (Preserves elapsed session timer!)
+  const idleState = isTokenmaxxing && !settings.hideTokens
+    ? `⚡ Tokenmaxxing (${tokenStr})`
+    : 'In Antigravity';
+
   return {
     name: 'Antigravity',
-    details: 'Idle',
-    state: 'In Antigravity',
+    details: wsCount > 1 ? `Idle • ${wsCount} Workspaces` : 'Idle',
+    state: idleState,
     timestamps: {
       start: sessionStartSec,
     },
     assets: {
       large_image: 'antigravity_logo',
-      large_text: 'Antigravity',
+      large_text: tokenmaxxingHover,
+      small_image: 'antigravity_logo',
+      small_text: `Antigravity • ${wsText}`,
     },
     instance: false,
   };
@@ -176,10 +212,21 @@ export class PresenceManager {
   private lastSentTimeMs = 0;
   private debounceTimer: NodeJS.Timeout | null = null;
   private manualState: ManualEditorState | null = null;
+  private workspaceCount: number = 1;
+  private workspaceNames: string[] = [];
 
   constructor(client: DiscordIpcClient, configManager: ConfigManager) {
     this.client = client;
     this.configManager = configManager;
+  }
+
+  public setWorkspaceInfo(count: number, names: string[] = []): void {
+    this.workspaceCount = Math.max(1, count);
+    this.workspaceNames = names;
+  }
+
+  public getWorkspaceInfo(): { count: number; names: string[] } {
+    return { count: this.workspaceCount, names: this.workspaceNames };
   }
 
   public setManualEditorState(state: ManualEditorState | null): void {
@@ -195,7 +242,13 @@ export class PresenceManager {
    */
   public updateFromSnapshot(snapshot: TrackerSnapshot, nowMs: number = Date.now()): void {
     const settings = this.configManager.getSettings();
-    const activity = buildDiscordActivity(snapshot, this.manualState, settings, nowMs);
+    const activity = buildDiscordActivity(
+      snapshot,
+      this.manualState,
+      settings,
+      nowMs,
+      this.getWorkspaceInfo()
+    );
 
     this.dispatchActivityDebounced(activity, settings.debounceMs, nowMs);
   }

@@ -273,6 +273,35 @@ describe('Phase 4: Discord Rich Presence (IPC)', () => {
       expect(idleActivity?.details).toBe('Idle');
       expect(idleActivity?.timestamps?.start).toBe(expectedStartSec);
     });
+
+    it('formats multi-workspace counts and tokenmaxxing indicators when multiple workspaces are open', () => {
+      const config = new ConfigManager(path.join(os.tmpdir(), 'test-cfg-' + Date.now()));
+      config.updateSettings({ hideTokens: false });
+      const settings = config.getSettings();
+
+      const snapshot = makeMockSnapshot([{ model: 'Gemini 4 Argon' }]);
+      snapshot.session.tokens = {
+        inputTokens: 38_000_000,
+        cacheReadTokens: 742_000_000,
+        outputTokens: 4_000_000,
+        totalTokens: 784_000_000,
+        estimated: false,
+        source: 'transcript_exact',
+      };
+
+      const activity = buildDiscordActivity(snapshot, null, settings, Date.now(), {
+        count: 2,
+        names: ['Antigravity Extension', 'Unstable Wiki'],
+      });
+
+      expect(activity).not.toBeNull();
+      expect(activity?.details).toBe('1 AI agent active • 2 Workspaces');
+      expect(activity?.state).toContain('Gemini 4 Argon');
+      expect(activity?.state).toContain('⚡ 784M tokens');
+      expect(activity?.assets?.large_text).toContain('Tokenmaxxing & AI Maxxing');
+      expect(activity?.assets?.large_text).toContain('784M tokens');
+      expect(activity?.assets?.small_text).toContain('2 Workspaces');
+    });
   });
 
   describe('3. IPC Handshake, SET_ACTIVITY & 15s Debounce Loop', () => {

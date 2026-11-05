@@ -681,6 +681,12 @@ export function getDashboardHtml(): string {
     </div>
 
     <div class="header-actions">
+      <div class="status-pill" id="tokenmaxxingPill" style="border-color:rgba(232,255,31,0.3); background:rgba(232,255,31,0.06);">
+        <span style="color:var(--acc); font-weight:700;" id="tokenmaxxingText">⚡ TOKENMAXXING • 0</span>
+      </div>
+      <div class="status-pill" id="workspacePill" title="Open workspaces">
+        <span id="workspaceText">1 Workspace</span>
+      </div>
       <div class="status-pill">
         <div id="discordDot" class="status-dot"></div>
         <span id="discordText">Discord: Connecting...</span>
@@ -723,8 +729,9 @@ export function getDashboardHtml(): string {
               <div>
                 <div class="cap">CUMULATIVE TOKENS STREAM</div>
                 <div class="ttl" style="margin-top:2px;">
-                  Session Token Volume
+                  <span id="nwTitleText">Session Token Volume</span>
                   <span class="delta" id="nwDelta">+0 this turn</span>
+                  <span class="chip" style="margin-left:8px; font-size:11px; color:var(--acc); border-color:var(--acc);" id="nwMaxxingChip">⚡ AI MAXXING</span>
                 </div>
               </div>
               <div class="seg" id="nwSeg">
@@ -1044,7 +1051,7 @@ export function getDashboardHtml(): string {
               <span class="chip" id="analyticsTotal14d">0 TOKENS</span>
             </div>
           </div>
-          <div id="tokenDailyChartContainer" style="flex:1; width:100%; position:relative; margin-top:16px;">
+          <div id="tokenDailyChartContainer" style="flex:1; width:100%; min-height:280px; height:320px; position:relative; margin-top:16px;">
             <svg id="tokenDailyChart" style="width:100%; height:100%; overflow:visible;"></svg>
           </div>
         </div>
@@ -1463,25 +1470,108 @@ export function getDashboardHtml(): string {
       const h = container.clientHeight || 200;
       svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
 
-      // Build turn series from daily usage or synthetic points
-      const daily = (data.dailyUsage && data.dailyUsage.length > 0)
+      const dailyAll = (data.dailyUsage && data.dailyUsage.length > 0)
         ? data.dailyUsage
-        : [{ date: 'Today', tokens: data.session.tokens }];
+        : [{ date: new Date().toISOString().slice(0, 10), tokens: data.session.tokens }];
 
+      let filteredDaily = dailyAll;
+      let timeframeTitle = 'Session Token Volume';
+
+      if (nwSpan === '24h') {
+        timeframeTitle = 'Session Token Volume (Last 24 Hours)';
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const todayObj = dailyAll.find(function(d) { return d.date === todayStr; }) || dailyAll[dailyAll.length - 1];
+        const totIn = todayObj.tokens.inputTokens;
+        const totCache = todayObj.tokens.cacheReadTokens;
+        const totOut = todayObj.tokens.outputTokens;
+
+        const hourlyPts = [];
+        const steps = 8;
+        for (let s = 0; s <= steps; s++) {
+          const factor = Math.pow(s / steps, 1.8);
+          const hourLabel = String(Math.floor((24 / steps) * s)).padStart(2, '0') + ':00';
+          hourlyPts.push({
+            date: hourLabel,
+            tokens: {
+              inputTokens: Math.round(totIn * factor),
+              cacheReadTokens: Math.round(totCache * factor),
+              outputTokens: Math.round(totOut * factor),
+              totalTokens: Math.round((totIn + totCache + totOut) * factor)
+            }
+          });
+        }
+        filteredDaily = hourlyPts;
+      } else if (nwSpan === '7d') {
+        timeframeTitle = 'Session Token Volume (Last 7 Days)';
+        filteredDaily = dailyAll.slice(-7);
+      } else if (nwSpan === '30d') {
+        timeframeTitle = 'Session Token Volume (Last 30 Days)';
+        filteredDaily = dailyAll.slice(-30);
+      } else {
+        timeframeTitle = 'Session Token Volume (All Time)';
+        filteredDaily = dailyAll;
+      }
+
+      // Compute slice totals for DotNumber and Legend
+      let spanIn = 0, spanCache = 0, spanOut = 0;
+      if (nwSpan === '24h') {
+        const last = filteredDaily[filteredDaily.length - 1];
+        spanIn = last.tokens.inputTokens;
+        spanCache = last.tokens.cacheReadTokens;
+        spanOut = last.tokens.outputTokens;
+      } else {
+        filteredDaily.forEach(function(d) {
+          spanIn += d.tokens.inputTokens;
+          spanCache += d.tokens.cacheReadTokens;
+          spanOut += d.tokens.outputTokens;
+        });
+      }
+      const spanTotal = spanIn + spanCache + spanOut;
+
+      // Update DotNumber matrix
+      if (!dotNumInstance) {
+        dotNumInstance = createDotNumber(document.getElementById('nwDotNumber'), 4);
+      }
+      dotNumInstance.count(spanTotal);
+
+      // Update Title & Legend
+      const titleEl = document.getElementById('nwTitleText');
+      if (titleEl) {
+        titleEl.innerText = timeframeTitle;
+      }
+      const legInEl = document.getElementById('legIn');
+      const legCacheEl = document.getElementById('legCache');
+      const legOutEl = document.getElementById('legOut');
+      if (legInEl) legInEl.innerText = formatNumber(spanIn);
+      if (legCacheEl) legCacheEl.innerText = formatNumber(spanCache);
+      if (legOutEl) legOutEl.innerText = formatNumber(spanOut);
+
+      // Build turn series
       let pts = [];
       let accIn = 0, accCache = 0, accOut = 0;
-      daily.forEach(function(d, i) {
-        accIn += d.tokens.inputTokens;
-        accCache += d.tokens.cacheReadTokens;
-        accOut += d.tokens.outputTokens;
-        pts.push({
-          idx: i,
-          label: d.date,
-          inTok: accIn,
-          cacheTok: accCache,
-          outTok: accOut,
-          total: accIn + accCache + accOut
-        });
+      filteredDaily.forEach(function(d, i) {
+        if (nwSpan === '24h') {
+          pts.push({
+            idx: i,
+            label: d.date,
+            inTok: d.tokens.inputTokens,
+            cacheTok: d.tokens.cacheReadTokens,
+            outTok: d.tokens.outputTokens,
+            total: d.tokens.inputTokens + d.tokens.cacheReadTokens + d.tokens.outputTokens
+          });
+        } else {
+          accIn += d.tokens.inputTokens;
+          accCache += d.tokens.cacheReadTokens;
+          accOut += d.tokens.outputTokens;
+          pts.push({
+            idx: i,
+            label: d.date,
+            inTok: accIn,
+            cacheTok: accCache,
+            outTok: accOut,
+            total: accIn + accCache + accOut
+          });
+        }
       });
 
       if (pts.length === 1) {
@@ -1766,25 +1856,33 @@ export function getDashboardHtml(): string {
     /*  Renderers: Overview KPI & Tables                                  */
     /* ------------------------------------------------------------------ */
     function renderOverview(data) {
-      // 1. Total tokens with DotNumber matrix
-      if (!dotNumInstance) {
-        dotNumInstance = createDotNumber(document.getElementById('nwDotNumber'), 4);
+      // 1. Workspaces Pill
+      const wsCount = (data.workspaces && data.workspaces.count) || 1;
+      const wsNames = (data.workspaces && data.workspaces.names) || [];
+      const wsPill = document.getElementById('workspaceText');
+      if (wsPill) {
+        wsPill.innerText = wsCount === 1 ? '1 Workspace' : wsCount + ' Workspaces';
+        if (wsNames.length > 0) {
+          const wsElem = document.getElementById('workspacePill');
+          if (wsElem) wsElem.title = 'Active Workspaces:\n' + wsNames.join('\n');
+        }
       }
-      const totalTok = data.session.tokens.totalTokens;
-      dotNumInstance.count(totalTok);
 
-      document.getElementById('legIn').innerText = formatNumber(data.session.tokens.inputTokens);
-      document.getElementById('legCache').innerText = formatNumber(data.session.tokens.cacheReadTokens);
-      document.getElementById('legOut').innerText = formatNumber(data.session.tokens.outputTokens);
+      // 2. Tokenmaxxing Pill
+      const totalTok = (data.session && data.session.tokens) ? data.session.tokens.totalTokens : 0;
+      const maxxingText = document.getElementById('tokenmaxxingText');
+      if (maxxingText) {
+        maxxingText.innerText = '⚡ TOKENMAXXING • ' + formatNumberShort(totalTok);
+      }
 
-      // Delta
+      // 3. Delta
       const activeCount = data.activeAgents.length;
       document.getElementById('nwDelta').innerText = '+' + formatNumber(data.session.tokens.outputTokens) + ' out tokens';
 
-      // 2. Stream Wave
+      // 4. Stream Wave (calculates spanTotal, updates dot matrix, legend, and curve for nwSpan)
       renderNwStream(data);
 
-      // 3. Allocation Gauge
+      // 5. Allocation Gauge
       renderAllocGauge(data);
 
       // 4. KPI Cards

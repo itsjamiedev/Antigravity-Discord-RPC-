@@ -1,14 +1,3 @@
-/**
- * TokenStore — Atomic Zero-Loss Persistent Token Accounting Engine
- *
- * Persists cumulative token metrics, daily usage graphs, and per-model consumption
- * to disk (~/.gemini/antigravity/presence-tokens.json) with step watermarking so that
- * restarting Antigravity IDE, reloading windows, or switching models never loses
- * historical token metrics and never double-counts turns.
- *
- * 100% pure TypeScript / Node.js standard library — zero native C++ addons.
- */
-
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -34,6 +23,7 @@ export class TokenStore {
       maxStepIndex: number;
       model: string;
       tokens: TokenUsageRecord;
+      modelTokens?: Record<string, TokenUsageRecord>;
       lastUpdated: string;
     }
   > = new Map();
@@ -119,12 +109,23 @@ export class TokenStore {
 
         if (data.conversationWatermarks && typeof data.conversationWatermarks === 'object') {
           for (const [convId, watermark] of Object.entries(data.conversationWatermarks)) {
+            // Strictly purge synthetic or test watermarks
+            if (convId === 'conv-test-123' || convId.startsWith('test-dummy')) {
+              needsMigrationSave = true;
+              continue;
+            }
+
             if (watermark && typeof watermark.maxStepIndex === 'number') {
               const rawModel = watermark.model ?? 'Gemini 3.8 Flash';
               const model = formatModelDisplayName(rawModel);
               if (model !== rawModel) {
                 needsMigrationSave = true;
               }
+
+              const modelTokens = watermark.modelTokens
+                ? (watermark.modelTokens as Record<string, TokenUsageRecord>)
+                : undefined;
+
               this.conversationWatermarks.set(convId, {
                 maxStepIndex: watermark.maxStepIndex,
                 model,
@@ -136,20 +137,32 @@ export class TokenStore {
                   estimated: false,
                   source: 'transcript_exact',
                 },
+                modelTokens,
                 lastUpdated: watermark.lastUpdated ?? new Date().toISOString(),
               });
             }
           }
         }
+      }
 
-        if (needsMigrationSave) {
-          this.isDirty = true;
-          this.scheduleSave();
-        }
+      if (needsMigrationSave) {
+        this.saveSync();
       }
     } catch {
-      // Fail-open on corrupted JSON
+      // Fail-open on corrupted json file
     }
+  }
+
+  public scheduleSave(): void {
+    this.isDirty = true;
+    if (this.saveDebounceTimer) return;
+
+    this.saveDebounceTimer = setTimeout(() => {
+      this.saveDebounceTimer = null;
+      if (this.isDirty) {
+        this.saveSync();
+      }
+    }, 2000);
   }
 
   public saveSync(): void {
@@ -176,10 +189,18 @@ export class TokenStore {
 
       const watermarksObj: Record<
         string,
-        { maxStepIndex: number; model: string; tokens: TokenUsageRecord; lastUpdated: string }
+        {
+          maxStepIndex: number;
+          model: string;
+          tokens: TokenUsageRecord;
+          modelTokens?: Record<string, TokenUsageRecord>;
+          lastUpdated: string;
+        }
       > = {};
-      for (const [id, w] of this.conversationWatermarks.entries()) {
-        watermarksObj[id] = w;
+      for (const [c, w] of this.conversationWatermarks.entries()) {
+        if (c !== 'conv-test-123') {
+          watermarksObj[c] = w;
+        }
       }
 
       const payload: PersistentTokenStoreData = {
@@ -199,42 +220,64 @@ export class TokenStore {
     }
   }
 
-  public scheduleSave(): void {
-    this.isDirty = true;
-    if (this.saveDebounceTimer) return;
-    this.saveDebounceTimer = setTimeout(() => {
-      this.saveDebounceTimer = null;
-      if (this.isDirty) {
-        this.saveSync();
-      }
-    }, 2000);
-    this.saveDebounceTimer.unref?.();
-  }
-
   /**
-   * Records or updates tokens for a conversation.
-   * Compares against existing recorded watermark to compute delta tokens,
-   * avoiding double counting when re-scanning files.
+   * Records multi-model token metrics for a conversation.
+   * Tracks exact attribution per model (e.g. Gemini 4 Argon, Gemini 3.8 Flash, Claude Sonnet 5.5).
    */
-  public recordConversationTokens(
+  public recordConversationMultiModelTokens(
     conversationId: string,
-    model: string,
-    currentTokens: TokenUsageRecord,
+    modelTokensMap: Record<string, TokenUsageRecord>,
     maxStepIndex: number,
+    primaryModel: string = 'Gemini 3.8 Flash',
     dateStr?: string
   ): { deltaTokens: TokenUsageRecord } {
-    const normalizedModel = formatModelDisplayName(model);
     const existing = this.conversationWatermarks.get(conversationId);
+    const existingModelTokens = existing?.modelTokens || {};
     const dateKey = dateStr ?? new Date().toISOString().slice(0, 10);
 
-    let deltaInput = currentTokens.inputTokens;
-    let deltaCache = currentTokens.cacheReadTokens;
-    let deltaOutput = currentTokens.outputTokens;
+    let deltaInput = 0;
+    let deltaCache = 0;
+    let deltaOutput = 0;
 
-    if (existing) {
-      deltaInput = Math.max(0, currentTokens.inputTokens - existing.tokens.inputTokens);
-      deltaCache = Math.max(0, currentTokens.cacheReadTokens - existing.tokens.cacheReadTokens);
-      deltaOutput = Math.max(0, currentTokens.outputTokens - existing.tokens.outputTokens);
+    const normalizedMap: Record<string, TokenUsageRecord> = {};
+
+    for (const [rawModel, tokens] of Object.entries(modelTokensMap)) {
+      const model = formatModelDisplayName(rawModel);
+      normalizedMap[model] = { ...tokens };
+
+      const prev = existingModelTokens[model] || {
+        inputTokens: 0,
+        cacheReadTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        estimated: false,
+        source: 'transcript_exact',
+      };
+
+      const dIn = Math.max(0, tokens.inputTokens - prev.inputTokens);
+      const dCache = Math.max(0, tokens.cacheReadTokens - prev.cacheReadTokens);
+      const dOut = Math.max(0, tokens.outputTokens - prev.outputTokens);
+      const dTot = dIn + dCache + dOut;
+
+      deltaInput += dIn;
+      deltaCache += dCache;
+      deltaOutput += dOut;
+
+      if (dTot > 0) {
+        const curModel = this.cumulativeTokensByModel.get(model) ?? {
+          inputTokens: 0,
+          cacheReadTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0,
+          estimated: false,
+          source: 'transcript_exact',
+        };
+        curModel.inputTokens += dIn;
+        curModel.cacheReadTokens += dCache;
+        curModel.outputTokens += dOut;
+        curModel.totalTokens += dTot;
+        this.cumulativeTokensByModel.set(model, curModel);
+      }
     }
 
     const deltaTotal = deltaInput + deltaCache + deltaOutput;
@@ -247,38 +290,42 @@ export class TokenStore {
       source: 'transcript_exact',
     };
 
-    // Update conversation watermark
+    // Calculate total tokens for conversation
+    let totalIn = 0;
+    let totalCache = 0;
+    let totalOut = 0;
+    for (const t of Object.values(normalizedMap)) {
+      totalIn += t.inputTokens;
+      totalCache += t.cacheReadTokens;
+      totalOut += t.outputTokens;
+    }
+
+    const normalizedPrimary = formatModelDisplayName(primaryModel);
+
     this.conversationWatermarks.set(conversationId, {
       maxStepIndex: Math.max(maxStepIndex, existing?.maxStepIndex ?? 0),
-      model: normalizedModel,
-      tokens: { ...currentTokens },
+      model: normalizedPrimary,
+      tokens: {
+        inputTokens: totalIn,
+        cacheReadTokens: totalCache,
+        outputTokens: totalOut,
+        totalTokens: totalIn + totalCache + totalOut,
+        estimated: false,
+        source: 'transcript_exact',
+      },
+      modelTokens: normalizedMap,
       lastUpdated: new Date().toISOString(),
     });
 
     if (deltaTotal > 0) {
-      // 1. Accumulate into model stats
-      const existingModel = this.cumulativeTokensByModel.get(normalizedModel) ?? {
-        inputTokens: 0,
-        cacheReadTokens: 0,
-        outputTokens: 0,
-        totalTokens: 0,
-        estimated: false,
-        source: 'transcript_exact',
-      };
-      existingModel.inputTokens += deltaInput;
-      existingModel.cacheReadTokens += deltaCache;
-      existingModel.outputTokens += deltaOutput;
-      existingModel.totalTokens += deltaTotal;
-      this.cumulativeTokensByModel.set(normalizedModel, existingModel);
-
-      // 2. Accumulate into daily usage
+      const activeModels = Object.keys(normalizedMap);
       const existingDaily = this.cumulativeDailyUsage.get(dateKey) ?? {
         date: dateKey,
         conversationCount: 1,
         invocationCount: 1,
         toolCallCount: 0,
         errorCount: 0,
-        modelsUsed: [normalizedModel],
+        modelsUsed: activeModels.length > 0 ? activeModels : [normalizedPrimary],
         tokens: {
           inputTokens: 0,
           cacheReadTokens: 0,
@@ -289,8 +336,10 @@ export class TokenStore {
         },
       };
 
-      if (!existingDaily.modelsUsed.includes(normalizedModel)) {
-        existingDaily.modelsUsed.push(normalizedModel);
+      for (const m of activeModels) {
+        if (!existingDaily.modelsUsed.includes(m)) {
+          existingDaily.modelsUsed.push(m);
+        }
       }
       existingDaily.tokens.inputTokens += deltaInput;
       existingDaily.tokens.cacheReadTokens += deltaCache;
@@ -304,6 +353,80 @@ export class TokenStore {
     return { deltaTokens: deltaRecord };
   }
 
+  /**
+   * Backward-compatible single-model record method.
+   */
+  public recordConversationTokens(
+    conversationId: string,
+    model: string,
+    currentTokens: TokenUsageRecord,
+    maxStepIndex: number,
+    dateStr?: string
+  ): { deltaTokens: TokenUsageRecord } {
+    const normalizedModel = formatModelDisplayName(model);
+    return this.recordConversationMultiModelTokens(
+      conversationId,
+      { [normalizedModel]: currentTokens },
+      maxStepIndex,
+      normalizedModel,
+      dateStr
+    );
+  }
+
+  /**
+   * Sets daily usage record directly (used for full historical hydration).
+   */
+  public setDailyUsageRecord(daily: DailyUsage): void {
+    this.cumulativeDailyUsage.set(daily.date, daily);
+    this.scheduleSave();
+  }
+
+  /**
+   * Hydrates historical daily usage without duplicating counts.
+   */
+  public recordHistoricalDailyTokens(
+    dateKey: string,
+    tokens: TokenUsageRecord,
+    models: string[] = []
+  ): void {
+    const existing = this.cumulativeDailyUsage.get(dateKey);
+    const normalizedModels = models.map((m) => formatModelDisplayName(m));
+
+    if (existing) {
+      // Keep maximum to avoid double counting
+      existing.tokens.inputTokens = Math.max(existing.tokens.inputTokens, tokens.inputTokens);
+      existing.tokens.cacheReadTokens = Math.max(existing.tokens.cacheReadTokens, tokens.cacheReadTokens);
+      existing.tokens.outputTokens = Math.max(existing.tokens.outputTokens, tokens.outputTokens);
+      existing.tokens.totalTokens =
+        existing.tokens.inputTokens + existing.tokens.cacheReadTokens + existing.tokens.outputTokens;
+
+      for (const m of normalizedModels) {
+        if (!existing.modelsUsed.includes(m)) {
+          existing.modelsUsed.push(m);
+        }
+      }
+      this.cumulativeDailyUsage.set(dateKey, existing);
+    } else {
+      this.cumulativeDailyUsage.set(dateKey, {
+        date: dateKey,
+        conversationCount: 1,
+        invocationCount: 1,
+        toolCallCount: 0,
+        errorCount: 0,
+        modelsUsed: normalizedModels.length > 0 ? normalizedModels : ['Gemini 3.8 Flash'],
+        tokens: {
+          inputTokens: tokens.inputTokens,
+          cacheReadTokens: tokens.cacheReadTokens,
+          outputTokens: tokens.outputTokens,
+          totalTokens: tokens.inputTokens + tokens.cacheReadTokens + tokens.outputTokens,
+          estimated: false,
+          source: 'transcript_exact',
+        },
+      });
+    }
+    this.scheduleSave();
+  }
+
   public getModelStats(): ModelStats[] {
     const list: ModelStats[] = [];
     const now = new Date().toISOString();
@@ -311,7 +434,9 @@ export class TokenStore {
     for (const [model, tokens] of this.cumulativeTokensByModel.entries()) {
       let convCount = 0;
       for (const w of this.conversationWatermarks.values()) {
-        if (w.model === model) convCount++;
+        if (w.model === model || (w.modelTokens && w.modelTokens[model])) {
+          convCount++;
+        }
       }
 
       list.push({
@@ -371,4 +496,3 @@ export class TokenStore {
     }
   }
 }
-

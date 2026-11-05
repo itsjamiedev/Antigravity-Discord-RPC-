@@ -153,7 +153,15 @@ export class PureTracker {
         : state.agents;
 
     for (const item of conversationList) {
-      if (item.tokens && item.tokens.totalTokens > 0) {
+      if (item.modelTokens && Object.keys(item.modelTokens).length > 0) {
+        this.tokenStore.recordConversationMultiModelTokens(
+          item.conversationId,
+          item.modelTokens,
+          item.stepIndex ?? 1,
+          item.model,
+          dateStr
+        );
+      } else if (item.tokens && item.tokens.totalTokens > 0) {
         this.tokenStore.recordConversationTokens(
           item.conversationId,
           item.model,
@@ -163,17 +171,31 @@ export class PureTracker {
         );
       }
 
+      // Hydrate historical daily buckets
+      if (item.dailyTokens) {
+        for (const [dDate, dToks] of Object.entries(item.dailyTokens)) {
+          this.tokenStore.recordHistoricalDailyTokens(
+            dDate,
+            dToks,
+            item.modelsUsed || [item.model]
+          );
+        }
+      }
+
       const isActive = activeIds.has(item.conversationId);
       const convStatus = isActive
         ? (item.activeTool ? 'running_tool' : 'thinking')
         : 'idle';
+
+      const modelsUsed =
+        item.modelsUsed && item.modelsUsed.length > 0 ? item.modelsUsed : [item.model];
 
       // Conversation summary
       const conv: Conversation = {
         conversationId: item.conversationId,
         title: null,
         currentModel: item.model,
-        modelsUsed: [item.model],
+        modelsUsed,
         status: convStatus,
         statusEstimated: false,
         activeTool: isActive ? (item.activeTool ?? null) : null,

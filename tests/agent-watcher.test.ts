@@ -251,5 +251,51 @@ describe('Hookless AgentWatcher & PureTracker', () => {
     const realMap = getGroundTruthConversationStatuses();
     expect(realMap instanceof Map).toBe(true);
   });
+
+  it('extracts multi-model tokens across turns in a conversation', () => {
+    const convId = '55667788-99aa-bbcc-ddee-ff0011223344';
+    const convDir = path.join(tempBrainDir, convId, '.system_generated', 'logs');
+    fs.mkdirSync(convDir, { recursive: true });
+
+    const transcriptFile = path.join(convDir, 'transcript.jsonl');
+    const step1 = JSON.stringify({
+      step_index: 1,
+      source: 'MODEL',
+      type: 'PLANNER_RESPONSE',
+      model: 'Gemini 3.8 Flash',
+      input_tokens: 1000,
+      cache_read_tokens: 5000,
+      output_tokens: 200,
+      tool_calls: [{ name: 'run_cmd' }],
+    });
+    const step2 = JSON.stringify({
+      step_index: 2,
+      source: 'MODEL',
+      type: 'PLANNER_RESPONSE',
+      model: 'Gemini 4 Argon',
+      input_tokens: 500,
+      cache_read_tokens: 2000,
+      output_tokens: 100,
+      tool_calls: [{ name: 'edit_file' }],
+    });
+    fs.writeFileSync(transcriptFile, `${step1}\n${step2}\n`, 'utf8');
+
+    const watcher = new AgentWatcher({
+      brainDir: tempBrainDir,
+      activeThresholdMs: 30000,
+    });
+    watcher.scan();
+    const state = watcher.getState();
+
+    expect(state.agents.length).toBe(1);
+    const agent = state.agents[0]!;
+    expect(agent.modelTokens).toBeDefined();
+    expect(agent.modelTokens?.['Gemini 3.8 Flash']?.totalTokens).toBe(6200);
+    expect(agent.modelTokens?.['Gemini 4 Argon']?.totalTokens).toBe(2600);
+    expect(agent.modelsUsed).toContain('Gemini 3.8 Flash');
+    expect(agent.modelsUsed).toContain('Gemini 4 Argon');
+
+    watcher.stop();
+  });
 });
 

@@ -207,5 +207,68 @@ describe('TokenStore — Atomic Persistent Token Accounting', () => {
     expect(daily[0]!.modelsUsed).toContain('Claude Sonnet 5.5');
     expect(daily[0]!.modelsUsed).toContain('Gemini 3.8 Flash');
   });
+
+  it('records multi-model attribution within a single conversation', () => {
+    const store = new TokenStore(testStorePath);
+    store.recordConversationMultiModelTokens(
+      'multi-model-conv',
+      {
+        'Gemini 3.8 Flash': {
+          inputTokens: 1000,
+          cacheReadTokens: 10000,
+          outputTokens: 500,
+          totalTokens: 11500,
+          estimated: false,
+          source: 'transcript_exact',
+        },
+        'Gemini 4 Argon': {
+          inputTokens: 500,
+          cacheReadTokens: 5000,
+          outputTokens: 250,
+          totalTokens: 5750,
+          estimated: false,
+          source: 'transcript_exact',
+        },
+      },
+      12,
+      'Gemini 4 Argon',
+      '2026-11-05'
+    );
+
+    const stats = store.getModelStats();
+    expect(stats.length).toBe(2);
+    expect(stats.find((s) => s.model === 'Gemini 3.8 Flash')?.tokens.totalTokens).toBe(11500);
+    expect(stats.find((s) => s.model === 'Gemini 4 Argon')?.tokens.totalTokens).toBe(5750);
+    expect(store.getTotalCumulativeTokens().totalTokens).toBe(17250);
+  });
+
+  it('purges synthetic conv-test-123 watermarks on load', () => {
+    const rawData = {
+      version: 1,
+      lastSavedAt: new Date().toISOString(),
+      cumulativeTokensByModel: {},
+      cumulativeDailyUsage: {},
+      conversationWatermarks: {
+        'conv-test-123': {
+          maxStepIndex: 1,
+          model: 'Gemini 4 Argon',
+          tokens: {
+            inputTokens: 2000,
+            cacheReadTokens: 2500,
+            outputTokens: 500,
+            totalTokens: 5000,
+            estimated: false,
+            source: 'transcript_exact',
+          },
+          lastUpdated: new Date().toISOString(),
+        },
+      },
+    };
+
+    fs.writeFileSync(testStorePath, JSON.stringify(rawData, null, 2), 'utf8');
+
+    const store = new TokenStore(testStorePath);
+    expect(store.getConversationWatermark('conv-test-123')).toBeUndefined();
+  });
 });
 

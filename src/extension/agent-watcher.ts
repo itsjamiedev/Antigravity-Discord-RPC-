@@ -19,6 +19,9 @@ export interface ActiveAgentInfo {
   model: string;
   stepIndex?: number;
   tokens: TokenUsageRecord;
+  modelTokens?: Record<string, TokenUsageRecord>;
+  modelsUsed?: string[];
+  dailyTokens?: Record<string, TokenUsageRecord>;
   activeTool?: string | null;
   status?: 'thinking' | 'running_tool' | 'idle' | 'error';
   recentEvents?: Array<{
@@ -386,12 +389,113 @@ export function extractModelForConversation(conversationId: string): string {
   return 'Gemini 3.8 Flash';
 }
 
+/**
+ * Extracts a complete mapping of step index -> model name for a conversation
+ * by scanning the SQLite B-tree leaf cells in `gen_metadata`.
+ */
+export function getConversationStepModelMap(conversationId: string): Map<number, string> {
+  const stepMap = new Map<number, string>();
+  const antigravityDir = path.join(os.homedir(), '.gemini', 'antigravity');
+  const convDir = path.join(antigravityDir, 'conversations');
+  const dbFile = path.join(convDir, `${conversationId}.db`);
+  const walFile = path.join(convDir, `${conversationId}.db-wal`);
+
+  const pbSingleRegex = /\x9a\x01[\x01-\x30]((?:gemini|claude)[a-z0-9\.\-]+)\xa2\x01/;
+
+  function readVarint(buf: Buffer, offset: number): { val: number; len: number } {
+    let val = 0;
+    let len = 0;
+    for (let i = 0; i < 9; i++) {
+      if (offset + i >= buf.length) break;
+      const b = buf[offset + i]!;
+      len++;
+      if (i === 8) {
+        val = val * 256 + b;
+        break;
+      }
+      val = val * 128 + (b & 0x7f);
+      if ((b & 0x80) === 0) break;
+    }
+    return { val, len };
+  }
+
+  function scanLeafPage(buf: Buffer, offset: number, pageSize: number): void {
+    if (offset + 8 > buf.length) return;
+    if (buf[offset] !== 0x0d) return;
+
+    const cellCount = buf.readUInt16BE(offset + 3);
+    for (let c = 0; c < cellCount; c++) {
+      const ptrPos = offset + 8 + c * 2;
+      if (ptrPos + 2 > buf.length) break;
+      const cellRel = buf.readUInt16BE(ptrPos);
+      const cellOffset = offset + cellRel;
+      if (cellOffset >= offset + pageSize || cellOffset >= buf.length) continue;
+
+      let ptr = cellOffset;
+      const payloadSize = readVarint(buf, ptr);
+      ptr += payloadSize.len;
+      const rowId = readVarint(buf, ptr);
+      ptr += rowId.len;
+
+      const cellEnd = Math.min(offset + pageSize, buf.length, ptr + payloadSize.val);
+      const sliceStr = buf.subarray(ptr, cellEnd).toString('latin1');
+      const m = pbSingleRegex.exec(sliceStr);
+      if (m && m[1]) {
+        stepMap.set(rowId.val, normalizeModelName(m[1]));
+      }
+    }
+  }
+
+  try {
+    let pageSize = 4096;
+    if (fs.existsSync(dbFile)) {
+      const buf = fs.readFileSync(dbFile);
+      if (buf.length >= 4096) {
+        pageSize = buf.readUInt16BE(16) || 4096;
+        if (pageSize >= 512) {
+          const totalPages = Math.floor(buf.length / pageSize);
+          for (let p = 1; p <= totalPages; p++) {
+            scanLeafPage(buf, (p - 1) * pageSize, pageSize);
+          }
+        }
+      }
+    }
+
+    if (fs.existsSync(walFile)) {
+      const walBuf = fs.readFileSync(walFile);
+      if (walBuf.length >= 32 + 24 + pageSize) {
+        const walPageSize = walBuf.readUInt32BE(8) || pageSize;
+        const salt1 = walBuf.readUInt32BE(16);
+        const salt2 = walBuf.readUInt32BE(20);
+        if (walPageSize >= 512) {
+          let ptr = 32;
+          while (ptr + 24 + walPageSize <= walBuf.length) {
+            const fSalt1 = walBuf.readUInt32BE(ptr + 8);
+            const fSalt2 = walBuf.readUInt32BE(ptr + 12);
+            if (fSalt1 === salt1 && fSalt2 === salt2) {
+              scanLeafPage(walBuf, ptr + 24, walPageSize);
+            }
+            ptr += 24 + walPageSize;
+          }
+        }
+      }
+    }
+  } catch {
+    // ignore B-tree errors
+  }
+
+  return stepMap;
+}
+
 interface TranscriptCacheEntry {
   fileSize: number;
   mtimeMs: number;
   model: string | null;
   stepIndex?: number;
   tokens: TokenUsageRecord;
+  modelTokens: Record<string, TokenUsageRecord>;
+  modelsUsed: string[];
+  dailyTokens: Record<string, TokenUsageRecord>;
   isExecuting: boolean;
   activeTool: string | null;
   recentEvents: Array<{
@@ -406,6 +510,7 @@ export class AgentWatcher extends EventEmitter {
   private intervalTimer: NodeJS.Timeout | null = null;
   private watcher: fs.FSWatcher | null = null;
   private transcriptCache: Map<string, TranscriptCacheEntry> = new Map();
+  private stepModelCache = new Map<string, { mtimeMs: number; map: Map<number, string> }>();
   private state: AgentWatcherState = {
     activeAgentCount: 0,
     activeModels: [],
@@ -432,6 +537,25 @@ export class AgentWatcher extends EventEmitter {
     this.pollIntervalMs = options?.pollIntervalMs ?? 1000; // Poll every 1.0s for real-time RPC updates
     this.activeThresholdMs = options?.activeThresholdMs ?? 120000; // 120s active turn threshold
     this.summariesDbDir = options?.summariesDbDir;
+  }
+
+  private getStepModelMap(conversationId: string): Map<number, string> {
+    const dbFile = path.join(os.homedir(), '.gemini', 'antigravity', 'conversations', `${conversationId}.db`);
+    let mtime = 0;
+    if (fs.existsSync(dbFile)) {
+      try {
+        mtime = fs.statSync(dbFile).mtimeMs;
+      } catch {}
+    }
+
+    const cached = this.stepModelCache.get(conversationId);
+    if (cached && cached.mtimeMs === mtime) {
+      return cached.map;
+    }
+
+    const map = getConversationStepModelMap(conversationId);
+    this.stepModelCache.set(conversationId, { mtimeMs: mtime, map });
+    return map;
   }
 
   public start(): void {
@@ -594,6 +718,9 @@ export class AgentWatcher extends EventEmitter {
               estimated: false,
               source: 'unavailable',
             },
+            modelTokens: parsedTail?.modelTokens,
+            modelsUsed: parsedTail?.modelsUsed,
+            dailyTokens: parsedTail?.dailyTokens,
             activeTool: parsedTail?.activeTool ?? null,
             status: agentStatus,
             recentEvents: parsedTail?.recentEvents ?? [],
@@ -654,19 +781,8 @@ export class AgentWatcher extends EventEmitter {
     filePath: string,
     fileSize: number,
     mtimeMs: number,
-    _conversationId: string
-  ): {
-    model: string | null;
-    stepIndex?: number;
-    tokens: TokenUsageRecord;
-    isExecuting: boolean;
-    activeTool: string | null;
-    recentEvents: Array<{
-      type: string;
-      toolName?: string | null;
-      timestamp: string;
-    }>;
-  } | null {
+    conversationId: string
+  ): TranscriptCacheEntry | null {
     if (fileSize <= 0) return null;
 
     const cached = this.transcriptCache.get(filePath);
@@ -675,8 +791,8 @@ export class AgentWatcher extends EventEmitter {
     }
 
     try {
-      // Read up to 2MB to sum tokens accurately across turns
-      const readLength = Math.min(fileSize, 2097152);
+      // Read up to 4MB to sum tokens accurately across turns
+      const readLength = Math.min(fileSize, 4194304);
       const buffer = Buffer.alloc(readLength);
       const fd = fs.openSync(filePath, 'r');
       try {
@@ -689,7 +805,10 @@ export class AgentWatcher extends EventEmitter {
       const allLines = text.trim().split('\n');
       const lines = fileSize > readLength && allLines.length > 1 ? allLines.slice(1) : allLines;
 
-      let model: string | null = null;
+      const stepModelMap = this.getStepModelMap(conversationId);
+      const fallbackModel = extractModelForConversation(conversationId);
+      let latestModel: string = fallbackModel;
+
       let maxStepIndex: number | undefined;
       let isExecuting = false;
       let activeTool: string | null = null;
@@ -699,6 +818,9 @@ export class AgentWatcher extends EventEmitter {
       let hasTokens = false;
       const seenSteps = new Set<number>();
       const allEvents: Array<{ type: string; toolName?: string | null; timestamp: string }> = [];
+
+      const modelTokensMap: Record<string, TokenUsageRecord> = {};
+      const dailyTokensMap: Record<string, TokenUsageRecord> = {};
 
       for (let i = 0; i < lines.length; i++) {
         const rawLine = lines[i];
@@ -721,23 +843,62 @@ export class AgentWatcher extends EventEmitter {
             const stepKey = typeof parsed.step_index === 'number' ? parsed.step_index : seenSteps.size;
             if (!seenSteps.has(stepKey)) {
               seenSteps.add(stepKey);
-              if (typeof parsed.input_tokens === 'number') {
-                sumInput += parsed.input_tokens;
+              const inTok = typeof parsed.input_tokens === 'number' ? parsed.input_tokens : 0;
+              const cacheTok = typeof parsed.cache_read_tokens === 'number' ? parsed.cache_read_tokens : 0;
+              const outTok = typeof parsed.output_tokens === 'number' ? parsed.output_tokens : 0;
+
+              if (inTok > 0 || cacheTok > 0 || outTok > 0) {
                 hasTokens = true;
+                sumInput += inTok;
+                sumCache += cacheTok;
+                sumOutput += outTok;
               }
-              if (typeof parsed.cache_read_tokens === 'number') {
-                sumCache += parsed.cache_read_tokens;
-                hasTokens = true;
+
+              // Determine exact model for this turn
+              const turnRawModel =
+                stepModelMap.get(stepKey) ||
+                (typeof parsed.model === 'string' ? parsed.model : latestModel);
+              const turnModel = formatModelDisplayName(turnRawModel);
+              latestModel = turnModel;
+
+              if (!modelTokensMap[turnModel]) {
+                modelTokensMap[turnModel] = {
+                  inputTokens: 0,
+                  cacheReadTokens: 0,
+                  outputTokens: 0,
+                  totalTokens: 0,
+                  estimated: false,
+                  source: 'transcript_exact',
+                };
               }
-              if (typeof parsed.output_tokens === 'number') {
-                sumOutput += parsed.output_tokens;
-                hasTokens = true;
+              modelTokensMap[turnModel].inputTokens += inTok;
+              modelTokensMap[turnModel].cacheReadTokens += cacheTok;
+              modelTokensMap[turnModel].outputTokens += outTok;
+              modelTokensMap[turnModel].totalTokens += inTok + cacheTok + outTok;
+
+              // Record daily usage bucket if created_at is present
+              const dateStr = typeof parsed.created_at === 'string' ? parsed.created_at.slice(0, 10) : '';
+              if (dateStr && dateStr.startsWith('20')) {
+                if (!dailyTokensMap[dateStr]) {
+                  dailyTokensMap[dateStr] = {
+                    inputTokens: 0,
+                    cacheReadTokens: 0,
+                    outputTokens: 0,
+                    totalTokens: 0,
+                    estimated: false,
+                    source: 'transcript_exact',
+                  };
+                }
+                dailyTokensMap[dateStr].inputTokens += inTok;
+                dailyTokensMap[dateStr].cacheReadTokens += cacheTok;
+                dailyTokensMap[dateStr].outputTokens += outTok;
+                dailyTokensMap[dateStr].totalTokens += inTok + cacheTok + outTok;
               }
             }
           }
 
           if (typeof parsed.model === 'string' && parsed.model) {
-            model = formatModelDisplayName(parsed.model);
+            latestModel = formatModelDisplayName(parsed.model);
           }
 
           const eventType = typeof parsed.type === 'string' ? parsed.type : 'UNKNOWN';
@@ -791,13 +952,17 @@ export class AgentWatcher extends EventEmitter {
       };
 
       const recentEvents = allEvents.slice(-10).reverse();
+      const modelsUsed = Object.keys(modelTokensMap);
 
       const result: TranscriptCacheEntry = {
         fileSize,
         mtimeMs,
-        model,
+        model: latestModel,
         stepIndex: maxStepIndex,
         tokens,
+        modelTokens: modelTokensMap,
+        modelsUsed: modelsUsed.length > 0 ? modelsUsed : [latestModel],
+        dailyTokens: dailyTokensMap,
         isExecuting,
         activeTool,
         recentEvents,

@@ -193,5 +193,27 @@ describe('Phase 5: Local Usage Dashboard (127.0.0.1)', () => {
 
     await reader!.cancel();
   });
+
+  it('registers multi-workspace windows via POST /api/workspaces and broadcasts in payload', async () => {
+    const postRes = await fetch(`${baseUrl}/api/workspaces`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        windowId: 'win-secondary',
+        workspaceFolders: ['Unstable Wiki', 'Antigravity Extension'],
+      }),
+    });
+    expect(postRes.status).toBe(200);
+    const postJson = (await postRes.json()) as { ok: boolean; workspaces: { count: number; names: string[] } };
+    expect(postJson.ok).toBe(true);
+    expect(postJson.workspaces.count).toBe(2);
+    expect(postJson.workspaces.names).toContain('Unstable Wiki');
+    expect(postJson.workspaces.names).toContain('Antigravity Extension');
+
+    const overRes = await fetch(`${baseUrl}/api/overview`);
+    const overJson = (await overRes.json()) as { workspaces?: { count: number; names: string[] } };
+    expect(overJson.workspaces?.count).toBe(2);
+    expect(overJson.workspaces?.names).toContain('Unstable Wiki');
+  });
 });
 
