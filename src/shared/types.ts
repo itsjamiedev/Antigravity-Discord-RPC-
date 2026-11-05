@@ -2,8 +2,7 @@
  * Antigravity Presence — Shared Types & Strict Field Contracts
  *
  * Defines the exact 10-field whitelist allowed to leave the hook-forwarder,
- * plus the Central Tracker domain models (Agent, Conversation, ModelStats,
- * Session, DailyUsage).
+ * the Central Tracker domain models, and the Dual-Mode Presence structures.
  */
 
 export const HOOK_EVENTS = [
@@ -53,6 +52,7 @@ export interface WhitelistedHookPayload {
 
 export const DEFAULT_DAEMON_HOST = '127.0.0.1';
 export const DEFAULT_DAEMON_PORT = 41177;
+export const DEFAULT_DISCORD_CLIENT_ID = '1440730997460172810';
 
 /**
  * Agent activity states.
@@ -148,4 +148,49 @@ export interface TrackerSnapshot {
   conversations: Conversation[];
   modelStats: ModelStats[];
   dailyUsage: DailyUsage[];
+}
+
+/**
+ * Manual Editor State sent by the IDE when the user is editing files manually.
+ * Only file basename is sent (no directory paths).
+ */
+export interface ManualEditorState {
+  fileName: string;
+  language: string;
+  currentLine: number;
+  totalLines: number;
+  workspaceName: string | null;
+  updatedAt: string;
+}
+
+export interface PrivacySettings {
+  disableRichPresence: boolean;
+  pauseTracking: boolean;
+  hideTokens: boolean;
+  hideConversations: boolean;
+  hideModels: boolean;
+  enableManualEditsPresence: boolean;
+  hideFileNamesInManualEdits: boolean;
+  discordClientId: string;
+  debounceMs: number;
+}
+
+export interface DiscordActivityTimestamps {
+  start?: number;
+  end?: number;
+}
+
+export interface DiscordActivityAssets {
+  large_image?: string;
+  large_text?: string;
+  small_image?: string;
+  small_text?: string;
+}
+
+export interface DiscordActivity {
+  details: string;
+  state?: string;
+  timestamps?: DiscordActivityTimestamps;
+  assets?: DiscordActivityAssets;
+  instance?: boolean;
 }

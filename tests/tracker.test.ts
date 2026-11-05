@@ -403,3 +403,4 @@ describe('Phase 3: Central Tracker & SQLite Persistence', () => {
 function mockAppDataDataDir(dir: string): string {
   return dir;
 }
+

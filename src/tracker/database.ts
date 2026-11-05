@@ -103,3 +103,4 @@ export function openTrackerDatabase(dbPath: string = getDefaultDatabasePath()): 
 
   return db;
 }
+

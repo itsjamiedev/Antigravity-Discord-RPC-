@@ -1,13 +1,15 @@
 /**
  * Antigravity Presence — Daemon Ingest Server & Spool Drainer
  *
- * Accepts whitelisted hook payloads over 127.0.0.1 (`POST /api/ingest`) and
- * drains any offline-spooled events from `spool.jsonl`.
- * Enforces a strict Zod schema that rejects any non-whitelisted fields.
+ * Accepts:
+ *   - Whitelisted hook payloads over 127.0.0.1 (`POST /api/ingest`)
+ *   - Manual editor state over 127.0.0.1 (`POST /api/editor`)
+ *   - Drains offline-spooled events from `spool.jsonl`.
  */
 
 import fs from 'node:fs';
 import http from 'node:http';
+import path from 'node:path';
 import { z } from 'zod';
 import { getDefaultSpoolPath } from '../forwarder/transport.js';
 import { assertStrictlyWhitelisted } from '../forwarder/whitelist.js';
@@ -15,6 +17,7 @@ import {
   DEFAULT_DAEMON_HOST,
   DEFAULT_DAEMON_PORT,
   HOOK_EVENTS,
+  type ManualEditorState,
   type WhitelistedHookPayload,
 } from '../shared/types.js';
 
@@ -35,13 +38,26 @@ export const WhitelistedPayloadSchema = z
   })
   .strict();
 
+export const ManualEditorPayloadSchema = z
+  .object({
+    fileName: z.string().min(1).max(256),
+    language: z.string().min(1).max(64),
+    currentLine: z.number().int().positive(),
+    totalLines: z.number().int().positive(),
+    workspaceName: z.string().max(256).nullable().optional(),
+    updatedAt: z.string().optional(),
+  })
+  .strict();
+
 export type IngestHandler = (payload: WhitelistedHookPayload) => void | Promise<void>;
+export type EditorHandler = (state: ManualEditorState) => void | Promise<void>;
 
 export interface IngestServerOptions {
   host?: string;
   port?: number;
   spoolPath?: string;
   onEvent: IngestHandler;
+  onEditorState?: EditorHandler;
 }
 
 /**
@@ -99,12 +115,14 @@ export class IngestServer {
   private readonly port: number;
   private readonly spoolPath: string;
   private readonly onEvent: IngestHandler;
+  private readonly onEditorState?: EditorHandler;
 
   constructor(options: IngestServerOptions) {
     this.host = options.host ?? DEFAULT_DAEMON_HOST;
     this.port = options.port ?? DEFAULT_DAEMON_PORT;
     this.spoolPath = options.spoolPath ?? getDefaultSpoolPath();
     this.onEvent = options.onEvent;
+    this.onEditorState = options.onEditorState;
   }
 
   public async start(): Promise<number> {
@@ -162,6 +180,59 @@ export class IngestServer {
           return;
         }
 
+        if (req.method === 'POST' && req.url === '/api/editor') {
+          let body = '';
+          let aborted = false;
+
+          req.setEncoding('utf8');
+          req.on('data', (chunk: string) => {
+            body += chunk;
+            if (body.length > 8192) {
+              aborted = true;
+              res.writeHead(413, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Payload too large' }));
+              req.destroy();
+            }
+          });
+
+          req.on('end', () => {
+            if (aborted) return;
+            void (async () => {
+              try {
+                const raw: unknown = JSON.parse(body);
+                const parsed = ManualEditorPayloadSchema.safeParse(raw);
+                if (!parsed.success) {
+                  res.writeHead(400, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ error: 'Invalid editor payload' }));
+                  return;
+                }
+
+                // Strip any directory paths, strictly allow basename only
+                const cleanFileName = path.basename(parsed.data.fileName);
+                const state: ManualEditorState = {
+                  fileName: cleanFileName,
+                  language: parsed.data.language,
+                  currentLine: parsed.data.currentLine,
+                  totalLines: parsed.data.totalLines,
+                  workspaceName: parsed.data.workspaceName ?? null,
+                  updatedAt: parsed.data.updatedAt ?? new Date().toISOString(),
+                };
+
+                if (this.onEditorState) {
+                  await this.onEditorState(state);
+                }
+
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ accepted: true }));
+              } catch {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Invalid JSON' }));
+              }
+            })();
+          });
+          return;
+        }
+
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Not found' }));
       });
@@ -188,4 +259,3 @@ export class IngestServer {
     });
   }
 }
-
