@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Antigravity Delta Levitating Prism -->
+  <polygon points="12 2 22 18 2 18" stroke="currentColor" stroke-width="1.8" fill="none" />
+  <!-- Inner Floating Core -->
+  <polygon points="12 7 17 15 7 15" fill="currentColor" opacity="0.3" stroke="currentColor" stroke-width="1.2" />
+  <!-- Levitation Rings / Energy Arc -->
+  <path d="M4 21h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.8" />
+</svg>

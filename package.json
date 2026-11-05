@@ -67,6 +67,24 @@
         "title": "Antigravity Presence: Reload Extension Host Window"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "antigravity-presence-sidebar",
+          "title": "Antigravity Presence",
+          "icon": "resources/activity-bar-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "antigravity-presence-sidebar": [
+        {
+          "type": "webview",
+          "id": "antigravityPresence.sidebarView",
+          "name": "Antigravity Telemetry"
+        }
+      ]
+    },
     "configuration": {
       "title": "Antigravity Presence",
       "properties": {
