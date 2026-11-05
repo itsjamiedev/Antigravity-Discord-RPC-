@@ -20,6 +20,7 @@ import { PureTracker } from '../tracker/pure-tracker.js';
 import { AgentWatcher, type AgentWatcherState } from './agent-watcher.js';
 import { DashboardServer } from '../dashboard/server.js';
 import { openDashboardWebview } from './dashboard-webview.js';
+import { SidebarDashboardProvider } from './sidebar-provider.js';
 import type { CentralTracker } from '../tracker/tracker.js';
 import type { ManualEditorState } from '../shared/types.js';
 
@@ -30,6 +31,7 @@ let tracker: PureTracker | null = null;
 let agentWatcher: AgentWatcher | null = null;
 let dashboardServer: DashboardServer | null = null;
 let statusBarItem: vscode.StatusBarItem | null = null;
+let sidebarProvider: SidebarDashboardProvider | null = null;
 
 let isLeader = false;
 let leaderCheckTimer: NodeJS.Timeout | null = null;
@@ -116,7 +118,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // 5. Initialize PureTracker (zero C++ dependencies)
   tracker = new PureTracker();
 
-  // 6. Attempt Leader Election (Port 41177 Dashboard Server)
+  // 6. Initialize Activity Bar Sidebar Dashboard Provider
+  sidebarProvider = new SidebarDashboardProvider(vscode);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(
+      'antigravityPresence.sidebarView',
+      sidebarProvider,
+      {
+        webviewOptions: {
+          retainContextWhenHidden: true,
+        },
+      }
+    )
+  );
+  tracker.subscribe((snap) => {
+    sidebarProvider?.updateSnapshot(snap);
+  });
+
+  // 7. Attempt Leader Election (Port 41177 Dashboard Server)
   const wonElection = await tryAcquireLeaderRole();
   if (!wonElection) {
     console.log('[Antigravity Presence] Operating in Follower mode (another IDE window is Leader).');
@@ -424,9 +443,11 @@ function syncConfigFromVsCode(): void {
 function onAgentStateChanged(state: AgentWatcherState): void {
   if (!tracker || !presenceManager) return;
   tracker.updateFromAgentWatcher(state);
+  const snap = tracker.getSnapshot();
   if (isLeader) {
-    presenceManager.updateFromSnapshot(tracker.getSnapshot());
+    presenceManager.updateFromSnapshot(snap);
   }
+  sidebarProvider?.updateSnapshot(snap);
   updateStatusBar();
 }
 
