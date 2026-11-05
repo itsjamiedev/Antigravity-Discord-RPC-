@@ -192,7 +192,8 @@ describe('Hookless AgentWatcher & PureTracker', () => {
   });
 
   it('PureTracker consumes AgentWatcher state and builds a valid TrackerSnapshot', () => {
-    const tracker = new PureTracker();
+    const testStorePath = path.join(tempBrainDir, 'test-tokens.json');
+    const tracker = new PureTracker(false, testStorePath);
     let receivedSnapshot = false;
 
     tracker.subscribe((snap) => {
