@@ -21,47 +21,7 @@ import type {
 } from '../shared/types.js';
 import type { AgentWatcherState } from '../extension/agent-watcher.js';
 import { TokenStore } from './token-store.js';
-
-function getSessionStateFilePath(): string {
-  return path.join(os.homedir(), '.gemini', 'antigravity', 'presence-session.json');
-}
-
-function loadOrCreatePersistentStartTime(): string {
-  const filePath = getSessionStateFilePath();
-  const nowMs = Date.now();
-  try {
-    if (fs.existsSync(filePath)) {
-      const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-      if (
-        typeof raw?.startedAt === 'string' &&
-        typeof raw?.lastHeartbeatMs === 'number' &&
-        nowMs - raw.lastHeartbeatMs < 600_000 // Preserved across window reloads, handoffs, and idle spans
-      ) {
-        // Antigravity IDE is still running
-        return raw.startedAt;
-      }
-    }
-  } catch {
-    // ignore read error
-  }
-
-  const freshStart = new Date(nowMs).toISOString();
-  savePersistentHeartbeat(freshStart, nowMs);
-  return freshStart;
-}
-
-function savePersistentHeartbeat(startedAt: string, nowMs: number = Date.now()): void {
-  const filePath = getSessionStateFilePath();
-  try {
-    fs.writeFileSync(
-      filePath,
-      JSON.stringify({ startedAt, lastHeartbeatMs: nowMs }),
-      'utf8'
-    );
-  } catch {
-    // fail-open
-  }
-}
+import { SessionManager, type PersistentSessionState } from './session-manager.js';
 
 export class PureTracker {
   private session: Session;
@@ -74,14 +34,17 @@ export class PureTracker {
   private startTime: string;
   private heartbeatTimer: NodeJS.Timeout | null = null;
   private tokenStore: TokenStore;
+  private sessionManager: SessionManager;
 
-  constructor(_isLeader: boolean = false, customTokenStorePath?: string) {
-    this.startTime = loadOrCreatePersistentStartTime();
+  constructor(_isLeader: boolean = false, customTokenStorePath?: string, customSessionFilePath?: string) {
+    this.sessionManager = new SessionManager(customSessionFilePath);
+    const sessionState = this.sessionManager.getSessionState();
+    this.startTime = sessionState?.startedAt || new Date().toISOString();
     this.tokenStore = new TokenStore(customTokenStorePath);
     this.startHeartbeat();
     const initialTokens = this.tokenStore.getTotalCumulativeTokens();
     this.session = {
-      sessionId: 'ext-session-' + Date.now(),
+      sessionId: sessionState?.sessionId || ('ext-session-' + Date.now()),
       startedAt: this.startTime,
       lastActivityAt: new Date().toISOString(),
       activeAgentCount: 0,
@@ -91,9 +54,42 @@ export class PureTracker {
     };
   }
 
-  public setPaused(paused: boolean): void {
-    this.isPaused = paused;
+  public getSessionManager(): SessionManager {
+    return this.sessionManager;
+  }
+
+  public pauseSession(): PersistentSessionState {
+    this.isPaused = true;
+    const pausedState = this.sessionManager.pauseSession(this.session.tokens);
     this.notify();
+    return pausedState;
+  }
+
+  public resumeSession(): { startedAt: string; elapsedSeconds: number } {
+    this.isPaused = false;
+    const resumed = this.sessionManager.resumeSession();
+    this.startTime = resumed.startedAt;
+    this.session.startedAt = resumed.startedAt;
+    this.notify();
+    return resumed;
+  }
+
+  public startFreshSession(): { startedAt: string; elapsedSeconds: number } {
+    this.isPaused = false;
+    const fresh = this.sessionManager.startFreshSession();
+    this.startTime = fresh.startedAt;
+    this.session.startedAt = fresh.startedAt;
+    this.session.sessionId = 'session-' + Date.now();
+    this.notify();
+    return fresh;
+  }
+
+  public setPaused(paused: boolean): void {
+    if (paused) {
+      this.pauseSession();
+    } else {
+      this.resumeSession();
+    }
   }
 
   public subscribe(fn: (snapshot: TrackerSnapshot) => void): () => void {
@@ -113,15 +109,18 @@ export class PureTracker {
   public startHeartbeat(): void {
     if (this.heartbeatTimer) return;
     this.heartbeatTimer = setInterval(() => {
-      savePersistentHeartbeat(this.startTime, Date.now());
+      this.sessionManager.recordHeartbeat();
     }, 10_000);
     this.heartbeatTimer.unref?.();
   }
 
   public refreshPersistentStartTime(): void {
-    this.startTime = loadOrCreatePersistentStartTime();
-    this.session.startedAt = this.startTime;
-    savePersistentHeartbeat(this.startTime, Date.now());
+    const state = this.sessionManager.getSessionState();
+    if (state) {
+      this.startTime = state.startedAt;
+      this.session.startedAt = state.startedAt;
+    }
+    this.sessionManager.recordHeartbeat();
     this.startHeartbeat();
   }
 
@@ -131,7 +130,7 @@ export class PureTracker {
     const nowMs = Date.now();
     const now = new Date(nowMs).toISOString();
     const dateStr = now.slice(0, 10);
-    savePersistentHeartbeat(this.startTime, nowMs);
+    this.sessionManager.recordHeartbeat();
 
     this.session.lastActivityAt = now;
     this.session.activeAgentCount = state.activeAgentCount;
