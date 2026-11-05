@@ -695,12 +695,12 @@ export function getDashboardHtml(): string {
   <!-- NAVIGATION TABS -->
   <div class="tabs-wrapper">
     <nav class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
-      <button class="tab-btn" onclick="switchTab('agents')">Agents</button>
-      <button class="tab-btn" onclick="switchTab('models')">Models & Tokens</button>
-      <button class="tab-btn" onclick="switchTab('conversations')">Conversations</button>
-      <button class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
-      <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+      <button class="tab-btn active" onclick="switchTab('overview', this)">Overview</button>
+      <button class="tab-btn" onclick="switchTab('agents', this)">Agents</button>
+      <button class="tab-btn" onclick="switchTab('models', this)">Models & Tokens</button>
+      <button class="tab-btn" onclick="switchTab('conversations', this)">Conversations</button>
+      <button class="tab-btn" onclick="switchTab('analytics', this)">Analytics</button>
+      <button class="tab-btn" onclick="switchTab('settings', this)">Settings</button>
     </nav>
   </div>
 
@@ -1016,16 +1016,112 @@ export function getDashboardHtml(): string {
 
     <!-- ANALYTICS TAB -->
     <section id="tab-analytics" class="view-panel">
-      <div class="card full-width" style="height: 420px; margin-bottom:16px;">
+      <!-- 1. Hero 14-Day Stacked Bar Card -->
+      <div class="card full-width" style="height: 440px; margin-bottom:16px;">
+        <div class="rim"></div>
+        <div class="core" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(232, 255, 31, 0.08));"></div>
+        <div class="in-c">
+          <div class="card-top">
+            <div>
+              <div class="cap">DAILY TOKEN CONSUMPTION</div>
+              <div class="ttl" style="margin-top:2px;">
+                Tokens by Day
+                <span class="muted" style="font-size:13px; font-weight:500; margin-left:8px;" id="analyticsDailySubtitle">Last 14 Days</span>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:16px;">
+              <div class="legend" style="display:flex; gap:14px; font-size:12px; font-weight:600;">
+                <span style="display:inline-flex; align-items:center; gap:5px; color:#10b981;">
+                  <i style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></i>Cache Read
+                </span>
+                <span style="display:inline-flex; align-items:center; gap:5px; color:#ffffff;">
+                  <i style="width:8px; height:8px; border-radius:50%; background:#ffffff; display:inline-block;"></i>Input
+                </span>
+                <span style="display:inline-flex; align-items:center; gap:5px; color:#E8FF1F;">
+                  <i style="width:8px; height:8px; border-radius:50%; background:#E8FF1F; display:inline-block;"></i>Output
+                </span>
+              </div>
+              <span class="chip" id="analyticsTotal14d">0 TOKENS</span>
+            </div>
+          </div>
+          <div id="tokenDailyChartContainer" style="flex:1; width:100%; position:relative; margin-top:16px;">
+            <svg id="tokenDailyChart" style="width:100%; height:100%; overflow:visible;"></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Bento Summary Row (3 Cards) -->
+      <div class="bento-grid" style="margin-bottom:16px;">
+        <div class="card" style="grid-column: span 4; height: 180px;">
+          <div class="rim"></div>
+          <div class="core" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), transparent);"></div>
+          <div class="in-c" style="justify-content:space-between;">
+            <div class="card-top">
+              <span class="cap">PROMPT CACHE EFFICIENCY</span>
+              <span class="status-badge running_tool" id="analyticsCacheBadge">SAVINGS</span>
+            </div>
+            <div>
+              <div class="big-num mono" style="font-size:2.2rem; color:var(--emerald);" id="analyticsCacheRatio">0%</div>
+              <div class="muted" style="margin-top:4px;" id="analyticsCacheDetail">0 cached tokens preserved</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="grid-column: span 4; height: 180px;">
+          <div class="rim"></div>
+          <div class="core" style="background: linear-gradient(135deg, rgba(232, 255, 31, 0.18), transparent);"></div>
+          <div class="in-c" style="justify-content:space-between;">
+            <div class="card-top">
+              <span class="cap">14-DAY PEAK VELOCITY</span>
+              <span class="chip">HIGHEST DAY</span>
+            </div>
+            <div>
+              <div class="big-num mono" style="font-size:2.2rem; color:var(--acc);" id="analyticsPeakTokens">0</div>
+              <div class="muted" style="margin-top:4px;" id="analyticsPeakDate">No peak recorded</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="grid-column: span 4; height: 180px;">
+          <div class="rim"></div>
+          <div class="core" style="background: linear-gradient(135deg, rgba(169, 178, 255, 0.2), transparent);"></div>
+          <div class="in-c" style="justify-content:space-between;">
+            <div class="card-top">
+              <span class="cap">DOMINANT MODEL</span>
+              <span class="chip" id="analyticsModelShare">0% SHARE</span>
+            </div>
+            <div>
+              <div class="ttl" style="font-size:1.4rem; color:var(--t1);" id="analyticsDominantModel">None</div>
+              <div class="muted" style="margin-top:4px;" id="analyticsModelTotal">0 tokens accumulated</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Daily Historical Ledger Table -->
+      <div class="card full-width" style="height: auto;">
         <div class="rim"></div>
         <div class="in-c">
           <div class="card-top">
-            <div class="cap">DAILY TOKEN CONSUMPTION</div>
-            <span class="chip">14 DAYS</span>
+            <div class="cap">HISTORICAL USAGE TELEMETRY</div>
+            <span class="chip" id="analyticsTableCount">0 DAYS RECORDED</span>
           </div>
-          <div class="ttl">Tokens by Day</div>
-          <div style="flex:1; width:100%; position:relative; margin-top:12px;">
-            <svg id="tokenDailyChart" style="width:100%; height:100%; overflow:visible;"></svg>
+          <div class="ttl">Day-by-Day Token Accounting</div>
+          <div class="table-container" style="margin-top:14px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Total Tokens</th>
+                  <th>Cache Read</th>
+                  <th>Input</th>
+                  <th>Output</th>
+                  <th>Cache Ratio</th>
+                  <th>Models Used</th>
+                </tr>
+              </thead>
+              <tbody id="analyticsTableBody"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -1249,6 +1345,14 @@ export function getDashboardHtml(): string {
       return num.toLocaleString('en-US');
     }
 
+    function formatNumberShort(num) {
+      if (!num || num <= 0) return '0';
+      if (num >= 1000000000) return (num / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
+      if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+      return Math.round(num).toString();
+    }
+
     function formatTime(isoStr) {
       if (!isoStr) return '--';
       try {
@@ -1259,12 +1363,27 @@ export function getDashboardHtml(): string {
       }
     }
 
-    function switchTab(tabName) {
+    function switchTab(tabName, btn) {
       document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
       document.querySelectorAll('.view-panel').forEach(function(p) { p.classList.remove('active'); });
-      event.target.classList.add('active');
+      if (btn) {
+        btn.classList.add('active');
+      } else if (window.event && window.event.currentTarget) {
+        window.event.currentTarget.classList.add('active');
+      } else {
+        const matchingBtn = document.querySelector('.tab-btn[onclick*="' + tabName + '"]');
+        if (matchingBtn) matchingBtn.classList.add('active');
+      }
       const panel = document.getElementById('tab-' + tabName);
-      if (panel) panel.classList.add('active');
+      if (panel) {
+        panel.classList.add('active');
+        if (tabName === 'analytics' && currentData) {
+          setTimeout(function() { renderAnalyticsTab(currentData); }, 30);
+        }
+        if (tabName === 'overview' && currentData) {
+          setTimeout(function() { renderOverview(currentData); }, 30);
+        }
+      }
     }
 
     function setNwSpan(span) {
@@ -1820,6 +1939,239 @@ export function getDashboardHtml(): string {
     }
 
     /* ------------------------------------------------------------------ */
+    /*  Renderers: Analytics Tab & 14-Day Stacked Token Histogram         */
+    /* ------------------------------------------------------------------ */
+    let analyticsTimeline = [];
+
+    function renderAnalyticsTab(data) {
+      if (!data) return;
+      const svg = document.getElementById('tokenDailyChart');
+      const container = document.getElementById('tokenDailyChartContainer');
+      if (!svg || !container) return;
+
+      const w = container.clientWidth || 900;
+      const h = container.clientHeight || 320;
+      svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+
+      // 1. Strict 14-day calendar timeline ending Today
+      const dayList = [];
+      const now = new Date();
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 86400000);
+        const dateStr = d.toISOString().slice(0, 10);
+        const shortLabel = (i === 0) ? 'Today' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        dayList.push({
+          dateStr: dateStr,
+          label: shortLabel,
+          inputTokens: 0,
+          cacheReadTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0,
+          modelsUsed: []
+        });
+      }
+
+      // 2. Map existing dailyUsage into timeline
+      const dailyMap = new Map();
+      if (data.dailyUsage && data.dailyUsage.length > 0) {
+        data.dailyUsage.forEach(function(u) {
+          dailyMap.set(u.date, u);
+        });
+      }
+
+      let total14d = 0;
+      let totalCache14d = 0;
+      let totalIn14d = 0;
+      let peakDayTokens = 0;
+      let peakDayLabel = '--';
+
+      dayList.forEach(function(day) {
+        const found = dailyMap.get(day.dateStr);
+        if (found && found.tokens) {
+          day.inputTokens = found.tokens.inputTokens || 0;
+          day.cacheReadTokens = found.tokens.cacheReadTokens || 0;
+          day.outputTokens = found.tokens.outputTokens || 0;
+          day.totalTokens = found.tokens.totalTokens || (day.inputTokens + day.cacheReadTokens + day.outputTokens);
+          day.modelsUsed = found.modelsUsed || [];
+        }
+        total14d += day.totalTokens;
+        totalCache14d += day.cacheReadTokens;
+        totalIn14d += day.inputTokens;
+
+        if (day.totalTokens > peakDayTokens) {
+          peakDayTokens = day.totalTokens;
+          peakDayLabel = day.label + ' (' + formatNumber(peakDayTokens) + ')';
+        }
+      });
+
+      // If dailyUsage was empty or today had no entry yet, map session tokens to Today
+      if (total14d === 0 && data.session && data.session.tokens && data.session.tokens.totalTokens > 0) {
+        const todayObj = dayList[dayList.length - 1];
+        todayObj.inputTokens = data.session.tokens.inputTokens;
+        todayObj.cacheReadTokens = data.session.tokens.cacheReadTokens;
+        todayObj.outputTokens = data.session.tokens.outputTokens;
+        todayObj.totalTokens = data.session.tokens.totalTokens;
+        todayObj.modelsUsed = (data.modelStats || []).map(function(m) { return m.model; });
+        total14d = todayObj.totalTokens;
+        totalCache14d = todayObj.cacheReadTokens;
+        totalIn14d = todayObj.inputTokens;
+        peakDayTokens = total14d;
+        peakDayLabel = 'Today (' + formatNumber(peakDayTokens) + ')';
+      }
+
+      analyticsTimeline = dayList;
+
+      // 3. Update Summary Bento Cards
+      document.getElementById('analyticsTotal14d').innerText = formatNumber(total14d) + ' TOKENS';
+      const overallCacheRatio = (totalIn14d + totalCache14d > 0)
+        ? Math.round((totalCache14d / (totalIn14d + totalCache14d)) * 100)
+        : 0;
+      document.getElementById('analyticsCacheRatio').innerText = overallCacheRatio + '%';
+      document.getElementById('analyticsCacheDetail').innerText = formatNumber(totalCache14d) + ' cached tokens preserved';
+
+      document.getElementById('analyticsPeakTokens').innerText = formatNumber(peakDayTokens);
+      document.getElementById('analyticsPeakDate').innerText = peakDayTokens > 0 ? peakDayLabel : 'No activity yet';
+
+      const models = data.modelStats || [];
+      const topModel = models[0] || { model: 'None', tokens: { totalTokens: 0 } };
+      const topShare = total14d > 0 ? Math.round((topModel.tokens.totalTokens / Math.max(1, data.session.tokens.totalTokens)) * 100) : 0;
+      document.getElementById('analyticsDominantModel').innerText = topModel.model;
+      document.getElementById('analyticsModelShare').innerText = topShare + '% SHARE';
+      document.getElementById('analyticsModelTotal').innerText = formatNumber(topModel.tokens.totalTokens) + ' tokens accumulated';
+
+      // 4. Render SVG Stacked Bar Chart
+      const padLeft = 65;
+      const padRight = 20;
+      const padTop = 30;
+      const padBottom = 40;
+      const plotW = Math.max(200, w - padLeft - padRight);
+      const plotH = Math.max(100, h - padTop - padBottom);
+
+      const maxVal = Math.max(1, peakDayTokens);
+
+      let s = '';
+
+      // Horizontal Grid Lines & Y-Axis Labels
+      const gridSteps = 4;
+      for (let i = 0; i <= gridSteps; i++) {
+        const yVal = (maxVal / gridSteps) * (gridSteps - i);
+        const yPos = padTop + (i / gridSteps) * plotH;
+
+        s += '<line x1="' + padLeft + '" y1="' + yPos + '" x2="' + (w - padRight) + '" y2="' + yPos + '" stroke="rgba(255,255,255,0.08)" stroke-dasharray="' + (i === gridSteps ? 'none' : '3,4') + '" stroke-width="1"/>';
+        s += '<text x="' + (padLeft - 10) + '" y="' + (yPos + 4) + '" fill="rgba(255,255,255,0.4)" font-size="11" font-family="Geist Mono" text-anchor="end">' + formatNumberShort(yVal) + '</text>';
+      }
+
+      // Draw 14 stacked bars
+      const barCount = dayList.length;
+      const slotW = plotW / barCount;
+      const barW = Math.max(14, Math.min(38, slotW - 12));
+
+      dayList.forEach(function(d, i) {
+        const xCenter = padLeft + i * slotW + slotW / 2;
+        const xLeft = xCenter - barW / 2;
+
+        const total = d.totalTokens;
+        const cacheH = (d.cacheReadTokens / maxVal) * plotH;
+        const inH = (d.inputTokens / maxVal) * plotH;
+        const outH = (d.outputTokens / maxVal) * plotH;
+
+        const yBase = padTop + plotH;
+
+        if (total === 0) {
+          s += '<rect x="' + xLeft + '" y="' + (yBase - 4) + '" width="' + barW + '" height="4" rx="2" fill="rgba(255,255,255,0.06)"/>';
+        } else {
+          // 1. Cache Read (Emerald bottom)
+          const yCache = yBase - cacheH;
+          if (cacheH > 0) {
+            s += '<rect x="' + xLeft + '" y="' + yCache + '" width="' + barW + '" height="' + cacheH + '" rx="' + (inH + outH === 0 ? 6 : 0) + '" fill="#10b981" opacity="0.9"/>';
+          }
+
+          // 2. Input Tokens (White middle)
+          const yIn = yCache - inH;
+          if (inH > 0) {
+            s += '<rect x="' + xLeft + '" y="' + yIn + '" width="' + barW + '" height="' + inH + '" rx="' + (outH === 0 && cacheH === 0 ? 6 : 0) + '" fill="#ffffff" opacity="0.95"/>';
+          }
+
+          // 3. Output Tokens (Electric Lime top)
+          const yOut = yIn - outH;
+          if (outH > 0) {
+            s += '<rect x="' + xLeft + '" y="' + yOut + '" width="' + barW + '" height="' + outH + '" rx="6" fill="#E8FF1F"/>';
+          }
+        }
+
+        // X-Axis Date Label
+        const isToday = i === barCount - 1;
+        s += '<text x="' + xCenter + '" y="' + (yBase + 22) + '" fill="' + (isToday ? '#E8FF1F' : 'rgba(255,255,255,0.5)') + '" font-size="11" font-weight="' + (isToday ? '700' : '500') + '" font-family="Geist" text-anchor="middle">' + d.label + '</text>';
+
+        // Hitbox for Tooltip Hover
+        const colLeft = padLeft + i * slotW;
+        s += '<rect class="bar-hitbox" data-idx="' + i + '" x="' + colLeft + '" y="' + padTop + '" width="' + slotW + '" height="' + plotH + '" fill="transparent" style="cursor:pointer;" onmouseenter="onBarHover(event, ' + i + ')" onmouseleave="onBarLeave()"/>';
+      });
+
+      svg.innerHTML = s;
+
+      // 5. Populate Historical Ledger Table
+      const tbody = document.getElementById('analyticsTableBody');
+      if (tbody) {
+        const tableDays = (data.dailyUsage && data.dailyUsage.length > 0)
+          ? data.dailyUsage.slice().reverse()
+          : [{
+              date: new Date().toISOString().slice(0, 10),
+              tokens: data.session.tokens,
+              modelsUsed: models.map(function(m) { return m.model; })
+            }];
+
+        tbody.innerHTML = tableDays.map(function(row) {
+          const inT = row.tokens.inputTokens;
+          const cT = row.tokens.cacheReadTokens;
+          const oT = row.tokens.outputTokens;
+          const tot = row.tokens.totalTokens;
+          const ratio = (inT + cT > 0) ? Math.round((cT / (inT + cT)) * 100) : 0;
+          const isPeak = tot === peakDayTokens && tot > 0;
+
+          const modelChips = (row.modelsUsed && row.modelsUsed.length > 0)
+            ? row.modelsUsed.map(function(m) { return '<span class="chip" style="margin-right:4px;">' + m + '</span>'; }).join('')
+            : '<span class="muted">--</span>';
+
+          return (
+            '<tr>' +
+            '<td class="mono" style="font-weight:600;">' + row.date + (isPeak ? ' <span class="chip" style="color:var(--acc); border-color:var(--acc);">PEAK</span>' : '') + '</td>' +
+            '<td class="mono" style="font-weight:700;">' + formatNumber(tot) + '</td>' +
+            '<td class="mono" style="color:#10b981;">' + formatNumber(cT) + '</td>' +
+            '<td class="mono">' + formatNumber(inT) + '</td>' +
+            '<td class="mono" style="color:var(--acc);">' + formatNumber(oT) + '</td>' +
+            '<td><span class="mono" style="font-weight:700; color:#10b981;">' + ratio + '%</span></td>' +
+            '<td>' + modelChips + '</td>' +
+            '</tr>'
+          );
+        }).join('');
+        document.getElementById('analyticsTableCount').innerText = tableDays.length + ' DAYS RECORDED';
+      }
+    }
+
+    function onBarHover(e, idx) {
+      if (!analyticsTimeline || !analyticsTimeline[idx]) return;
+      const d = analyticsTimeline[idx];
+      const inT = d.inputTokens;
+      const cT = d.cacheReadTokens;
+      const oT = d.outputTokens;
+      const tot = d.totalTokens;
+      const ratio = (inT + cT > 0) ? Math.round((cT / (inT + cT)) * 100) : 0;
+
+      showTip(e, d.dateStr + ' (' + d.label + ')', [
+        { label: 'Total Tokens', value: formatNumber(tot), color: '#ffffff' },
+        { label: 'Prompt Cache Hit', value: ratio + '% (' + formatNumber(cT) + ')', color: '#10b981' },
+        { label: 'Input Tokens', value: formatNumber(inT), color: '#ffffff' },
+        { label: 'Output Tokens', value: formatNumber(oT), color: '#E8FF1F' },
+        { label: 'Active Models', value: (d.modelsUsed && d.modelsUsed.length > 0 ? d.modelsUsed.join(', ') : 'None'), color: '#A9B2FF' }
+      ]);
+    }
+
+    function onBarLeave() {
+      hideTip();
+    }
+
+    /* ------------------------------------------------------------------ */
     /*  Slide-Over Drawer Inspection                                      */
     /* ------------------------------------------------------------------ */
     async function openDrawer(convId) {
@@ -1897,6 +2249,7 @@ export function getDashboardHtml(): string {
       renderModelsTab(data);
       renderConversationsTab(data);
       renderAgentsTab(data);
+      renderAnalyticsTab(data);
       if (data.editor) renderEditor(data.editor);
       if (data.discord) renderDiscord(data.discord);
       if (data.settings) renderSettings(data.settings);
@@ -1907,6 +2260,13 @@ export function getDashboardHtml(): string {
         if (activeConv) renderDrawerData(activeConv);
       }
     }
+
+    window.addEventListener('resize', function() {
+      if (currentData) {
+        renderOverview(currentData);
+        renderAnalyticsTab(currentData);
+      }
+    });
 
     function startSSE() {
       const es = new EventSource('/api/stream');

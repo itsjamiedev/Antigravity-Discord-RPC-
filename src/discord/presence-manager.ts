@@ -19,27 +19,48 @@ import type {
 import type { DiscordIpcClient } from './ipc-client.js';
 
 export function formatModelDisplayName(model: string): string {
-  const map: Record<string, string> = {
-    'gemini-4-argon-medium': 'Gemini 4 Argon',
-    'gemini-4-argon-high': 'Gemini 4 Argon',
-    'gemini-4-argon-low': 'Gemini 4 Argon',
-    'gemini-3.8-flash-high': 'Gemini 3.8 Flash',
-    'gemini-3.8-flash-medium': 'Gemini 3.8 Flash',
-    'gemini-3.8-flash-low': 'Gemini 3.8 Flash',
-    'gemini-3.5-flash-lite': 'Gemini 3.5 Flash Lite',
-    'claude-sonnet-5-5-high': 'Claude Sonnet 3.5',
-    'claude-opus-5-5-high': 'Claude Opus 3.5',
-  };
-  if (map[model]) return map[model];
+  if (!model || typeof model !== 'string') return 'Gemini 3.8 Flash';
+  let str = model.trim();
 
-  const lower = model.toLowerCase();
-  if (lower.includes('flash-lite')) return 'Gemini 3.5 Flash Lite';
-  if (lower.includes('flash')) return 'Gemini 3.8 Flash';
-  if (lower.includes('argon')) return 'Gemini 4 Argon';
-  if (lower.includes('sonnet')) return 'Claude Sonnet 3.5';
-  if (lower.includes('opus')) return 'Claude Opus 3.5';
+  // If already contains spaces, it's a human-readable display name (e.g. 'Claude Sonnet 5.5 (Medium)' or 'Gemini 3.8 Flash (High)')
+  if (str.includes(' ')) {
+    str = str.replace(/\s*\((?:High|Medium|Low|Thinking|Default|Trial|Preview|Exp)\)/gi, '').trim();
+    if (/claude\s+sonnet\s+3\.5/i.test(str)) {
+      str = str.replace(/claude\s+sonnet\s+3\.5/gi, 'Claude Sonnet 5.5');
+    }
+    return str;
+  }
 
-  return model.replace(/\s*\(.*?\)/g, '').trim();
+  // Strip trailing tier / variant suffixes from slugs
+  str = str.replace(/-(?:high|medium|low|trial|preview|exp|thinking|n)$/i, '');
+
+  // Convert version hyphens between numbers like '5-5' or '3-8' to '5.5' or '3.8'
+  str = str.replace(/(\d+)-(\d+)/g, (_m, a, b) => a + '.' + b);
+
+  if (/claude-sonnet-3\.5/i.test(str)) {
+    str = str.replace(/claude-sonnet-3\.5/gi, 'claude-sonnet-5.5');
+  }
+
+  // Split on hyphens and title case each segment dynamically
+  const parts = str.split('-').map((part) => {
+    if (!part) return '';
+    if (/^\d+(\.\d+)?$/.test(part)) return part;
+    const lower = part.toLowerCase();
+    if (lower === 'gpt') return 'GPT';
+    if (lower === 'ai') return 'AI';
+    if (lower === 'llm') return 'LLM';
+    if (lower === 'lite') return 'Lite';
+    if (lower === 'flash') return 'Flash';
+    if (lower === 'pro') return 'Pro';
+    if (lower === 'ultra') return 'Ultra';
+    if (lower === 'argon') return 'Argon';
+    if (lower === 'sonnet') return 'Sonnet';
+    if (lower === 'opus') return 'Opus';
+    if (lower === 'haiku') return 'Haiku';
+    return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+  }).filter(Boolean);
+
+  return parts.join(' ');
 }
 
 export function buildDiscordActivity(

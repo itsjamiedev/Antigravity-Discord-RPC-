@@ -12,6 +12,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { formatModelDisplayName } from '../discord/presence-manager.js';
 import type {
   DailyUsage,
   ModelStats,
@@ -56,19 +57,32 @@ export class TokenStore {
     try {
       const raw = fs.readFileSync(this.filePath, 'utf8');
       const data = JSON.parse(raw) as Partial<PersistentTokenStoreData>;
+      let needsMigrationSave = false;
 
       if (data && typeof data === 'object') {
         if (data.cumulativeTokensByModel && typeof data.cumulativeTokensByModel === 'object') {
-          for (const [model, tokens] of Object.entries(data.cumulativeTokensByModel)) {
+          for (const [rawModel, tokens] of Object.entries(data.cumulativeTokensByModel)) {
             if (tokens && typeof tokens.totalTokens === 'number') {
-              this.cumulativeTokensByModel.set(model, {
-                inputTokens: tokens.inputTokens ?? 0,
-                cacheReadTokens: tokens.cacheReadTokens ?? 0,
-                outputTokens: tokens.outputTokens ?? 0,
-                totalTokens: tokens.totalTokens ?? 0,
-                estimated: false,
-                source: 'transcript_exact',
-              });
+              const model = formatModelDisplayName(rawModel);
+              if (model !== rawModel) {
+                needsMigrationSave = true;
+              }
+              const existing = this.cumulativeTokensByModel.get(model);
+              if (existing) {
+                existing.inputTokens += tokens.inputTokens ?? 0;
+                existing.cacheReadTokens += tokens.cacheReadTokens ?? 0;
+                existing.outputTokens += tokens.outputTokens ?? 0;
+                existing.totalTokens += tokens.totalTokens ?? 0;
+              } else {
+                this.cumulativeTokensByModel.set(model, {
+                  inputTokens: tokens.inputTokens ?? 0,
+                  cacheReadTokens: tokens.cacheReadTokens ?? 0,
+                  outputTokens: tokens.outputTokens ?? 0,
+                  totalTokens: tokens.totalTokens ?? 0,
+                  estimated: false,
+                  source: 'transcript_exact',
+                });
+              }
             }
           }
         }
@@ -76,13 +90,20 @@ export class TokenStore {
         if (data.cumulativeDailyUsage && typeof data.cumulativeDailyUsage === 'object') {
           for (const [dateKey, usage] of Object.entries(data.cumulativeDailyUsage)) {
             if (usage && typeof usage.date === 'string') {
+              const rawModels = Array.isArray(usage.modelsUsed) ? usage.modelsUsed : [];
+              const normalizedModels = Array.from(
+                new Set(rawModels.map((m) => formatModelDisplayName(m)))
+              );
+              if (JSON.stringify(rawModels) !== JSON.stringify(normalizedModels)) {
+                needsMigrationSave = true;
+              }
               this.cumulativeDailyUsage.set(dateKey, {
                 date: usage.date,
                 conversationCount: usage.conversationCount ?? 1,
                 invocationCount: usage.invocationCount ?? 0,
                 toolCallCount: usage.toolCallCount ?? 0,
                 errorCount: usage.errorCount ?? 0,
-                modelsUsed: Array.isArray(usage.modelsUsed) ? usage.modelsUsed : [],
+                modelsUsed: normalizedModels,
                 tokens: {
                   inputTokens: usage.tokens?.inputTokens ?? 0,
                   cacheReadTokens: usage.tokens?.cacheReadTokens ?? 0,
@@ -99,9 +120,14 @@ export class TokenStore {
         if (data.conversationWatermarks && typeof data.conversationWatermarks === 'object') {
           for (const [convId, watermark] of Object.entries(data.conversationWatermarks)) {
             if (watermark && typeof watermark.maxStepIndex === 'number') {
+              const rawModel = watermark.model ?? 'Gemini 3.8 Flash';
+              const model = formatModelDisplayName(rawModel);
+              if (model !== rawModel) {
+                needsMigrationSave = true;
+              }
               this.conversationWatermarks.set(convId, {
                 maxStepIndex: watermark.maxStepIndex,
-                model: watermark.model ?? 'Gemini 3.8 Flash',
+                model,
                 tokens: {
                   inputTokens: watermark.tokens?.inputTokens ?? 0,
                   cacheReadTokens: watermark.tokens?.cacheReadTokens ?? 0,
@@ -114,6 +140,11 @@ export class TokenStore {
               });
             }
           }
+        }
+
+        if (needsMigrationSave) {
+          this.isDirty = true;
+          this.scheduleSave();
         }
       }
     } catch {
@@ -192,6 +223,7 @@ export class TokenStore {
     maxStepIndex: number,
     dateStr?: string
   ): { deltaTokens: TokenUsageRecord } {
+    const normalizedModel = formatModelDisplayName(model);
     const existing = this.conversationWatermarks.get(conversationId);
     const dateKey = dateStr ?? new Date().toISOString().slice(0, 10);
 
@@ -218,14 +250,14 @@ export class TokenStore {
     // Update conversation watermark
     this.conversationWatermarks.set(conversationId, {
       maxStepIndex: Math.max(maxStepIndex, existing?.maxStepIndex ?? 0),
-      model,
+      model: normalizedModel,
       tokens: { ...currentTokens },
       lastUpdated: new Date().toISOString(),
     });
 
     if (deltaTotal > 0) {
       // 1. Accumulate into model stats
-      const existingModel = this.cumulativeTokensByModel.get(model) ?? {
+      const existingModel = this.cumulativeTokensByModel.get(normalizedModel) ?? {
         inputTokens: 0,
         cacheReadTokens: 0,
         outputTokens: 0,
@@ -237,7 +269,7 @@ export class TokenStore {
       existingModel.cacheReadTokens += deltaCache;
       existingModel.outputTokens += deltaOutput;
       existingModel.totalTokens += deltaTotal;
-      this.cumulativeTokensByModel.set(model, existingModel);
+      this.cumulativeTokensByModel.set(normalizedModel, existingModel);
 
       // 2. Accumulate into daily usage
       const existingDaily = this.cumulativeDailyUsage.get(dateKey) ?? {
@@ -246,7 +278,7 @@ export class TokenStore {
         invocationCount: 1,
         toolCallCount: 0,
         errorCount: 0,
-        modelsUsed: [model],
+        modelsUsed: [normalizedModel],
         tokens: {
           inputTokens: 0,
           cacheReadTokens: 0,
@@ -257,8 +289,8 @@ export class TokenStore {
         },
       };
 
-      if (!existingDaily.modelsUsed.includes(model)) {
-        existingDaily.modelsUsed.push(model);
+      if (!existingDaily.modelsUsed.includes(normalizedModel)) {
+        existingDaily.modelsUsed.push(normalizedModel);
       }
       existingDaily.tokens.inputTokens += deltaInput;
       existingDaily.tokens.cacheReadTokens += deltaCache;

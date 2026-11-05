@@ -151,13 +151,61 @@ describe('TokenStore — Atomic Persistent Token Accounting', () => {
     const store2 = new TokenStore(testStorePath);
     const stats = store2.getModelStats();
     expect(stats.length).toBe(1);
-    expect(stats[0]!.model).toBe('Claude Sonnet 3.5');
+    expect(stats[0]!.model).toBe('Claude Sonnet 5.5');
     expect(stats[0]!.tokens.totalTokens).toBe(7800);
 
     const daily = store2.getDailyUsage();
     expect(daily.length).toBe(1);
     expect(daily[0]!.date).toBe('2026-11-05');
     expect(daily[0]!.tokens.totalTokens).toBe(7800);
+  });
+
+  it('dynamically formats model names and migrates legacy slugs seamlessly', () => {
+    const rawData = {
+      version: 1,
+      lastSavedAt: new Date().toISOString(),
+      cumulativeTokensByModel: {
+        'claude-sonnet-5-5-medium': {
+          inputTokens: 100,
+          cacheReadTokens: 400,
+          outputTokens: 50,
+          totalTokens: 550,
+        },
+        'gemini-3.8-flash-high': {
+          inputTokens: 200,
+          cacheReadTokens: 1000,
+          outputTokens: 100,
+          totalTokens: 1300,
+        },
+      },
+      cumulativeDailyUsage: {
+        '2026-11-05': {
+          date: '2026-11-05',
+          conversationCount: 1,
+          invocationCount: 2,
+          modelsUsed: ['claude-sonnet-5-5-medium', 'gemini-3.8-flash-high'],
+          tokens: {
+            inputTokens: 300,
+            cacheReadTokens: 1400,
+            outputTokens: 150,
+            totalTokens: 1850,
+          },
+        },
+      },
+    };
+
+    fs.writeFileSync(testStorePath, JSON.stringify(rawData, null, 2), 'utf8');
+
+    const store = new TokenStore(testStorePath);
+    const stats = store.getModelStats();
+    const modelNames = stats.map((m) => m.model);
+
+    expect(modelNames).toContain('Claude Sonnet 5.5');
+    expect(modelNames).toContain('Gemini 3.8 Flash');
+
+    const daily = store.getDailyUsage();
+    expect(daily[0]!.modelsUsed).toContain('Claude Sonnet 5.5');
+    expect(daily[0]!.modelsUsed).toContain('Gemini 3.8 Flash');
   });
 });
 

@@ -11,6 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import type { TokenUsageRecord } from '../shared/types.js';
+import { formatModelDisplayName } from '../discord/presence-manager.js';
 
 export interface ActiveAgentInfo {
   conversationId: string;
@@ -171,13 +172,7 @@ export function getGroundTruthConversationStatuses(customDbDir?: string): Map<st
 }
 
 function normalizeModelName(raw: string): string {
-  const lower = raw.toLowerCase();
-  if (lower.includes('flash-lite')) return 'Gemini 3.5 Flash Lite';
-  if (lower.includes('flash')) return 'Gemini 3.8 Flash';
-  if (lower.includes('argon')) return 'Gemini 4 Argon';
-  if (lower.includes('sonnet')) return 'Claude Sonnet 3.5';
-  if (lower.includes('opus')) return 'Claude Opus 3.5';
-  return raw.replace(/\s*\(.*?\)/g, '').trim();
+  return formatModelDisplayName(raw);
 }
 
 /**
@@ -742,13 +737,7 @@ export class AgentWatcher extends EventEmitter {
           }
 
           if (typeof parsed.model === 'string' && parsed.model) {
-            const lower = parsed.model.toLowerCase();
-            if (lower.includes('flash-lite')) model = 'Gemini 3.5 Flash Lite';
-            else if (lower.includes('flash')) model = 'Gemini 3.8 Flash';
-            else if (lower.includes('argon')) model = 'Gemini 4 Argon';
-            else if (lower.includes('sonnet')) model = 'Claude Sonnet 3.5';
-            else if (lower.includes('opus')) model = 'Claude Opus 3.5';
-            else model = parsed.model;
+            model = formatModelDisplayName(parsed.model);
           }
 
           const eventType = typeof parsed.type === 'string' ? parsed.type : 'UNKNOWN';
