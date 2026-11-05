@@ -717,10 +717,12 @@ export function getDashboardHtml(): string {
       document.getElementById('metricTotalConversations').innerText = formatNumber(data.session.totalConversations);
       document.getElementById('metricEventsProcessed').innerText = formatNumber(data.session.totalEventsProcessed) + ' hook events processed';
 
-      document.getElementById('metricModelCount').innerText = data.modelStats.length;
-      document.getElementById('metricPrimaryModel').innerText = data.modelStats.length > 0 
-        ? data.modelStats[0].model 
-        : 'Awaiting model events';
+      // Models in active use
+      const activeModels = Array.from(new Set((data.activeAgents || []).map(a => a.model)));
+      document.getElementById('metricModelCount').innerText = activeModels.length;
+      document.getElementById('metricPrimaryModel').innerText = activeModels.length > 0 
+        ? activeModels.join(', ') 
+        : (data.modelStats && data.modelStats.length > 0 ? data.modelStats[0].model + ' (Idle)' : 'Awaiting model events');
 
       // Active Table
       const tbody = document.getElementById('overviewActiveTableBody');

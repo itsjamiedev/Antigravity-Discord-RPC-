@@ -145,7 +145,7 @@ describe('Phase 6: Comprehensive E2E Chaos & Privacy Verification', () => {
       terminationReason: null,
       fullyIdle: null,
       hasError: false,
-      timestamp: '2026-11-05T04:40:01.000Z',
+      timestamp: new Date().toISOString(),
     };
 
     const agentB: WhitelistedHookPayload = {
@@ -158,7 +158,7 @@ describe('Phase 6: Comprehensive E2E Chaos & Privacy Verification', () => {
       terminationReason: null,
       fullyIdle: null,
       hasError: false,
-      timestamp: '2026-11-05T04:40:02.000Z',
+      timestamp: new Date().toISOString(),
     };
 
     await forwardPayloadToDaemon(agentA, { port: serverPort, spoolPath });
@@ -189,7 +189,7 @@ describe('Phase 6: Comprehensive E2E Chaos & Privacy Verification', () => {
       terminationReason: null,
       fullyIdle: null,
       hasError: false,
-      timestamp: '2026-11-05T04:45:00.000Z',
+      timestamp: new Date().toISOString(),
     });
 
     tracker.processEvent({
@@ -202,7 +202,7 @@ describe('Phase 6: Comprehensive E2E Chaos & Privacy Verification', () => {
       terminationReason: null,
       fullyIdle: null,
       hasError: false,
-      timestamp: '2026-11-05T04:45:01.000Z',
+      timestamp: new Date().toISOString(),
     });
 
     const snap = tracker.getSnapshot();
@@ -229,7 +229,7 @@ describe('Phase 6: Comprehensive E2E Chaos & Privacy Verification', () => {
       terminationReason: null,
       fullyIdle: null,
       hasError: false,
-      timestamp: '2026-11-05T04:50:00.000Z',
+      timestamp: new Date().toISOString(),
     });
 
     // Switch model on turn 2
@@ -243,7 +243,7 @@ describe('Phase 6: Comprehensive E2E Chaos & Privacy Verification', () => {
       terminationReason: null,
       fullyIdle: null,
       hasError: false,
-      timestamp: '2026-11-05T04:50:10.000Z',
+      timestamp: new Date().toISOString(),
     });
 
     const snap = tracker.getSnapshot();
@@ -269,7 +269,7 @@ describe('Phase 6: Comprehensive E2E Chaos & Privacy Verification', () => {
       terminationReason: 'NO_TOOL_CALL',
       fullyIdle: false,
       hasError: false,
-      timestamp: '2026-11-05T04:55:00.000Z',
+      timestamp: new Date().toISOString(),
     });
 
     let snap = tracker.getSnapshot();
@@ -287,7 +287,7 @@ describe('Phase 6: Comprehensive E2E Chaos & Privacy Verification', () => {
       terminationReason: 'NO_TOOL_CALL',
       fullyIdle: true,
       hasError: false,
-      timestamp: '2026-11-05T04:55:10.000Z',
+      timestamp: new Date().toISOString(),
     });
 
     snap = tracker.getSnapshot();
@@ -310,7 +310,7 @@ describe('Phase 6: Comprehensive E2E Chaos & Privacy Verification', () => {
       terminationReason: null,
       fullyIdle: null,
       hasError: false,
-      timestamp: '2026-11-05T05:00:00.000Z',
+      timestamp: new Date().toISOString(),
     });
 
     tracker.close();
@@ -337,7 +337,7 @@ describe('Phase 6: Comprehensive E2E Chaos & Privacy Verification', () => {
         terminationReason: null,
         fullyIdle: null,
         hasError: false,
-        timestamp: '2026-11-05T05:00:05.000Z',
+        timestamp: new Date().toISOString(),
       });
 
       const snap2 = restartedTracker.getSnapshot();
@@ -361,7 +361,7 @@ describe('Phase 6: Comprehensive E2E Chaos & Privacy Verification', () => {
       terminationReason: null,
       fullyIdle: null,
       hasError: false,
-      timestamp: '2026-11-05T05:05:00.000Z',
+      timestamp: new Date().toISOString(),
     };
 
     const delivered = await forwardPayloadToDaemon(offlinePayload, {
@@ -407,7 +407,7 @@ describe('Phase 6: Comprehensive E2E Chaos & Privacy Verification', () => {
       terminationReason: null,
       fullyIdle: null,
       hasError: false,
-      timestamp: '2026-11-05T05:10:00.000Z',
+      timestamp: new Date().toISOString(),
     });
 
     const snap = tracker.getSnapshot();
@@ -429,7 +429,7 @@ describe('Phase 6: Comprehensive E2E Chaos & Privacy Verification', () => {
       terminationReason: null,
       fullyIdle: null,
       hasError: false,
-      timestamp: '2026-11-05T05:15:00.000Z',
+      timestamp: new Date().toISOString(),
     };
 
     expect(tracker.processEvent(event)).toBe(true);

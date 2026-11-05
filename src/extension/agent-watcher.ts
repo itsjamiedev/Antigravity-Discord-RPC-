@@ -29,8 +29,12 @@ export interface AgentWatcherState {
 }
 
 /**
- * Extracts the real model name for a conversation by scanning the tail
- * of its SQLite DB / WAL file (gen_metadata buffer) with zero native dependencies.
+ * Extracts the real model name for a conversation by scanning the binary protobuf
+ * metadata from its SQLite DB / WAL file with zero native dependencies.
+ *
+ * Antigravity records generation metadata with wire tag 19 (0x9a 0x01) followed by
+ * the model slug (e.g. `gemini-3.8-flash-n`, `gemini-4-argon-a`) and wire tag 20 (0xa2 0x01).
+ * This binary match is 100% immune to user chat prompts and assistant text.
  */
 export function extractModelForConversation(conversationId: string): string {
   const convDir = path.join(os.homedir(), '.gemini', 'antigravity', 'conversations');
@@ -45,7 +49,7 @@ export function extractModelForConversation(conversationId: string): string {
       const size = fs.statSync(f).size;
       if (size === 0) continue;
 
-      const readLen = Math.min(size, 512 * 1024);
+      const readLen = Math.min(size, 1024 * 1024); // scan up to 1 MB from tail
       const buf = Buffer.alloc(readLen);
       const fd = fs.openSync(f, 'r');
       try {
@@ -55,12 +59,30 @@ export function extractModelForConversation(conversationId: string): string {
       }
 
       const str = buf.toString('latin1');
-      const matches = str.match(
-        /(Gemini [0-9\.]+ [a-zA-Z]+( \([a-zA-Z]+\))?|gemini-[0-9\.]+[a-zA-Z0-9\-]+|Claude [0-9\.]+ [a-zA-Z]+|claude-[0-9a-zA-Z\-]+)/gi
-      );
+      // Exact protobuf sequence: \x9a\x01 [len] (gemini-... | claude-...) \xa2\x01
+      const pbRegex = /\x9a\x01[\x01-\x30]((?:gemini|claude)[a-z0-9\.\-]+)\xa2\x01/g;
+      let match: RegExpExecArray | null;
+      let lastPbModel: string | null = null;
+      while ((match = pbRegex.exec(str)) !== null) {
+        if (match[1]) lastPbModel = match[1];
+      }
 
-      if (matches && matches.length > 0) {
-        const raw = matches[matches.length - 1] ?? '';
+      if (lastPbModel) {
+        const lower = lastPbModel.toLowerCase();
+        if (lower.includes('flash-lite')) return 'Gemini 3.5 Flash Lite';
+        if (lower.includes('flash')) return 'Gemini 3.8 Flash';
+        if (lower.includes('argon')) return 'Gemini 4 Argon';
+        if (lower.includes('sonnet')) return 'Claude Sonnet 3.5';
+        if (lower.includes('opus')) return 'Claude Opus 3.5';
+        return lastPbModel.trim();
+      }
+
+      // Secondary fallback: exact internal slugs only (reject chat prose words)
+      const slugMatches = str.match(
+        /(?:gemini-(?:3\.8-flash|4-argon|3\.5-flash-lite)[a-z0-9\-]*|claude-(?:sonnet|opus)[a-z0-9\-]*)/gi
+      );
+      if (slugMatches && slugMatches.length > 0) {
+        const raw = slugMatches[slugMatches.length - 1] ?? '';
         const lower = raw.toLowerCase();
         if (lower.includes('flash-lite')) return 'Gemini 3.5 Flash Lite';
         if (lower.includes('flash')) return 'Gemini 3.8 Flash';
@@ -74,7 +96,7 @@ export function extractModelForConversation(conversationId: string): string {
     }
   }
 
-  return 'Gemini 4 Argon';
+  return 'Gemini 3.8 Flash';
 }
 
 export class AgentWatcher extends EventEmitter {
