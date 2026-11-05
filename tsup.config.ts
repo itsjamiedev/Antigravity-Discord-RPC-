@@ -16,6 +16,7 @@ export default defineConfig([
     sourcemap: false,
     bundle: true,
     splitting: false,
+    noExternal: ['zod'],
     outExtension() {
       return {
         js: '.cjs',
