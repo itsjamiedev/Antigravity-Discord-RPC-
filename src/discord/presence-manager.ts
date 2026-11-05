@@ -80,6 +80,7 @@ export function buildDiscordActivity(
     }
 
     return {
+      name: 'Antigravity',
       details,
       state,
       timestamps: {
@@ -87,7 +88,7 @@ export function buildDiscordActivity(
       },
       assets: {
         large_image: 'antigravity_logo',
-        large_text: 'Google Antigravity',
+        large_text: 'Antigravity',
         small_image: 'robot',
         small_text: 'AI Agent Working',
       },
@@ -108,6 +109,7 @@ export function buildDiscordActivity(
       const state = `${manualState.language} — Line ${manualState.currentLine} of ${manualState.totalLines}`;
 
       return {
+        name: 'Antigravity',
         details,
         state,
         timestamps: {
@@ -115,7 +117,7 @@ export function buildDiscordActivity(
         },
         assets: {
           large_image: 'antigravity_logo',
-          large_text: 'Google Antigravity',
+          large_text: 'Antigravity',
           small_image: 'pencil',
           small_text: 'Manual Editing',
         },
@@ -126,11 +128,12 @@ export function buildDiscordActivity(
 
   // MODE 3: Idle in Antigravity
   return {
+    name: 'Antigravity',
     details: 'Idle',
     state: 'In Antigravity',
     assets: {
       large_image: 'antigravity_logo',
-      large_text: 'Google Antigravity',
+      large_text: 'Antigravity',
     },
     instance: false,
   };

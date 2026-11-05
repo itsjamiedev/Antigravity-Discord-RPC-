@@ -277,6 +277,7 @@ describe('Phase 4: Discord Rich Presence (IPC)', () => {
         });
 
         const activity: DiscordActivity = {
+          name: 'Antigravity',
           details: '1 AI agent active',
           state: 'Gemini 4 Argon',
         };

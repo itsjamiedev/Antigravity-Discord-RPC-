@@ -188,6 +188,7 @@ export interface DiscordActivityAssets {
 }
 
 export interface DiscordActivity {
+  name?: string;
   details: string;
   state?: string;
   timestamps?: DiscordActivityTimestamps;

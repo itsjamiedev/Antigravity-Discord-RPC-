@@ -312,7 +312,12 @@ export class DiscordIpcClient {
       cmd: 'SET_ACTIVITY',
       args: {
         pid: process.pid,
-        activity,
+        activity: activity
+          ? {
+              name: 'Antigravity',
+              ...activity,
+            }
+          : null,
       },
       nonce: crypto.randomUUID(),
     };
