@@ -118,10 +118,10 @@ describe('TokenStore — Atomic Persistent Token Accounting', () => {
 
     const stats = store.getModelStats();
     expect(stats.length).toBe(2);
-    expect(stats[0].model).toBe('Gemini 4 Argon');
-    expect(stats[0].tokens.totalTokens).toBe(1700);
-    expect(stats[1].model).toBe('Gemini 3.8 Flash');
-    expect(stats[1].tokens.totalTokens).toBe(350);
+    expect(stats[0]!.model).toBe('Gemini 4 Argon');
+    expect(stats[0]!.tokens.totalTokens).toBe(1700);
+    expect(stats[1]!.model).toBe('Gemini 3.8 Flash');
+    expect(stats[1]!.tokens.totalTokens).toBe(350);
 
     expect(store.getTotalCumulativeTokens().totalTokens).toBe(2050);
   });
@@ -151,13 +151,13 @@ describe('TokenStore — Atomic Persistent Token Accounting', () => {
     const store2 = new TokenStore(testStorePath);
     const stats = store2.getModelStats();
     expect(stats.length).toBe(1);
-    expect(stats[0].model).toBe('Claude Sonnet 3.5');
-    expect(stats[0].tokens.totalTokens).toBe(7800);
+    expect(stats[0]!.model).toBe('Claude Sonnet 3.5');
+    expect(stats[0]!.tokens.totalTokens).toBe(7800);
 
     const daily = store2.getDailyUsage();
     expect(daily.length).toBe(1);
-    expect(daily[0].date).toBe('2026-11-05');
-    expect(daily[0].tokens.totalTokens).toBe(7800);
+    expect(daily[0]!.date).toBe('2026-11-05');
+    expect(daily[0]!.tokens.totalTokens).toBe(7800);
   });
 });
 

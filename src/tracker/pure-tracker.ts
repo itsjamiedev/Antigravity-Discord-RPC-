@@ -195,6 +195,7 @@ export class PureTracker {
 
       const detail: ConversationDetail = {
         ...conv,
+        activeTool: conv.activeTool ?? null,
         cacheHitRatio: ratio,
         recentEvents: item.recentEvents ?? [],
       };

@@ -310,22 +310,25 @@ export class DiscordIpcClient {
 
     let safeActivity: Record<string, unknown> | null = null;
     if (activity) {
-      const timestamps = activity.timestamps
-        ? {
-            start:
-              activity.timestamps.start > 10_000_000_000
-                ? Math.floor(activity.timestamps.start / 1000)
-                : activity.timestamps.start,
-            ...(activity.timestamps.end
-              ? {
-                  end:
-                    activity.timestamps.end > 10_000_000_000
-                      ? Math.floor(activity.timestamps.end / 1000)
-                      : activity.timestamps.end,
-                }
-              : {}),
-          }
-        : undefined;
+      let timestamps: Record<string, unknown> | undefined = undefined;
+      if (activity.timestamps) {
+        const start =
+          typeof activity.timestamps.start === 'number'
+            ? activity.timestamps.start > 10_000_000_000
+              ? Math.floor(activity.timestamps.start / 1000)
+              : activity.timestamps.start
+            : undefined;
+        const end =
+          typeof activity.timestamps.end === 'number'
+            ? activity.timestamps.end > 10_000_000_000
+              ? Math.floor(activity.timestamps.end / 1000)
+              : activity.timestamps.end
+            : undefined;
+        timestamps = {
+          ...(typeof start === 'number' ? { start } : {}),
+          ...(typeof end === 'number' ? { end } : {}),
+        };
+      }
 
       safeActivity = {
         name: 'Antigravity',

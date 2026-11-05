@@ -774,6 +774,7 @@ export class AgentWatcher extends EventEmitter {
       // Determine active execution and tool name from recent non-system steps
       for (let i = allEvents.length - 1; i >= 0; i--) {
         const ev = allEvents[i];
+        if (!ev) continue;
         if (ev.type === 'SYSTEM_MESSAGE') continue;
         if (ev.type === 'PLANNER_RESPONSE') {
           if (ev.toolName) {
