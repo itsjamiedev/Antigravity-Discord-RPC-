@@ -248,6 +248,31 @@ describe('Phase 4: Discord Rich Presence (IPC)', () => {
       const paused = { ...configManager.getSettings(), pauseTracking: true };
       expect(buildDiscordActivity(snapshot, null, paused)).toBeNull();
     });
+
+    it('preserves exact session timestamps.start across AI Mode, Manual Mode, and Idle Mode without resetting to 0', () => {
+      const settings = configManager.getSettings();
+      const activeSnapshot = makeMockSnapshot([{ model: 'gemini-4-argon-medium' }]);
+      const idleSnapshot = makeMockSnapshot([]);
+      const expectedStartMs = Date.parse(activeSnapshot.session.startedAt);
+
+      const aiActivity = buildDiscordActivity(activeSnapshot, null, settings);
+      expect(aiActivity?.timestamps?.start).toBe(expectedStartMs);
+
+      const manualState: ManualEditorState = {
+        fileName: 'index.ts',
+        language: 'TypeScript',
+        currentLine: 10,
+        totalLines: 100,
+        workspaceName: 'Antigravity Extension',
+        updatedAt: new Date().toISOString(),
+      };
+      const manualActivity = buildDiscordActivity(idleSnapshot, manualState, settings);
+      expect(manualActivity?.timestamps?.start).toBe(expectedStartMs);
+
+      const idleActivity = buildDiscordActivity(idleSnapshot, null, settings);
+      expect(idleActivity?.details).toBe('Idle');
+      expect(idleActivity?.timestamps?.start).toBe(expectedStartMs);
+    });
   });
 
   describe('3. IPC Handshake, SET_ACTIVITY & 15s Debounce Loop', () => {

@@ -52,6 +52,14 @@ export function buildDiscordActivity(
     return null;
   }
 
+  // Persistent Antigravity IDE session start timestamp:
+  // Never resets to 0:00 across AI Mode, Manual Coding Mode, or Idle Mode
+  // until Google Antigravity is completely shut down.
+  let sessionStartMs = Date.parse(snapshot.session.startedAt);
+  if (Number.isNaN(sessionStartMs) || sessionStartMs <= 0) {
+    sessionStartMs = nowMs;
+  }
+
   // MODE 1: AI Agent Mode (Active whenever agents are running)
   if (snapshot.activeAgents.length > 0) {
     const activeCount = snapshot.activeAgents.length;
@@ -73,11 +81,6 @@ export function buildDiscordActivity(
     }
 
     const state = parts.length > 0 ? parts.join(' • ') : undefined;
-
-    let sessionStartMs = Date.parse(snapshot.session.startedAt);
-    if (Number.isNaN(sessionStartMs)) {
-      sessionStartMs = nowMs;
-    }
 
     return {
       name: 'Antigravity',
@@ -113,7 +116,7 @@ export function buildDiscordActivity(
         details,
         state,
         timestamps: {
-          start: !Number.isNaN(updatedMs) ? updatedMs : nowMs,
+          start: sessionStartMs,
         },
         assets: {
           large_image: 'antigravity_logo',
@@ -126,11 +129,14 @@ export function buildDiscordActivity(
     }
   }
 
-  // MODE 3: Idle in Antigravity
+  // MODE 3: Idle in Antigravity (Preserves elapsed session timer!)
   return {
     name: 'Antigravity',
     details: 'Idle',
     state: 'In Antigravity',
+    timestamps: {
+      start: sessionStartMs,
+    },
     assets: {
       large_image: 'antigravity_logo',
       large_text: 'Antigravity',
@@ -177,8 +183,10 @@ export class PresenceManager {
     nowMs: number
   ): void {
     const elapsedMs = nowMs - this.lastSentTimeMs;
-    const isStateTransition = activity?.details !== this.lastSentActivity?.details;
-    const effectiveDebounce = isStateTransition ? Math.min(2500, debounceMs) : debounceMs;
+    const isStateTransition =
+      activity?.details !== this.lastSentActivity?.details ||
+      activity?.state !== this.lastSentActivity?.state;
+    const effectiveDebounce = isStateTransition ? Math.min(1000, debounceMs) : debounceMs;
 
     // Leading edge: If more than effectiveDebounce has passed, dispatch immediately
     if (elapsedMs >= effectiveDebounce) {

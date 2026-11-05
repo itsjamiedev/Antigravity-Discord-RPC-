@@ -162,28 +162,195 @@ export function getGroundTruthConversationStatuses(customDbDir?: string): Map<st
   return runningMap;
 }
 
+function normalizeModelName(raw: string): string {
+  const lower = raw.toLowerCase();
+  if (lower.includes('flash-lite')) return 'Gemini 3.5 Flash Lite';
+  if (lower.includes('flash')) return 'Gemini 3.8 Flash';
+  if (lower.includes('argon')) return 'Gemini 4 Argon';
+  if (lower.includes('sonnet')) return 'Claude Sonnet 3.5';
+  if (lower.includes('opus')) return 'Claude Opus 3.5';
+  return raw.replace(/\s*\(.*?\)/g, '').trim();
+}
+
 /**
- * Extracts the real model name for a conversation by scanning the binary protobuf
- * metadata from its SQLite DB / WAL file with zero native dependencies.
- *
- * Antigravity records generation metadata with wire tag 19 (0x9a 0x01) followed by
- * the model slug (e.g. `gemini-3.8-flash-n`, `gemini-4-argon-a`) and wire tag 20 (0xa2 0x01).
- * This binary match is 100% immune to user chat prompts and assistant text.
+ * Extracts the real model name for a conversation by:
+ * 1. Parsing SQLite B-Tree leaf cells (`0x0d`) of `gen_metadata` in `.db` and `.db-wal`
+ *    (validating active WAL header `salt-1`/`salt-2` so stale WAL frames are skipped)
+ *    and selecting the protobuf model slug with the strictly highest `rowid` (`idx`).
+ *    (Fixes the bug where SQLite downward cell allocation placed older rows at higher
+ *    byte offsets than newer rows within a 4096-byte page.)
+ * 2. Checking the tail of `transcript_full.jsonl` for an explicit `<USER_SETTINGS_CHANGE>`
+ *    model switch in the latest user turn.
  */
 export function extractModelForConversation(conversationId: string): string {
-  const convDir = path.join(os.homedir(), '.gemini', 'antigravity', 'conversations');
-  const candidates = [
-    path.join(convDir, `${conversationId}.db-wal`),
-    path.join(convDir, `${conversationId}.db`),
-  ];
+  const antigravityDir = path.join(os.homedir(), '.gemini', 'antigravity');
+  const convDir = path.join(antigravityDir, 'conversations');
+  const dbFile = path.join(convDir, `${conversationId}.db`);
+  const walFile = path.join(convDir, `${conversationId}.db-wal`);
 
-  for (const f of candidates) {
+  // 1. Check USER_INPUT steps in transcript_full.jsonl for <USER_SETTINGS_CHANGE>
+  // Antigravity logs every model selection & mid-conversation model switch in USER_INPUT at t=0ms.
+  const fullTranscript = path.join(
+    antigravityDir,
+    'brain',
+    conversationId,
+    '.system_generated',
+    'logs',
+    'transcript_full.jsonl'
+  );
+  let settingsChangeModel: string | null = null;
+  if (fs.existsSync(fullTranscript)) {
+    try {
+      const fStat = fs.statSync(fullTranscript);
+      if (fStat.size > 0) {
+        const readLen = Math.min(fStat.size, 262144); // last 256 KB
+        const buf = Buffer.alloc(readLen);
+        const fd = fs.openSync(fullTranscript, 'r');
+        try {
+          fs.readSync(fd, buf, 0, readLen, fStat.size - readLen);
+        } finally {
+          fs.closeSync(fd);
+        }
+        const lines = buf.toString('utf8').split('\n');
+        const changeRegex =
+          /<USER_SETTINGS_CHANGE>[\s\S]*?The user changed setting `Model Selection` from [^\r\n]+? to ([^\r\n]+?)\. No need to comment[\s\S]*?<\/USER_SETTINGS_CHANGE>/;
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line || !line.includes('USER_INPUT') || !line.includes('USER_SETTINGS_CHANGE')) {
+            continue;
+          }
+          try {
+            const parsed = JSON.parse(line);
+            if (
+              parsed &&
+              parsed.type === 'USER_INPUT' &&
+              typeof parsed.content === 'string'
+            ) {
+              const m = changeRegex.exec(parsed.content);
+              if (m && m[1]) {
+                settingsChangeModel = normalizeModelName(m[1]);
+              }
+            }
+          } catch {
+            // ignore partial line
+          }
+        }
+      }
+    } catch {
+      // ignore read error
+    }
+  }
+
+  if (settingsChangeModel) {
+    return settingsChangeModel;
+  }
+
+  // 2. Scan SQLite B-Tree leaf cells (0x0d) for highest rowid (idx) in gen_metadata
+  let maxIdx = -1;
+  let latestBtreeModel: string | null = null;
+  const pbSingleRegex = /\x9a\x01[\x01-\x30]((?:gemini|claude)[a-z0-9\.\-]+)\xa2\x01/;
+
+  function readVarint(buf: Buffer, offset: number): { val: number; len: number } {
+    let val = 0;
+    let len = 0;
+    for (let i = 0; i < 9; i++) {
+      if (offset + i >= buf.length) break;
+      const b = buf[offset + i]!;
+      len++;
+      if (i === 8) {
+        val = val * 256 + b;
+        break;
+      }
+      val = val * 128 + (b & 0x7f);
+      if ((b & 0x80) === 0) break;
+    }
+    return { val, len };
+  }
+
+  function scanLeafPage(buf: Buffer, offset: number, pageSize: number): void {
+    if (offset + 8 > buf.length) return;
+    if (buf[offset] !== 0x0d) return;
+
+    const cellCount = buf.readUInt16BE(offset + 3);
+    for (let c = 0; c < cellCount; c++) {
+      const ptrPos = offset + 8 + c * 2;
+      if (ptrPos + 2 > buf.length) break;
+      const cellRel = buf.readUInt16BE(ptrPos);
+      const cellOffset = offset + cellRel;
+      if (cellOffset >= offset + pageSize || cellOffset >= buf.length) continue;
+
+      let ptr = cellOffset;
+      const payloadSize = readVarint(buf, ptr);
+      ptr += payloadSize.len;
+      const rowId = readVarint(buf, ptr);
+      ptr += rowId.len;
+
+      if (rowId.val < maxIdx) continue;
+
+      const cellEnd = Math.min(offset + pageSize, buf.length, ptr + payloadSize.val);
+      const sliceStr = buf.subarray(ptr, cellEnd).toString('latin1');
+      const m = pbSingleRegex.exec(sliceStr);
+      if (m && m[1]) {
+        maxIdx = rowId.val;
+        latestBtreeModel = m[1];
+      }
+    }
+  }
+
+  try {
+    let pageSize = 4096;
+    if (fs.existsSync(dbFile)) {
+      const buf = fs.readFileSync(dbFile);
+      if (buf.length >= 4096) {
+        pageSize = buf.readUInt16BE(16) || 4096;
+        if (pageSize >= 512) {
+          const totalPages = Math.floor(buf.length / pageSize);
+          for (let p = 1; p <= totalPages; p++) {
+            scanLeafPage(buf, (p - 1) * pageSize, pageSize);
+          }
+        }
+      }
+    }
+
+    if (fs.existsSync(walFile)) {
+      const walBuf = fs.readFileSync(walFile);
+      if (walBuf.length >= 32 + 24 + pageSize) {
+        const walPageSize = walBuf.readUInt32BE(8) || pageSize;
+        const salt1 = walBuf.readUInt32BE(16);
+        const salt2 = walBuf.readUInt32BE(20);
+        if (walPageSize >= 512) {
+          let ptr = 32;
+          while (ptr + 24 + walPageSize <= walBuf.length) {
+            const fSalt1 = walBuf.readUInt32BE(ptr + 8);
+            const fSalt2 = walBuf.readUInt32BE(ptr + 12);
+            if (fSalt1 === salt1 && fSalt2 === salt2) {
+              scanLeafPage(walBuf, ptr + 24, walPageSize);
+            }
+            ptr += 24 + walPageSize;
+          }
+        }
+      }
+    }
+  } catch {
+    // ignore B-Tree scan errors
+  }
+
+  if (latestBtreeModel) {
+    return normalizeModelName(latestBtreeModel);
+  }
+
+  if (settingsChangeModel) {
+    return settingsChangeModel;
+  }
+
+  // 3. Fallback: raw buffer protobuf scan
+  for (const f of [walFile, dbFile]) {
     if (!fs.existsSync(f)) continue;
     try {
       const size = fs.statSync(f).size;
       if (size === 0) continue;
 
-      const readLen = Math.min(size, 1024 * 1024); // scan up to 1 MB from tail
+      const readLen = Math.min(size, 1024 * 1024);
       const buf = Buffer.alloc(readLen);
       const fd = fs.openSync(f, 'r');
       try {
@@ -193,7 +360,6 @@ export function extractModelForConversation(conversationId: string): string {
       }
 
       const str = buf.toString('latin1');
-      // Exact protobuf sequence: \x9a\x01 [len] (gemini-... | claude-...) \xa2\x01
       const pbRegex = /\x9a\x01[\x01-\x30]((?:gemini|claude)[a-z0-9\.\-]+)\xa2\x01/g;
       let match: RegExpExecArray | null;
       let lastPbModel: string | null = null;
@@ -202,28 +368,7 @@ export function extractModelForConversation(conversationId: string): string {
       }
 
       if (lastPbModel) {
-        const lower = lastPbModel.toLowerCase();
-        if (lower.includes('flash-lite')) return 'Gemini 3.5 Flash Lite';
-        if (lower.includes('flash')) return 'Gemini 3.8 Flash';
-        if (lower.includes('argon')) return 'Gemini 4 Argon';
-        if (lower.includes('sonnet')) return 'Claude Sonnet 3.5';
-        if (lower.includes('opus')) return 'Claude Opus 3.5';
-        return lastPbModel.trim();
-      }
-
-      // Secondary fallback: exact internal slugs only (reject chat prose words)
-      const slugMatches = str.match(
-        /(?:gemini-(?:3\.8-flash|4-argon|3\.5-flash-lite)[a-z0-9\-]*|claude-(?:sonnet|opus)[a-z0-9\-]*)/gi
-      );
-      if (slugMatches && slugMatches.length > 0) {
-        const raw = slugMatches[slugMatches.length - 1] ?? '';
-        const lower = raw.toLowerCase();
-        if (lower.includes('flash-lite')) return 'Gemini 3.5 Flash Lite';
-        if (lower.includes('flash')) return 'Gemini 3.8 Flash';
-        if (lower.includes('argon')) return 'Gemini 4 Argon';
-        if (lower.includes('sonnet')) return 'Claude Sonnet 3.5';
-        if (lower.includes('opus')) return 'Claude Opus 3.5';
-        return raw.trim();
+        return normalizeModelName(lastPbModel);
       }
     } catch {
       // ignore read error
@@ -258,7 +403,7 @@ export class AgentWatcher extends EventEmitter {
   constructor(options?: AgentWatcherOptions) {
     super();
     this.brainDir = options?.brainDir ?? path.join(os.homedir(), '.gemini', 'antigravity', 'brain');
-    this.pollIntervalMs = options?.pollIntervalMs ?? 1500; // Poll every 1.5s
+    this.pollIntervalMs = options?.pollIntervalMs ?? 1000; // Poll every 1.0s for real-time RPC updates
     this.activeThresholdMs = options?.activeThresholdMs ?? 120000; // 120s active turn threshold
     this.summariesDbDir = options?.summariesDbDir;
   }
@@ -432,11 +577,14 @@ export class AgentWatcher extends EventEmitter {
         agents: activeAgents,
       };
 
-      // Emit if state changed
+      // Emit if state changed (active state, agent count, active models, or per-agent model)
+      const prevAgentKey = previousState.agents.map((a) => `${a.conversationId}:${a.model}`).join('|');
+      const nextAgentKey = this.state.agents.map((a) => `${a.conversationId}:${a.model}`).join('|');
       if (
         previousState.isAgentActive !== this.state.isAgentActive ||
         previousState.activeAgentCount !== this.state.activeAgentCount ||
-        previousState.activeModels.join(',') !== this.state.activeModels.join(',')
+        previousState.activeModels.join(',') !== this.state.activeModels.join(',') ||
+        prevAgentKey !== nextAgentKey
       ) {
         this.emit('change', this.state);
       }
@@ -448,8 +596,8 @@ export class AgentWatcher extends EventEmitter {
   private readTranscriptTail(
     filePath: string,
     fileSize: number,
-    conversationId: string
-  ): { model: string; stepIndex?: number; tokens: TokenUsageRecord; isExecuting: boolean } | null {
+    _conversationId: string
+  ): { model: string | null; stepIndex?: number; tokens: TokenUsageRecord; isExecuting: boolean } | null {
     if (fileSize <= 0) return null;
 
     try {
@@ -469,7 +617,7 @@ export class AgentWatcher extends EventEmitter {
       // may be truncated; discard it if there are multiple lines.
       const lines = fileSize > readLength && allLines.length > 1 ? allLines.slice(1) : allLines;
 
-      let model = extractModelForConversation(conversationId);
+      let model: string | null = null;
       let stepIndex: number | undefined;
       let isExecuting = true;
       let tokens: TokenUsageRecord = {

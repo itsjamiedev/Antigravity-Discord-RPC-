@@ -5,6 +5,9 @@
  * requiring native C++ SQLite addons (better-sqlite3).
  */
 
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import type {
   TrackerSnapshot,
   Session,
@@ -17,6 +20,47 @@ import type {
 } from '../shared/types.js';
 import type { AgentWatcherState } from '../extension/agent-watcher.js';
 
+function getSessionStateFilePath(): string {
+  return path.join(os.homedir(), '.gemini', 'antigravity', 'presence-session.json');
+}
+
+function loadOrCreatePersistentStartTime(): string {
+  const filePath = getSessionStateFilePath();
+  const nowMs = Date.now();
+  try {
+    if (fs.existsSync(filePath)) {
+      const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      if (
+        typeof raw?.startedAt === 'string' &&
+        typeof raw?.lastHeartbeatMs === 'number' &&
+        nowMs - raw.lastHeartbeatMs < 60_000
+      ) {
+        // Antigravity IDE is still running (window reload or leader handoff)
+        return raw.startedAt;
+      }
+    }
+  } catch {
+    // ignore read error
+  }
+
+  const freshStart = new Date(nowMs).toISOString();
+  savePersistentHeartbeat(freshStart, nowMs);
+  return freshStart;
+}
+
+function savePersistentHeartbeat(startedAt: string, nowMs: number = Date.now()): void {
+  const filePath = getSessionStateFilePath();
+  try {
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify({ startedAt, lastHeartbeatMs: nowMs }),
+      'utf8'
+    );
+  } catch {
+    // fail-open
+  }
+}
+
 export class PureTracker {
   private session: Session;
   private agents: Map<string, Agent> = new Map();
@@ -24,13 +68,14 @@ export class PureTracker {
   private modelStats: Map<string, ModelStats> = new Map();
   private listeners: Set<(snapshot: TrackerSnapshot) => void> = new Set();
   private isPaused = false;
-  private startTime = new Date().toISOString();
+  private startTime: string;
 
   constructor() {
+    this.startTime = loadOrCreatePersistentStartTime();
     this.session = {
       sessionId: 'ext-session-' + Date.now(),
       startedAt: this.startTime,
-      lastActivityAt: this.startTime,
+      lastActivityAt: new Date().toISOString(),
       activeAgentCount: 0,
       totalConversations: 0,
       totalEventsProcessed: 0,
@@ -67,7 +112,10 @@ export class PureTracker {
   public updateFromAgentWatcher(state: AgentWatcherState): void {
     if (this.isPaused) return;
 
-    const now = new Date().toISOString();
+    const nowMs = Date.now();
+    const now = new Date(nowMs).toISOString();
+    savePersistentHeartbeat(this.startTime, nowMs);
+
     this.session.lastActivityAt = now;
     this.session.activeAgentCount = state.activeAgentCount;
     this.session.tokens = state.totalTokens;
