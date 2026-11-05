@@ -208,3 +208,4 @@ export class PresenceManager {
     this.client.clearActivity();
   }
 }
+
