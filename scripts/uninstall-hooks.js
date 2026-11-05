@@ -37,3 +37,4 @@ export function uninstallHooks(): void {
 if (process.argv[1] && process.argv[1].endsWith('uninstall-hooks.js')) {
   uninstallHooks();
 }
+

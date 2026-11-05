@@ -654,7 +654,8 @@ export function getDashboardHtml(): string {
   </main>
 
   <footer>
-    Antigravity Presence • Privacy-Safe Local Companion • 100% Local (127.0.0.1) • Zero Cloud / Zero Telemetry
+    Antigravity Presence • Privacy-Safe Local Companion • 100% Local (127.0.0.1)<br>
+    Made with ❤️ by <strong>itsjamiefied</strong> — a 16-year-old developer using Google Antigravity
   </footer>
 
   <script>
@@ -946,3 +947,4 @@ export function getDashboardHtml(): string {
 </body>
 </html>`;
 }
+

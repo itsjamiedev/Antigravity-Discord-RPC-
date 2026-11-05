@@ -74,3 +74,4 @@ void bootstrap().catch((err) => {
   console.error('[Antigravity Presence] Fatal daemon error:', err);
   process.exit(1);
 });
+

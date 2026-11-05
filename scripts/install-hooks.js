@@ -132,3 +132,4 @@ exit /b 0
 if (process.argv[1] && process.argv[1].endsWith('install-hooks.js')) {
   installHooks();
 }
+

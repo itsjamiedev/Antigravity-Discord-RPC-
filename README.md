@@ -131,3 +131,11 @@ Test coverage includes:
 ## Privacy Statement
 
 See [`PRIVACY.md`](file:///f:/Antigravity%20Extension/PRIVACY.md) for the formal privacy statement listing every field that ever exits the forwarder.
+
+---
+
+## About the Creator
+
+**Antigravity Presence** was created by **itsjamiefied**, a 16-year-old developer who uses Google Antigravity for daily coding sessions and built this companion to solve the lack of Discord Rich Presence and real-time session tracking for Antigravity.
+
+

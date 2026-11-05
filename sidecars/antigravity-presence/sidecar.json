@@ -4,3 +4,4 @@
   "restart_policy": "on_failure",
   "description": "Local companion daemon for Antigravity Presence"
 }
+

@@ -45,3 +45,4 @@ By default, Antigravity Presence follows **minimal public sharing**:
 - In **AI Mode**, Discord only shows `"N AI agents active"` and the high-level model names.
 - In **Manual Coding Mode**, you can optionally hide file names (`hideFileNamesInManualEdits: true`), displaying only the programming language and line numbers (e.g., `"Coding in TypeScript — Line 42 of 150"`).
 - You can turn off Discord Rich Presence entirely at any time via the Local Dashboard or `config.json` (`disableRichPresence: true`).
+
