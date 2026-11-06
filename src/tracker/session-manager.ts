@@ -21,6 +21,8 @@ export interface PersistentSessionState {
   pausedAt?: string;
   savedAt: string;
   savedTokens?: TokenUsageRecord;
+  sessionTokens?: TokenUsageRecord;
+  initialLifetimeTokens?: number;
 }
 
 export class SessionManager {
@@ -78,6 +80,11 @@ export class SessionManager {
             pausedAt: raw.pausedAt,
             savedAt: raw.savedAt || new Date().toISOString(),
             savedTokens: raw.savedTokens,
+            sessionTokens: raw.sessionTokens,
+            initialLifetimeTokens:
+              typeof raw.initialLifetimeTokens === 'number'
+                ? raw.initialLifetimeTokens
+                : undefined,
           };
         }
       }
@@ -101,6 +108,17 @@ export class SessionManager {
 
   public getSessionState(): PersistentSessionState | null {
     return { ...this.state };
+  }
+
+  public updateSessionTokens(
+    sessionTokens: TokenUsageRecord,
+    initialLifetimeTokens?: number
+  ): void {
+    this.state.sessionTokens = sessionTokens;
+    if (typeof initialLifetimeTokens === 'number') {
+      this.state.initialLifetimeTokens = initialLifetimeTokens;
+    }
+    this.saveToDisk(this.state);
   }
 
   /**
@@ -149,7 +167,10 @@ export class SessionManager {
   /**
    * Freezes active session elapsed seconds and marks it as paused.
    */
-  public pauseSession(tokens?: TokenUsageRecord): PersistentSessionState {
+  public pauseSession(
+    tokens?: TokenUsageRecord,
+    sessionTokens?: TokenUsageRecord
+  ): PersistentSessionState {
     const now = Date.now();
     const nowIso = new Date(now).toISOString();
     if (!this.state.isPaused) {
@@ -161,6 +182,9 @@ export class SessionManager {
     this.state.savedAt = nowIso;
     if (tokens) {
       this.state.savedTokens = tokens;
+    }
+    if (sessionTokens) {
+      this.state.sessionTokens = sessionTokens;
     }
     this.saveToDisk(this.state);
     return { ...this.state };
@@ -191,7 +215,9 @@ export class SessionManager {
   /**
    * Resets elapsed time and starts a brand new session.
    */
-  public startFreshSession(): { startedAt: string; elapsedSeconds: number } {
+  public startFreshSession(
+    initialLifetimeTokens?: number
+  ): { startedAt: string; elapsedSeconds: number } {
     const now = Date.now();
     const startedAt = new Date(now).toISOString();
 
@@ -204,6 +230,16 @@ export class SessionManager {
       isPaused: false,
       savedAt: startedAt,
       savedTokens: undefined,
+      sessionTokens: {
+        inputTokens: 0,
+        cacheReadTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        estimated: false,
+        source: 'transcript_exact',
+      },
+      initialLifetimeTokens:
+        typeof initialLifetimeTokens === 'number' ? initialLifetimeTokens : 0,
     };
 
     this.saveToDisk(this.state);

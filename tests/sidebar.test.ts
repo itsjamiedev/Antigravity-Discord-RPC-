@@ -22,6 +22,22 @@ describe('SidebarDashboardProvider (Native Activity Bar Webview View)', () => {
           estimated: false,
           source: 'transcript_exact',
         },
+        sessionTokens: {
+          inputTokens: 10_000,
+          cacheReadTokens: 40_000,
+          outputTokens: 2_500,
+          totalTokens: 52_500,
+          estimated: false,
+          source: 'transcript_exact',
+        },
+        lifetimeTokens: {
+          inputTokens: 100_000,
+          cacheReadTokens: 400_000,
+          outputTokens: 25_000,
+          totalTokens: 525_000,
+          estimated: false,
+          source: 'transcript_exact',
+        },
       },
       agents: [],
       activeAgents: [
@@ -84,6 +100,7 @@ describe('SidebarDashboardProvider (Native Activity Bar Webview View)', () => {
     expect(html).toContain('Antigravity Telemetry');
     expect(html).toContain('TOKEN VOLUME');
     expect(html).toContain('525,000');
+    expect(html).toContain('52.5K session');
     expect(html).toContain('Gemini 3.8 Flash');
     expect(html).toContain('Claude Sonnet 5.5');
     expect(html).toContain('btnPause');

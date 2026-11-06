@@ -205,5 +205,40 @@ describe('SessionManager (24-Hour Pause & Leave Resumption)', () => {
     expect(snap.session.tokens.totalTokens).toBe(260_000);
     tracker.close();
   });
+
+  it('persists session tokens and initial lifetime tokens across pauses and restarts', () => {
+    const manager = new SessionManager(sessionFilePath);
+    const initialSessionTokens = {
+      inputTokens: 10_000,
+      cacheReadTokens: 50_000,
+      outputTokens: 2_000,
+      totalTokens: 62_000,
+      estimated: false,
+      source: 'transcript_exact' as const,
+    };
+
+    manager.updateSessionTokens(initialSessionTokens, 500_000_000);
+    let state = manager.getSessionState();
+    expect(state?.sessionTokens?.totalTokens).toBe(62_000);
+    expect(state?.initialLifetimeTokens).toBe(500_000_000);
+
+    // Pause session with sessionTokens
+    const pausedTokens = {
+      inputTokens: 20_000,
+      cacheReadTokens: 80_000,
+      outputTokens: 4_000,
+      totalTokens: 104_000,
+      estimated: false,
+      source: 'transcript_exact' as const,
+    };
+    manager.pauseSession(undefined, pausedTokens);
+
+    // Re-instantiate SessionManager from disk simulating restart
+    const restoredManager = new SessionManager(sessionFilePath);
+    state = restoredManager.getSessionState();
+    expect(state?.isPaused).toBe(true);
+    expect(state?.sessionTokens?.totalTokens).toBe(104_000);
+    expect(state?.initialLifetimeTokens).toBe(500_000_000);
+  });
 });
 

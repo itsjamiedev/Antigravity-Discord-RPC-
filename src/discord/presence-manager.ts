@@ -77,6 +77,20 @@ export function formatTokenVolumeShort(tokens: number): string {
   return `${tokens} tokens`;
 }
 
+export function formatTokenNumberShort(tokens: number): string {
+  if (tokens <= 0 || !Number.isFinite(tokens)) return '0';
+  if (tokens >= 1_000_000_000) {
+    return (tokens / 1_000_000_000).toFixed(2).replace(/\.00$/, '') + 'B';
+  }
+  if (tokens >= 1_000_000) {
+    return (tokens / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  }
+  if (tokens >= 1_000) {
+    return (tokens / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  }
+  return `${tokens}`;
+}
+
 export function buildDiscordActivity(
   snapshot: TrackerSnapshot,
   manualState: ManualEditorState | null,
@@ -102,11 +116,23 @@ export function buildDiscordActivity(
   const wsSuffix = wsCount > 1 ? ` • ${wsCount} Workspaces` : '';
   const wsText = wsCount === 1 ? '1 Workspace' : `${wsCount} Workspaces`;
 
-  const totalTokens = snapshot.session.tokens.totalTokens;
-  const tokenStr = formatTokenVolumeShort(totalTokens);
-  const isTokenmaxxing = totalTokens > 0;
+  const lifetimeTotal =
+    snapshot.session?.lifetimeTokens?.totalTokens ??
+    snapshot.session?.tokens?.totalTokens ??
+    snapshot.lifetimeTokens?.totalTokens ??
+    0;
+
+  const sessionTotal =
+    snapshot.session?.sessionTokens?.totalTokens ??
+    snapshot.sessionTokens?.totalTokens ??
+    0;
+
+  const sessionStr = formatTokenNumberShort(sessionTotal);
+  const lifetimeStr = formatTokenNumberShort(lifetimeTotal);
+  const isTokenmaxxing = lifetimeTotal > 0 || sessionTotal > 0;
+  const dualTokenStr = `⚡ ${sessionStr} session • ${lifetimeStr} lifetime`;
   const tokenmaxxingHover = isTokenmaxxing
-    ? `Tokenmaxxing & AI Maxxing • ${tokenStr} spent in Antigravity (${wsText})`
+    ? `Tokenmaxxing: ${sessionStr} session • ${lifetimeStr} lifetime tokens spent in Antigravity (${wsText})`
     : `Antigravity • ${wsText}`;
 
   // MODE 1: AI Agent Mode (Active whenever agents are running)
@@ -126,7 +152,7 @@ export function buildDiscordActivity(
     }
 
     if (!settings.hideTokens && isTokenmaxxing) {
-      parts.push(`⚡ ${tokenStr}`);
+      parts.push(dualTokenStr);
     }
 
     const state = parts.length > 0 ? parts.join(' • ') : undefined;
@@ -142,7 +168,7 @@ export function buildDiscordActivity(
         large_image: 'antigravity_logo',
         large_text: tokenmaxxingHover,
         small_image: 'robot',
-        small_text: `AI Agent Working • ${wsText}`,
+        small_text: `AI Agent Working • ${sessionStr} session (${wsText})`,
       },
       instance: false,
     };
@@ -161,7 +187,7 @@ export function buildDiscordActivity(
 
       const stateParts = [`${manualState.language} — Line ${manualState.currentLine} of ${manualState.totalLines}`];
       if (!settings.hideTokens && isTokenmaxxing) {
-        stateParts.push(`⚡ ${tokenStr}`);
+        stateParts.push(dualTokenStr);
       }
 
       return {
@@ -175,7 +201,7 @@ export function buildDiscordActivity(
           large_image: 'antigravity_logo',
           large_text: tokenmaxxingHover,
           small_image: 'pencil',
-          small_text: `Manual Editing • ${wsText}`,
+          small_text: `Manual Editing • ${sessionStr} session (${wsText})`,
         },
         instance: false,
       };
@@ -184,7 +210,7 @@ export function buildDiscordActivity(
 
   // MODE 3: Idle in Antigravity (Preserves elapsed session timer!)
   const idleState = isTokenmaxxing && !settings.hideTokens
-    ? `⚡ Tokenmaxxing (${tokenStr})`
+    ? dualTokenStr
     : 'In Antigravity';
 
   return {
@@ -198,7 +224,7 @@ export function buildDiscordActivity(
       large_image: 'antigravity_logo',
       large_text: tokenmaxxingHover,
       small_image: 'antigravity_logo',
-      small_text: `Antigravity • ${wsText}`,
+      small_text: `Antigravity • ${sessionStr} session (${wsText})`,
     },
     instance: false,
   };

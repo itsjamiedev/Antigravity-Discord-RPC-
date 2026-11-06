@@ -36,6 +36,8 @@ export class PureTracker {
   private tokenStore: TokenStore;
   private sessionManager: SessionManager;
   private syncedModelStats: ModelStats[] = [];
+  private sessionTokens: TokenUsageRecord;
+  private initialLifetimeTokens: number;
 
   constructor(_isLeader: boolean = false, customTokenStorePath?: string, customSessionFilePath?: string) {
     this.sessionManager = new SessionManager(customSessionFilePath);
@@ -44,6 +46,26 @@ export class PureTracker {
     this.tokenStore = new TokenStore(customTokenStorePath);
     this.startHeartbeat();
     const initialTokens = this.tokenStore.getTotalCumulativeTokens();
+    this.initialLifetimeTokens =
+      typeof sessionState?.initialLifetimeTokens === 'number'
+        ? sessionState.initialLifetimeTokens
+        : initialTokens.totalTokens;
+    this.sessionTokens = sessionState?.sessionTokens || {
+      inputTokens: 0,
+      cacheReadTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      estimated: false,
+      source: 'transcript_exact',
+    };
+    if (
+      this.sessionTokens.totalTokens === 0 &&
+      initialTokens.totalTokens > this.initialLifetimeTokens
+    ) {
+      const diff = initialTokens.totalTokens - this.initialLifetimeTokens;
+      this.sessionTokens.totalTokens = diff;
+      this.sessionTokens.outputTokens = diff;
+    }
     this.session = {
       sessionId: sessionState?.sessionId || ('ext-session-' + Date.now()),
       startedAt: this.startTime,
@@ -52,6 +74,8 @@ export class PureTracker {
       totalConversations: 0,
       totalEventsProcessed: 0,
       tokens: initialTokens,
+      sessionTokens: { ...this.sessionTokens },
+      lifetimeTokens: { ...initialTokens },
     };
   }
 
@@ -61,7 +85,10 @@ export class PureTracker {
 
   public pauseSession(): PersistentSessionState {
     this.isPaused = true;
-    const pausedState = this.sessionManager.pauseSession(this.session.tokens);
+    const pausedState = this.sessionManager.pauseSession(
+      this.session.tokens,
+      this.sessionTokens
+    );
     this.notify();
     return pausedState;
   }
@@ -71,16 +98,32 @@ export class PureTracker {
     const resumed = this.sessionManager.resumeSession();
     this.startTime = resumed.startedAt;
     this.session.startedAt = resumed.startedAt;
+    const sessionState = this.sessionManager.getSessionState();
+    if (sessionState?.sessionTokens) {
+      this.sessionTokens = { ...sessionState.sessionTokens };
+    }
     this.notify();
     return resumed;
   }
 
   public startFreshSession(): { startedAt: string; elapsedSeconds: number } {
     this.isPaused = false;
-    const fresh = this.sessionManager.startFreshSession();
+    const lifetimeTokens = this.tokenStore.getTotalCumulativeTokens();
+    this.initialLifetimeTokens = lifetimeTokens.totalTokens;
+    this.sessionTokens = {
+      inputTokens: 0,
+      cacheReadTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      estimated: false,
+      source: 'transcript_exact',
+    };
+    const fresh = this.sessionManager.startFreshSession(this.initialLifetimeTokens);
     this.startTime = fresh.startedAt;
     this.session.startedAt = fresh.startedAt;
     this.session.sessionId = 'session-' + Date.now();
+    this.session.sessionTokens = { ...this.sessionTokens };
+    this.session.lifetimeTokens = { ...lifetimeTokens };
     this.notify();
     return fresh;
   }
@@ -133,7 +176,20 @@ export class PureTracker {
         ...this.session,
         ...snap.session,
         tokens: snap.session.tokens ?? this.session.tokens,
+        sessionTokens:
+          snap.session.sessionTokens ??
+          snap.sessionTokens ??
+          this.session.sessionTokens,
+        lifetimeTokens:
+          snap.session.lifetimeTokens ??
+          snap.lifetimeTokens ??
+          this.session.lifetimeTokens,
       };
+      if (snap.session.sessionTokens || snap.sessionTokens) {
+        this.sessionTokens = {
+          ...(snap.session.sessionTokens || snap.sessionTokens!),
+        };
+      }
       if (snap.session.startedAt) {
         this.startTime = snap.session.startedAt;
       }
@@ -193,23 +249,37 @@ export class PureTracker {
         ? state.allConversations
         : state.agents;
 
+    let totalDeltaIn = 0;
+    let totalDeltaCache = 0;
+    let totalDeltaOut = 0;
+
     for (const item of conversationList) {
       if (item.modelTokens && Object.keys(item.modelTokens).length > 0) {
-        this.tokenStore.recordConversationMultiModelTokens(
+        const res = this.tokenStore.recordConversationMultiModelTokens(
           item.conversationId,
           item.modelTokens,
           item.stepIndex ?? 1,
           item.model,
           dateStr
         );
+        if (res?.deltaTokens) {
+          totalDeltaIn += res.deltaTokens.inputTokens;
+          totalDeltaCache += res.deltaTokens.cacheReadTokens;
+          totalDeltaOut += res.deltaTokens.outputTokens;
+        }
       } else if (item.tokens && item.tokens.totalTokens > 0) {
-        this.tokenStore.recordConversationTokens(
+        const res = this.tokenStore.recordConversationTokens(
           item.conversationId,
           item.model,
           item.tokens,
           item.stepIndex ?? 1,
           dateStr
         );
+        if (res?.deltaTokens) {
+          totalDeltaIn += res.deltaTokens.inputTokens;
+          totalDeltaCache += res.deltaTokens.cacheReadTokens;
+          totalDeltaOut += res.deltaTokens.outputTokens;
+        }
       }
 
       // Hydrate historical daily buckets
@@ -265,6 +335,18 @@ export class PureTracker {
       this.conversationDetails.set(item.conversationId, detail);
     }
 
+    const totalDelta = totalDeltaIn + totalDeltaCache + totalDeltaOut;
+    if (totalDelta > 0) {
+      this.sessionTokens.inputTokens += totalDeltaIn;
+      this.sessionTokens.cacheReadTokens += totalDeltaCache;
+      this.sessionTokens.outputTokens += totalDeltaOut;
+      this.sessionTokens.totalTokens += totalDelta;
+      this.sessionManager.updateSessionTokens(
+        this.sessionTokens,
+        this.initialLifetimeTokens
+      );
+    }
+
     // 3. Update active agents
     for (const active of state.agents) {
       const agent: Agent = {
@@ -284,7 +366,22 @@ export class PureTracker {
     }
 
     // Synchronize session tokens from persistent store
-    this.session.tokens = this.tokenStore.getTotalCumulativeTokens();
+    const cumulativeTokens = this.tokenStore.getTotalCumulativeTokens();
+    this.session.tokens = cumulativeTokens;
+    this.session.lifetimeTokens = { ...cumulativeTokens };
+    if (
+      this.sessionTokens.totalTokens === 0 &&
+      cumulativeTokens.totalTokens > this.initialLifetimeTokens
+    ) {
+      const diff = cumulativeTokens.totalTokens - this.initialLifetimeTokens;
+      this.sessionTokens.totalTokens = diff;
+      this.sessionTokens.outputTokens = diff;
+      this.sessionManager.updateSessionTokens(
+        this.sessionTokens,
+        this.initialLifetimeTokens
+      );
+    }
+    this.session.sessionTokens = { ...this.sessionTokens };
     this.session.totalConversations = this.conversations.size;
     this.notify();
   }
@@ -324,7 +421,11 @@ export class PureTracker {
         ...this.session,
         activeAgentCount: activeAgentsList.length,
         tokens: effectiveTokens,
+        sessionTokens: { ...this.sessionTokens },
+        lifetimeTokens: { ...effectiveTokens },
       },
+      sessionTokens: { ...this.sessionTokens },
+      lifetimeTokens: { ...effectiveTokens },
       agents: agentsList,
       activeAgents: activeAgentsList,
       conversations: Array.from(this.conversations.values()),

@@ -288,6 +288,14 @@ describe('Phase 4: Discord Rich Presence (IPC)', () => {
         estimated: false,
         source: 'transcript_exact',
       };
+      snapshot.session.sessionTokens = {
+        inputTokens: 2_000_000,
+        cacheReadTokens: 10_000_000,
+        outputTokens: 500_000,
+        totalTokens: 12_500_000,
+        estimated: false,
+        source: 'transcript_exact',
+      };
 
       const activity = buildDiscordActivity(snapshot, null, settings, Date.now(), {
         count: 2,
@@ -297,10 +305,32 @@ describe('Phase 4: Discord Rich Presence (IPC)', () => {
       expect(activity).not.toBeNull();
       expect(activity?.details).toBe('1 AI agent active • 2 Workspaces');
       expect(activity?.state).toContain('Gemini 4 Argon');
-      expect(activity?.state).toContain('⚡ 784M tokens');
-      expect(activity?.assets?.large_text).toContain('Tokenmaxxing & AI Maxxing');
-      expect(activity?.assets?.large_text).toContain('784M tokens');
-      expect(activity?.assets?.small_text).toContain('2 Workspaces');
+      expect(activity?.state).toContain('⚡ 12.5M session • 784M lifetime');
+      expect(activity?.assets?.large_text).toContain('Tokenmaxxing');
+      expect(activity?.assets?.large_text).toContain('12.5M session • 784M lifetime');
+      expect(activity?.assets?.small_text).toBe('AI Agent Working • 12.5M session (2 Workspaces)');
+    });
+
+    it('formats dual tokens with 0 session when session tokens are 0 but lifetime tokens exist', () => {
+      const config = new ConfigManager(path.join(os.tmpdir(), 'test-cfg2-' + Date.now()));
+      config.updateSettings({ hideTokens: false });
+      const settings = config.getSettings();
+
+      const snapshot = makeMockSnapshot([{ model: 'Gemini 3.8 Flash' }]);
+      snapshot.session.tokens = {
+        inputTokens: 100_000,
+        cacheReadTokens: 200_000,
+        outputTokens: 50_000,
+        totalTokens: 350_000,
+        estimated: false,
+        source: 'transcript_exact',
+      };
+
+      const activity = buildDiscordActivity(snapshot, null, settings);
+      expect(activity).not.toBeNull();
+      expect(activity?.state).toContain('⚡ 0 session • 350K lifetime');
+      expect(activity?.assets?.large_text).toContain('0 session • 350K lifetime');
+      expect(activity?.assets?.small_text).toBe('AI Agent Working • 0 session (1 Workspace)');
     });
   });
 

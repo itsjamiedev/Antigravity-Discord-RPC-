@@ -50,6 +50,15 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
     let startedAt = new Date().toISOString();
     let isPaused = false;
     let sessionId = 'session-fallback';
+    let sessionTokens: TokenUsageRecord = {
+      inputTokens: 0,
+      cacheReadTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      estimated: false,
+      source: 'transcript_exact',
+    };
+    let initialLifetimeTokens: number | undefined;
 
     if (fs.existsSync(sessionFile)) {
       try {
@@ -58,6 +67,12 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
           startedAt = sessData.startedAt;
           isPaused = Boolean(sessData.isPaused);
           sessionId = sessData.sessionId || sessionId;
+          if (sessData.sessionTokens) {
+            sessionTokens = sessData.sessionTokens;
+          }
+          if (typeof sessData.initialLifetimeTokens === 'number') {
+            initialLifetimeTokens = sessData.initialLifetimeTokens;
+          }
         }
       } catch {}
     }
@@ -105,6 +120,16 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
 
     modelStats.sort((a, b) => b.tokens.totalTokens - a.tokens.totalTokens);
 
+    if (
+      sessionTokens.totalTokens === 0 &&
+      initialLifetimeTokens !== undefined &&
+      totalTokens > initialLifetimeTokens
+    ) {
+      const diff = totalTokens - initialLifetimeTokens;
+      sessionTokens.totalTokens = diff;
+      sessionTokens.outputTokens = diff;
+    }
+
     // Discover ground-truth running agents from conversation_summaries.db
     const runningAgents: Agent[] = [];
     try {
@@ -128,6 +153,15 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
       }
     } catch {}
 
+    const tokenRec: TokenUsageRecord = {
+      inputTokens,
+      cacheReadTokens,
+      outputTokens,
+      totalTokens,
+      estimated: false,
+      source: 'transcript_exact',
+    };
+
     return {
       session: {
         sessionId,
@@ -136,15 +170,12 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
         activeAgentCount: runningAgents.length,
         totalConversations: 0,
         totalEventsProcessed: 0,
-        tokens: {
-          inputTokens,
-          cacheReadTokens,
-          outputTokens,
-          totalTokens,
-          estimated: false,
-          source: 'transcript_exact',
-        },
+        tokens: tokenRec,
+        sessionTokens,
+        lifetimeTokens: tokenRec,
       },
+      sessionTokens,
+      lifetimeTokens: tokenRec,
       agents: runningAgents,
       activeAgents: runningAgents,
       conversations: [],
@@ -196,6 +227,12 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   const cacheTokens = tokens?.cacheReadTokens ?? 0;
   const inTokens = tokens?.inputTokens ?? 0;
   const outTokens = tokens?.outputTokens ?? 0;
+
+  const sessionTokRecord =
+    effective.session?.sessionTokens ??
+    snapshot?.sessionTokens ??
+    diskFallback?.sessionTokens;
+  const sessionTokens = sessionTokRecord?.totalTokens ?? 0;
 
   const cacheRatio =
     inTokens + cacheTokens > 0 ? Math.round((cacheTokens / (inTokens + cacheTokens)) * 100) : 0;
@@ -757,7 +794,10 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       <span class="chip mono" style="color:var(--emerald); border-color:rgba(16,185,129,0.3);" id="sideCacheRatio">${cacheRatio}% SAVED</span>
     </div>
 
-    <div class="hero-tokens mono" id="sideTotalTokens">${formatNumber(totalTokens)}</div>
+    <div style="display:flex; align-items:baseline; justify-content:space-between; margin: 3px 0 6px;">
+      <div class="hero-tokens mono" id="sideTotalTokens" style="margin:0;">${formatNumber(totalTokens)}</div>
+      <div class="mono" id="sideSessionTokens" style="font-size:11px; font-weight:700; color:var(--acc);">${formatCompactNumber(sessionTokens)} session</div>
+    </div>
 
     <!-- Segmented Cache Ratio Bar -->
     <div class="ratio-bar">
@@ -907,6 +947,12 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
         document.getElementById('sideInTokens').innerText = formatCompactJs(inTok);
         document.getElementById('sideOutTokens').innerText = formatCompactJs(outTok);
         document.getElementById('sideCacheRatio').innerText = ratio + '% SAVED';
+
+        const sessionTok = (snap.session && snap.session.sessionTokens)
+          ? snap.session.sessionTokens.totalTokens
+          : (snap.sessionTokens ? snap.sessionTokens.totalTokens : 0);
+        const sEl = document.getElementById('sideSessionTokens');
+        if (sEl) sEl.innerText = formatCompactJs(sessionTok) + ' session';
 
         const inR = tot > 0 ? Math.max(1, Math.round((inTok / tot) * 100)) : 0;
         const outR = tot > 0 ? Math.max(1, Math.round((outTok / tot) * 100)) : 0;

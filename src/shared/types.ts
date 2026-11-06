@@ -171,6 +171,8 @@ export interface Session {
   totalConversations: number;
   totalEventsProcessed: number;
   tokens: TokenUsageRecord;
+  sessionTokens?: TokenUsageRecord;
+  lifetimeTokens?: TokenUsageRecord;
 }
 
 export interface DailyUsage {
@@ -190,6 +192,8 @@ export interface TrackerSnapshot {
   conversations: Conversation[];
   modelStats: ModelStats[];
   dailyUsage: DailyUsage[];
+  sessionTokens?: TokenUsageRecord;
+  lifetimeTokens?: TokenUsageRecord;
 }
 
 /**
