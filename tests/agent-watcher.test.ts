@@ -297,5 +297,52 @@ describe('Hookless AgentWatcher & PureTracker', () => {
 
     watcher.stop();
   });
+
+  it('accurately updates active model when user switches model mid-conversation', () => {
+    const convId = 'a1b2c3d4-1234-5678-90ab-cdef12345678';
+    const convDir = path.join(tempBrainDir, convId, '.system_generated', 'logs');
+    fs.mkdirSync(convDir, { recursive: true });
+
+    const transcriptFile = path.join(convDir, 'transcript.jsonl');
+    const step1 = JSON.stringify({
+      step_index: 1,
+      source: 'MODEL',
+      type: 'PLANNER_RESPONSE',
+      model: 'Claude Sonnet 4.6',
+      input_tokens: 1000,
+      cache_read_tokens: 5000,
+      output_tokens: 200,
+      tool_calls: [{ name: 'run_cmd' }],
+    });
+    fs.writeFileSync(transcriptFile, `${step1}\n`, 'utf8');
+
+    const watcher = new AgentWatcher({
+      brainDir: tempBrainDir,
+      activeThresholdMs: 30000,
+    });
+    watcher.scan();
+    let state = watcher.getState();
+    expect(state.activeModels).toContain('Claude Sonnet 4.6');
+
+    // Simulate user prompting with Gemini 3.8 Flash High
+    const step2 = JSON.stringify({
+      step_index: 2,
+      source: 'MODEL',
+      type: 'PLANNER_RESPONSE',
+      model: 'Gemini 3.8 Flash High',
+      input_tokens: 800,
+      cache_read_tokens: 4000,
+      output_tokens: 150,
+      tool_calls: [{ name: 'run_cmd' }],
+    });
+    fs.appendFileSync(transcriptFile, `${step2}\n`, 'utf8');
+
+    watcher.scan();
+    state = watcher.getState();
+    expect(state.activeModels).toContain('Gemini 3.8 Flash');
+    expect(state.activeModels).not.toContain('Claude Sonnet 4.6');
+
+    watcher.stop();
+  });
 });
 

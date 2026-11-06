@@ -934,19 +934,27 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
         badge.innerText = 'Live Synced';
       }
 
-      const tokens = snap.session ? snap.session.tokens : null;
-      if (tokens && tokens.totalTokens > 0) {
+      const tokens = (snap.session && snap.session.tokens && snap.session.tokens.totalTokens > 0)
+        ? snap.session.tokens
+        : (snap.lifetimeTokens && snap.lifetimeTokens.totalTokens > 0 ? snap.lifetimeTokens : (snap.session ? snap.session.tokens : null));
+
+      if (tokens) {
         const tot = tokens.totalTokens || 0;
         const cTok = tokens.cacheReadTokens || 0;
         const inTok = tokens.inputTokens || 0;
         const outTok = tokens.outputTokens || 0;
         const ratio = inTok + cTok > 0 ? Math.round((cTok / (inTok + cTok)) * 100) : 0;
 
-        document.getElementById('sideTotalTokens').innerText = formatNumberJs(tot);
-        document.getElementById('sideCacheTokens').innerText = formatCompactJs(cTok);
-        document.getElementById('sideInTokens').innerText = formatCompactJs(inTok);
-        document.getElementById('sideOutTokens').innerText = formatCompactJs(outTok);
-        document.getElementById('sideCacheRatio').innerText = ratio + '% SAVED';
+        const totEl = document.getElementById('sideTotalTokens');
+        if (totEl) totEl.innerText = formatNumberJs(tot);
+        const cEl = document.getElementById('sideCacheTokens');
+        if (cEl) cEl.innerText = formatCompactJs(cTok);
+        const inEl = document.getElementById('sideInTokens');
+        if (inEl) inEl.innerText = formatCompactJs(inTok);
+        const outEl = document.getElementById('sideOutTokens');
+        if (outEl) outEl.innerText = formatCompactJs(outTok);
+        const ratEl = document.getElementById('sideCacheRatio');
+        if (ratEl) ratEl.innerText = ratio + '% SAVED';
 
         const sessionTok = (snap.session && snap.session.sessionTokens)
           ? snap.session.sessionTokens.totalTokens
@@ -1118,6 +1126,7 @@ export class SidebarDashboardProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private currentSnapshot?: TrackerSnapshot | null;
   private customVscode?: typeof vscode;
+  private syncTimer?: NodeJS.Timeout;
 
   constructor(customVscode?: typeof vscode, initialSnapshot?: TrackerSnapshot | null) {
     this.customVscode = customVscode;
@@ -1147,6 +1156,28 @@ export class SidebarDashboardProvider implements vscode.WebviewViewProvider {
 
     const initial = this.currentSnapshot || loadDiskFallbackSnapshot();
     webviewView.webview.html = getSidebarHtml(initial);
+
+    if (this.syncTimer) {
+      clearInterval(this.syncTimer);
+    }
+    this.syncTimer = setInterval(() => {
+      const snap = this.currentSnapshot || loadDiskFallbackSnapshot();
+      if (snap && this.view?.visible) {
+        void this.view.webview.postMessage({
+          type: 'update',
+          snapshot: snap,
+        });
+      }
+    }, 1500);
+
+    if (typeof webviewView.onDidDispose === 'function') {
+      webviewView.onDidDispose(() => {
+        if (this.syncTimer) {
+          clearInterval(this.syncTimer);
+          this.syncTimer = undefined;
+        }
+      });
+    }
 
     webviewView.webview.onDidReceiveMessage((message: { command: string }) => {
       switch (message.command) {
@@ -1195,6 +1226,13 @@ export class SidebarDashboardProvider implements vscode.WebviewViewProvider {
         type: 'update',
         snapshot,
       });
+    }
+  }
+
+  public dispose(): void {
+    if (this.syncTimer) {
+      clearInterval(this.syncTimer);
+      this.syncTimer = undefined;
     }
   }
 }

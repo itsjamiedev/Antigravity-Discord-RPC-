@@ -22,9 +22,9 @@ export function formatModelDisplayName(model: string): string {
   if (!model || typeof model !== 'string') return 'Gemini 3.8 Flash';
   let str = model.trim();
 
-  // If already contains spaces, it's a human-readable display name (e.g. 'Claude Sonnet 5.5 (Medium)' or 'Gemini 3.8 Flash (High)')
+  // If already contains spaces, it's a human-readable display name (e.g. 'Claude Sonnet 5.5 (Medium)' or 'Gemini 3.8 Flash High')
   if (str.includes(' ')) {
-    str = str.replace(/\s*\((?:High|Medium|Low|Thinking|Default|Trial|Preview|Exp|Tiered)\)/gi, '').trim();
+    str = str.replace(/\s*\(?(?:High|Medium|Low|Thinking|Default|Trial|Preview|Exp|Tiered)\)?$/gi, '').trim();
     if (/claude\s+sonnet\s+3\.5/i.test(str)) {
       str = str.replace(/claude\s+sonnet\s+3\.5/gi, 'Claude Sonnet 5.5');
     }

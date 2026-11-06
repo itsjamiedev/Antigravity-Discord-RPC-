@@ -192,6 +192,14 @@ export class PureTracker {
       }
       if (snap.session.startedAt) {
         this.startTime = snap.session.startedAt;
+        this.session.startedAt = snap.session.startedAt;
+        this.sessionManager.setSimulatedStartTime(snap.session.startedAt);
+      }
+      if (snap.session.sessionTokens) {
+        this.sessionManager.updateSessionTokens(
+          this.sessionTokens,
+          this.initialLifetimeTokens
+        );
       }
     }
 

@@ -3,6 +3,7 @@
   "displayName": "Antigravity Presence",
   "publisher": "itsjamiefied",
   "version": "1.0.0",
+  "icon": "resources/icon.png",
   "description": "Privacy-safe Discord Rich Presence and real-time observability dashboard for Google Antigravity IDE & agents",
   "author": "itsjamiefied",
   "license": "MIT",

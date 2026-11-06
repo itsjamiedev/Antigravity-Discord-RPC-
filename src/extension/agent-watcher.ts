@@ -251,11 +251,6 @@ export function extractModelForConversation(conversationId: string): string {
     }
   }
 
-  // If a model selection change was ever recorded in this conversation, return the latest one immediately
-  if (settingsChangeModel) {
-    return settingsChangeModel;
-  }
-
   // 2. Scan SQLite B-Tree leaf cells (0x0d) for highest rowid (idx) in gen_metadata
   let maxIdx = -1;
   let latestBtreeModel: string | null = null;
@@ -810,8 +805,9 @@ export class AgentWatcher extends EventEmitter {
       const lines = fileSize > readLength && allLines.length > 1 ? allLines.slice(1) : allLines;
 
       const stepModelMap = this.getStepModelMap(conversationId);
-      const fallbackModel = extractModelForConversation(conversationId);
-      let latestModel: string = fallbackModel;
+      const activeGroundTruthModel = extractModelForConversation(conversationId);
+      let latestModel: string = activeGroundTruthModel;
+      let plannerTurnIndex = 0;
 
       let maxStepIndex: number | undefined;
       let isExecuting = false;
@@ -858,12 +854,13 @@ export class AgentWatcher extends EventEmitter {
                 sumOutput += outTok;
               }
 
-              // Determine exact model for this turn
+              // Determine exact model for this generation turn
               const turnRawModel =
-                stepModelMap.get(stepKey) ||
-                (typeof parsed.model === 'string' ? parsed.model : latestModel);
+                stepModelMap.get(plannerTurnIndex) ||
+                (typeof parsed.model === 'string' ? parsed.model : activeGroundTruthModel);
               const turnModel = formatModelDisplayName(turnRawModel);
               latestModel = turnModel;
+              plannerTurnIndex++;
 
               if (!modelTokensMap[turnModel]) {
                 modelTokensMap[turnModel] = {
