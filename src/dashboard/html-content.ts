@@ -1930,7 +1930,7 @@ export function getDashboardHtml(): string {
         wsPill.innerText = wsCount === 1 ? '1 Workspace' : wsCount + ' Workspaces';
         if (wsNames.length > 0) {
           const wsElem = document.getElementById('workspacePill');
-          if (wsElem) wsElem.title = 'Active Workspaces:\n' + wsNames.join('\n');
+          if (wsElem) wsElem.title = 'Active Workspaces: ' + wsNames.join(', ');
         }
       }
 
@@ -2412,15 +2412,16 @@ export function getDashboardHtml(): string {
     }
 
     function updateAll(data) {
+      if (!data) return;
       currentData = data;
-      renderOverview(data);
-      renderModelsTab(data);
-      renderConversationsTab(data);
-      renderAgentsTab(data);
-      renderAnalyticsTab(data);
-      if (data.editor) renderEditor(data.editor);
-      if (data.discord) renderDiscord(data.discord);
-      if (data.settings) renderSettings(data.settings);
+      try { renderOverview(data); } catch (e) { console.error('Overview render error:', e); }
+      try { renderModelsTab(data); } catch (e) { console.error('Models render error:', e); }
+      try { renderConversationsTab(data); } catch (e) { console.error('Conversations render error:', e); }
+      try { renderAgentsTab(data); } catch (e) { console.error('Agents render error:', e); }
+      try { renderAnalyticsTab(data); } catch (e) { console.error('Analytics render error:', e); }
+      if (data.editor) { try { renderEditor(data.editor); } catch (e) {} }
+      if (data.discord) { try { renderDiscord(data.discord); } catch (e) {} }
+      if (data.settings) { try { renderSettings(data.settings); } catch (e) {} }
 
       isSessionPaused = !!(data.isPaused || (data.settings && data.settings.pauseTracking));
       updatePauseLeaveUi(isSessionPaused);
@@ -2430,8 +2431,8 @@ export function getDashboardHtml(): string {
       }
 
       if (activeConversationId) {
-        const activeConv = data.conversations.find(function(c) { return c.conversationId === activeConversationId; });
-        if (activeConv) renderDrawerData(activeConv);
+        const activeConv = (data.conversations || []).find(function(c) { return c.conversationId === activeConversationId; });
+        if (activeConv) { try { renderDrawerData(activeConv); } catch (e) {} }
       }
     }
 
@@ -2442,18 +2443,51 @@ export function getDashboardHtml(): string {
       }
     });
 
+    let sseClient = null;
+    let sseRetryTimer = null;
+
     function startSSE() {
-      const es = new EventSource(API_BASE + '/api/stream');
-      es.onmessage = function(e) {
-        try {
-          const payload = JSON.parse(e.data);
-          updateAll(payload);
-        } catch {}
-      };
-      es.onerror = function() {
-        renderDiscord({ connected: false });
-        setTimeout(startSSE, 3000);
-      };
+      if (sseClient) {
+        try { sseClient.close(); } catch {}
+        sseClient = null;
+      }
+      if (sseRetryTimer) {
+        clearTimeout(sseRetryTimer);
+        sseRetryTimer = null;
+      }
+
+      try {
+        const es = new EventSource(API_BASE + '/api/stream');
+        sseClient = es;
+
+        es.onmessage = function(e) {
+          try {
+            const payload = JSON.parse(e.data);
+            updateAll(payload);
+          } catch {}
+        };
+
+        es.onerror = function() {
+          try { es.close(); } catch {}
+          if (sseClient === es) {
+            sseClient = null;
+          }
+          renderDiscord({ connected: false });
+          if (!sseRetryTimer) {
+            sseRetryTimer = setTimeout(function() {
+              sseRetryTimer = null;
+              startSSE();
+            }, 3000);
+          }
+        };
+      } catch (err) {
+        if (!sseRetryTimer) {
+          sseRetryTimer = setTimeout(function() {
+            sseRetryTimer = null;
+            startSSE();
+          }, 3000);
+        }
+      }
     }
 
     async function init() {

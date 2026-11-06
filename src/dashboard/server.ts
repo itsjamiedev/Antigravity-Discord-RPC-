@@ -178,8 +178,19 @@ export class DashboardServer {
           return;
         }
 
+        // Standard CORS headers for local companion access
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
         const method = req.method ?? 'GET';
         const url = req.url ?? '/';
+
+        if (method === 'OPTIONS') {
+          res.writeHead(204);
+          res.end();
+          return;
+        }
 
         // Static Web UI
         if (method === 'GET' && (url === '/' || url === '/index.html')) {
@@ -196,7 +207,7 @@ export class DashboardServer {
           res.writeHead(200, {
             'Content-Type': 'text/event-stream',
             'Cache-Control': 'no-cache, no-transform',
-            Connection: 'keep-alive',
+            'Connection': 'keep-alive',
           });
           res.flushHeaders?.();
 
@@ -206,7 +217,18 @@ export class DashboardServer {
           const initialData = `data: ${JSON.stringify(this.getFullState())}\n\n`;
           res.write(initialData);
 
+          // 15-second keepalive ping to prevent browser connection drop
+          const pingTimer = setInterval(() => {
+            try {
+              res.write(': ping\n\n');
+            } catch {
+              clearInterval(pingTimer);
+              this.sseClients.delete(res);
+            }
+          }, 15000);
+
           req.on('close', () => {
+            clearInterval(pingTimer);
             this.sseClients.delete(res);
           });
           return;
