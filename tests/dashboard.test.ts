@@ -115,7 +115,7 @@ describe('Phase 5: Local Usage Dashboard (127.0.0.1)', () => {
     const analyticsRes = await fetch(`${baseUrl}/api/analytics`);
     expect(analyticsRes.status).toBe(200);
     const analyticsJson = (await analyticsRes.json()) as { dailyUsage: Array<{ date: string }> };
-    expect(analyticsJson.dailyUsage[0]?.date).toBe('2026-11-05');
+    expect(analyticsJson.dailyUsage[0]?.date).toBe(new Date().toISOString().slice(0, 10));
   });
 
   it('updates privacy settings live via POST /api/settings', async () => {

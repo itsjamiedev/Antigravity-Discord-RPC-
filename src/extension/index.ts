@@ -337,6 +337,7 @@ async function tryAcquireLeaderRole(): Promise<boolean> {
         onAgentStateChanged(state);
       });
       agentWatcher.start();
+      onAgentStateChanged(agentWatcher.getState());
     }
 
     if (leaderCheckTimer) {

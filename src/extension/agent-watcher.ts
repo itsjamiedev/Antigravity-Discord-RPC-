@@ -530,6 +530,7 @@ export class AgentWatcher extends EventEmitter {
   private activeThresholdMs: number;
   private summariesDbDir?: string;
   private activeAgentsGrace = new Map<string, number>();
+  private hasEmittedInitial = false;
 
   constructor(options?: AgentWatcherOptions) {
     super();
@@ -761,15 +762,18 @@ export class AgentWatcher extends EventEmitter {
         allConversations,
       };
 
-      // Emit if state changed (active state, agent count, active models, or per-agent model)
+      // Emit if state changed (active state, agent count, active models, tokens, or on initial scan)
       const prevAgentKey = previousState.agents.map((a) => `${a.conversationId}:${a.model}`).join('|');
       const nextAgentKey = this.state.agents.map((a) => `${a.conversationId}:${a.model}`).join('|');
       if (
+        !this.hasEmittedInitial ||
         previousState.isAgentActive !== this.state.isAgentActive ||
         previousState.activeAgentCount !== this.state.activeAgentCount ||
         previousState.activeModels.join(',') !== this.state.activeModels.join(',') ||
+        previousState.totalTokens.totalTokens !== this.state.totalTokens.totalTokens ||
         prevAgentKey !== nextAgentKey
       ) {
+        this.hasEmittedInitial = true;
         this.emit('change', this.state);
       }
     } catch {

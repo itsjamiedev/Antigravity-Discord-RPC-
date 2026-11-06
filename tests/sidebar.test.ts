@@ -82,7 +82,7 @@ describe('SidebarDashboardProvider (Native Activity Bar Webview View)', () => {
     const html = getSidebarHtml(mockSnapshot);
     expect(html).toContain('<!DOCTYPE html>');
     expect(html).toContain('Antigravity Telemetry');
-    expect(html).toContain('TOKENMAXXING');
+    expect(html).toContain('TOKEN VOLUME');
     expect(html).toContain('525,000');
     expect(html).toContain('Gemini 3.8 Flash');
     expect(html).toContain('Claude Sonnet 5.5');

@@ -35,6 +35,7 @@ export class PureTracker {
   private heartbeatTimer: NodeJS.Timeout | null = null;
   private tokenStore: TokenStore;
   private sessionManager: SessionManager;
+  private syncedModelStats: ModelStats[] = [];
 
   constructor(_isLeader: boolean = false, customTokenStorePath?: string, customSessionFilePath?: string) {
     this.sessionManager = new SessionManager(customSessionFilePath);
@@ -145,11 +146,21 @@ export class PureTracker {
       }
     }
 
+    if (Array.isArray(snap.activeAgents)) {
+      for (const a of snap.activeAgents) {
+        this.agents.set(a.conversationId, a);
+      }
+    }
+
     if (Array.isArray(snap.conversations)) {
       this.conversations.clear();
       for (const c of snap.conversations) {
         this.conversations.set(c.conversationId, c);
       }
+    }
+
+    if (Array.isArray(snap.modelStats) && snap.modelStats.length > 0) {
+      this.syncedModelStats = [...snap.modelStats];
     }
 
     this.notify();
@@ -301,7 +312,11 @@ export class PureTracker {
         ? localTokens
         : (this.session.tokens ?? localTokens);
 
-    const modelStatsList = this.tokenStore.getModelStats();
+    const localModelStats = this.tokenStore.getModelStats();
+    const modelStatsList =
+      localModelStats.length > 0
+        ? localModelStats
+        : this.syncedModelStats;
     const dailyUsage = this.tokenStore.getDailyUsage();
 
     return {

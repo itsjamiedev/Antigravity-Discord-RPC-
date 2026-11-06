@@ -2,19 +2,35 @@
  * SidebarDashboardProvider — Elite Native Activity Bar Sidebar Dashboard for Antigravity IDE
  *
  * Implements vscode.WebviewViewProvider to render real-time agent telemetry,
- * tokenmaxxing counters, 24h session controls, and dual-dashboard access (In-IDE & Browser)
- * directly inside the IDE primary sidebar with agency-grade Doppelrand aesthetics.
+ * compact Bento grid metrics, model consumption share, and dual-dashboard access (In-IDE & Browser)
+ * with zero generic emojis, agency-grade Linear/Apple dark aesthetics, and resilient multi-window sync.
  */
 
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type * as vscode from 'vscode';
-import type { TrackerSnapshot, ModelStats, TokenUsageRecord } from '../shared/types.js';
+import type { TrackerSnapshot, ModelStats, TokenUsageRecord, Agent } from '../shared/types.js';
+import { getGroundTruthConversationStatuses } from './agent-watcher.js';
+import { formatModelDisplayName } from '../discord/presence-manager.js';
 
 export function formatNumber(n: number): string {
   if (typeof n !== 'number' || !Number.isFinite(n)) return '0';
   return n.toLocaleString('en-US');
+}
+
+export function formatCompactNumber(n: number): string {
+  if (typeof n !== 'number' || !Number.isFinite(n) || n === 0) return '0';
+  if (n >= 1_000_000_000) {
+    return (n / 1_000_000_000).toFixed(n >= 10_000_000_000 ? 1 : 2) + 'B';
+  }
+  if (n >= 1_000_000) {
+    return (n / 1_000_000).toFixed(n >= 100_000_000 ? 0 : 1) + 'M';
+  }
+  if (n >= 1_000) {
+    return (n / 1_000).toFixed(1) + 'K';
+  }
+  return String(Math.round(n));
 }
 
 export function formatDuration(elapsedSec: number): string {
@@ -56,10 +72,11 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
       try {
         const tokData = JSON.parse(fs.readFileSync(tokensFile, 'utf8'));
         if (tokData && tokData.cumulativeTokensByModel) {
-          for (const [model, mTokens] of Object.entries(
+          for (const [rawModel, mTokens] of Object.entries(
             tokData.cumulativeTokensByModel as Record<string, TokenUsageRecord>
           )) {
             if (!mTokens) continue;
+            const model = formatModelDisplayName(rawModel);
             inputTokens += mTokens.inputTokens || 0;
             cacheReadTokens += mTokens.cacheReadTokens || 0;
             outputTokens += mTokens.outputTokens || 0;
@@ -88,12 +105,35 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
 
     modelStats.sort((a, b) => b.tokens.totalTokens - a.tokens.totalTokens);
 
+    // Discover ground-truth running agents from conversation_summaries.db
+    const runningAgents: Agent[] = [];
+    try {
+      const runningMap = getGroundTruthConversationStatuses();
+      for (const [convId, status] of runningMap.entries()) {
+        if (status === 'CASCADE_RUN_STATUS_RUNNING') {
+          runningAgents.push({
+            conversationId: convId,
+            model: 'Gemini 3.8 Flash',
+            status: 'thinking',
+            statusEstimated: false,
+            activeTool: null,
+            startedAt: new Date().toISOString(),
+            lastEventAt: new Date().toISOString(),
+            lastEventType: 'SessionStart',
+            parentConversationId: null,
+            isSubagent: false,
+            hasError: false,
+          });
+        }
+      }
+    } catch {}
+
     return {
       session: {
         sessionId,
         startedAt,
         lastActivityAt: new Date().toISOString(),
-        activeAgentCount: 0,
+        activeAgentCount: runningAgents.length,
         totalConversations: 0,
         totalEventsProcessed: 0,
         tokens: {
@@ -105,8 +145,8 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
           source: 'transcript_exact',
         },
       },
-      agents: [],
-      activeAgents: [],
+      agents: runningAgents,
+      activeAgents: runningAgents,
       conversations: [],
       modelStats,
       dailyUsage: [],
@@ -117,53 +157,59 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
 }
 
 export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
-  let effective = snapshot;
-  if (!effective || !effective.session?.tokens || effective.session.tokens.totalTokens === 0) {
-    const diskFallback = loadDiskFallbackSnapshot();
-    if (diskFallback) {
-      effective = {
-        ...diskFallback,
-        ...(effective ?? {}),
-        session: {
-          ...diskFallback.session,
-          ...(effective?.session ?? {}),
-          tokens:
-            (effective?.session?.tokens?.totalTokens ?? 0) > 0
-              ? effective!.session.tokens
-              : diskFallback.session.tokens,
-          startedAt:
-            effective?.session?.startedAt && effective.session.startedAt !== effective.session.lastActivityAt
-              ? effective.session.startedAt
-              : diskFallback.session.startedAt,
-        },
-        modelStats:
-          effective?.modelStats && effective.modelStats.length > 0
-            ? effective.modelStats
-            : diskFallback.modelStats,
-      };
-    }
-  }
+  const diskFallback = loadDiskFallbackSnapshot();
 
-  const tokens = effective?.session?.tokens;
+  const effective = {
+    ...(diskFallback ?? {}),
+    ...(snapshot ?? {}),
+    session: {
+      ...(diskFallback?.session ?? {}),
+      ...(snapshot?.session ?? {}),
+      tokens:
+        (snapshot?.session?.tokens?.totalTokens ?? 0) > 0
+          ? snapshot!.session.tokens
+          : (diskFallback?.session.tokens ?? {
+              inputTokens: 0,
+              cacheReadTokens: 0,
+              outputTokens: 0,
+              totalTokens: 0,
+              estimated: false,
+              source: 'transcript_exact' as const,
+            }),
+      startedAt:
+        snapshot?.session?.startedAt && snapshot.session.startedAt !== snapshot.session.lastActivityAt
+          ? snapshot.session.startedAt
+          : (diskFallback?.session.startedAt ?? new Date().toISOString()),
+    },
+    activeAgents:
+      snapshot?.activeAgents && snapshot.activeAgents.length > 0
+        ? snapshot.activeAgents
+        : (diskFallback?.activeAgents ?? []),
+    modelStats:
+      snapshot?.modelStats && snapshot.modelStats.length > 0
+        ? snapshot.modelStats
+        : (diskFallback?.modelStats ?? []),
+  };
+
+  const tokens = effective.session.tokens;
   const totalTokens = tokens?.totalTokens ?? 0;
   const cacheTokens = tokens?.cacheReadTokens ?? 0;
   const inTokens = tokens?.inputTokens ?? 0;
   const outTokens = tokens?.outputTokens ?? 0;
 
-  const cacheRatio = inTokens + cacheTokens > 0
-    ? Math.round((cacheTokens / (inTokens + cacheTokens)) * 100)
-    : 0;
+  const cacheRatio =
+    inTokens + cacheTokens > 0 ? Math.round((cacheTokens / (inTokens + cacheTokens)) * 100) : 0;
 
   const inRatio = totalTokens > 0 ? Math.max(1, Math.round((inTokens / totalTokens) * 100)) : 0;
   const outRatio = totalTokens > 0 ? Math.max(1, Math.round((outTokens / totalTokens) * 100)) : 0;
   const cacheBarRatio = totalTokens > 0 ? Math.max(0, 100 - inRatio - outRatio) : 0;
 
-  const models = effective?.modelStats ?? [];
-  const activeAgents = effective?.activeAgents ?? [];
+  const models = effective.modelStats ?? [];
+  const activeAgents = effective.activeAgents ?? [];
   const isAgentActive = activeAgents.length > 0;
   const activeAgent = activeAgents[0];
 
-  const startedAt = effective?.session?.startedAt ?? new Date().toISOString();
+  const startedAt = effective.session.startedAt ?? new Date().toISOString();
   const elapsedSec = Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000));
   const timeFormatted = formatDuration(elapsedSec);
 
@@ -177,18 +223,19 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   <style>
     :root {
       --bg: #070709;
-      --shell: rgba(255, 255, 255, 0.05);
-      --shell-hover: rgba(232, 255, 31, 0.25);
-      --core: #0c0c10;
-      --card-border: rgba(255, 255, 255, 0.08);
+      --card: #0c0c10;
+      --card-inner: #111116;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(232, 255, 31, 0.3);
       --acc: #E8FF1F;
       --acc-glow: rgba(232, 255, 31, 0.15);
       --emerald: #10b981;
       --lavender: #a9b2ff;
+      --cyan: #38bdf8;
       --coral: #ffb37a;
       --t1: #ffffff;
-      --t2: rgba(255, 255, 255, 0.72);
-      --t3: rgba(255, 255, 255, 0.42);
+      --t2: rgba(255, 255, 255, 0.68);
+      --t3: rgba(255, 255, 255, 0.38);
       --ease: cubic-bezier(0.32, 0.72, 0, 1);
       --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -199,44 +246,12 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       background: var(--bg);
       color: var(--t1);
       font-family: var(--font-sans);
-      font-size: 12px;
-      line-height: 1.45;
-      padding: 10px 8px 24px;
+      font-size: 11.5px;
+      line-height: 1.4;
+      padding: 8px 6px 16px;
       overflow-x: hidden;
       user-select: none;
       -webkit-font-smoothing: antialiased;
-    }
-
-    /* DOUBLE-BEZEL (DOPPELRAND) NESTED HARDWARE ARCHITECTURE */
-    .bezel {
-      position: relative;
-      border-radius: 16px;
-      padding: 1px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 100%);
-      margin-bottom: 10px;
-      transition: background 0.3s var(--ease), box-shadow 0.3s var(--ease);
-    }
-    .bezel:hover {
-      background: linear-gradient(180deg, rgba(232, 255, 31, 0.35) 0%, rgba(255, 255, 255, 0.08) 100%);
-      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
-    }
-    .core {
-      background: var(--core);
-      border-radius: 15px;
-      padding: 12px;
-      position: relative;
-      overflow: hidden;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    }
-    .core-ambient-glow {
-      position: absolute;
-      top: -30px;
-      right: -20px;
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      background: radial-gradient(circle, var(--acc-glow), transparent 70%);
-      pointer-events: none;
     }
 
     /* TOP BAR */
@@ -244,30 +259,28 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 2px 4px 10px;
-      margin-bottom: 4px;
+      padding: 2px 2px 8px;
+      margin-bottom: 6px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
     .brand-mark {
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 6px;
       font-weight: 700;
-      font-size: 12.5px;
+      font-size: 12px;
       letter-spacing: -0.02em;
       color: var(--t1);
     }
     .brand-mark svg {
-      width: 16px;
-      height: 16px;
       color: var(--acc);
-      filter: drop-shadow(0 0 6px rgba(232, 255, 31, 0.5));
+      filter: drop-shadow(0 0 5px rgba(232, 255, 31, 0.5));
     }
     .live-pill {
-      font-size: 9.5px;
+      font-size: 9px;
       font-weight: 700;
       letter-spacing: 0.03em;
-      padding: 2px 7px;
+      padding: 2px 6px;
       border-radius: 999px;
       background: rgba(16, 185, 129, 0.12);
       border: 1px solid rgba(16, 185, 129, 0.3);
@@ -284,264 +297,337 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       box-shadow: 0 0 6px currentColor;
     }
 
-    /* DUAL DASHBOARD HUB (USER DIRECTIVE: IN-IDE + BROWSER) */
-    .hub-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    .hub-tile {
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.09);
-      border-radius: 13px;
-      padding: 10px 9px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 74px;
+    /* BENTO CARD CONTAINER */
+    .bento-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 9px 10px;
+      margin-bottom: 7px;
       position: relative;
       overflow: hidden;
-      transition: all 0.25s var(--ease);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
     }
-    .hub-tile:hover {
-      transform: translateY(-2px);
-      border-color: rgba(255, 255, 255, 0.2);
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+    .bento-card:hover {
+      border-color: rgba(255, 255, 255, 0.16);
     }
-    .hub-tile.primary:hover {
-      border-color: rgba(232, 255, 31, 0.4);
-      box-shadow: 0 4px 16px -2px rgba(232, 255, 31, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    }
-    .hub-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 4px;
-    }
-    .hub-badge {
-      font-size: 8.5px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      padding: 1px 5px;
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--t2);
-    }
-    .hub-tile.primary .hub-badge {
-      background: rgba(232, 255, 31, 0.15);
-      color: var(--acc);
-    }
-    .icon-bubble {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.06);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      transition: transform 0.2s ease;
-    }
-    .hub-tile:hover .icon-bubble {
-      transform: scale(1.1) rotate(4deg);
-    }
-    .hub-title {
-      font-weight: 700;
-      font-size: 11.5px;
-      color: var(--t1);
-      letter-spacing: -0.01em;
-      margin-top: 2px;
-    }
-    .hub-sub {
-      font-size: 9.5px;
-      color: var(--t3);
-      line-height: 1.2;
-      margin-top: 2px;
+    .bento-card.hero-card:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 4px 18px -4px rgba(232, 255, 31, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
-    /* CARD HEADERS & EYEBROWS */
-    .card-top {
+    /* CARD HEADER & EYEBROW */
+    .card-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 6px;
     }
     .eyebrow {
-      font-size: 9.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: var(--t3);
-    }
-    .tag {
       font-size: 9px;
       font-weight: 700;
-      padding: 1px 6px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--t3);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .eyebrow svg {
+      opacity: 0.7;
+    }
+    .chip {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      padding: 1px 5px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
       color: var(--t2);
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
     }
 
-    /* TOKENMAXXING METRICS */
-    .mono { font-family: var(--font-mono); }
-    .hero-metric {
-      font-size: 1.65rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: var(--t1);
-      line-height: 1.1;
-      margin: 4px 0 8px;
-      text-shadow: 0 0 20px rgba(232, 255, 31, 0.1);
+    /* DUAL STUDIO HUB (IN-IDE + BROWSER) */
+    .hub-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 7px;
     }
-    .segmented-ratio-bar {
+    .hub-tile {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 7px 8px;
+      cursor: pointer;
       display: flex;
-      height: 6px;
-      width: 100%;
-      border-radius: 999px;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 52px;
+      position: relative;
       overflow: hidden;
+      transition: all 0.2s var(--ease);
+    }
+    .hub-tile:hover {
+      border-color: rgba(255, 255, 255, 0.22);
+      background: var(--card-inner);
+      transform: translateY(-1px);
+    }
+    .hub-tile.primary:hover {
+      border-color: rgba(232, 255, 31, 0.4);
+      box-shadow: 0 4px 12px -2px rgba(232, 255, 31, 0.15);
+    }
+    .hub-tile-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .hub-badge {
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 1px 4px;
+      border-radius: 3px;
       background: rgba(255, 255, 255, 0.06);
-      margin-bottom: 8px;
+      color: var(--t3);
     }
-    .ratio-cache { background: var(--emerald); transition: width 0.4s var(--ease); }
-    .ratio-in { background: #ffffff; transition: width 0.4s var(--ease); }
-    .ratio-out { background: var(--acc); transition: width 0.4s var(--ease); }
-
-    .micro-legend {
-      display: flex;
-      justify-content: space-between;
-      font-size: 10px;
-      color: var(--t2);
+    .hub-tile.primary .hub-badge {
+      background: rgba(232, 255, 31, 0.12);
+      color: var(--acc);
     }
-    .micro-legend span { display: inline-flex; align-items: center; gap: 4px; }
-    .micro-legend i {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      display: inline-block;
+    .hub-title {
+      font-weight: 700;
+      font-size: 11px;
+      color: var(--t1);
+      margin-top: 2px;
+      letter-spacing: -0.01em;
+    }
+    .hub-sub {
+      font-size: 9px;
+      color: var(--t3);
     }
 
-    /* SESSION TIMER & 24H RESILIENCE */
-    .timer-wrap {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      margin: 2px 0 8px;
+    /* 2-COLUMN SPLIT BENTO (SESSION + RADAR) */
+    .split-bento-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 7px;
     }
-    .clock-num {
-      font-size: 1.4rem;
+    .split-tile {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 8px 8px 7px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 84px;
+    }
+    .clock-display {
+      font-size: 1.15rem;
       font-weight: 800;
       letter-spacing: -0.02em;
       color: var(--acc);
-      text-shadow: 0 0 15px rgba(232, 255, 31, 0.25);
+      margin: 2px 0 6px;
+      text-shadow: 0 0 10px rgba(232, 255, 31, 0.2);
     }
-    .ctrl-strip {
+    .clock-actions {
       display: flex;
-      gap: 6px;
+      gap: 4px;
     }
-    .action-btn {
+    .micro-btn {
       flex: 1;
-      padding: 7px 10px;
-      border-radius: 9px;
-      border: 1px solid var(--card-border);
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
       background: rgba(255, 255, 255, 0.05);
-      color: var(--t1);
-      font-size: 11px;
+      color: var(--t2);
+      font-size: 9.5px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 4px;
       outline: none;
-      transition: all 0.2s var(--ease);
+      transition: all 0.18s var(--ease);
     }
-    .action-btn:hover {
+    .micro-btn:hover {
       background: rgba(255, 255, 255, 0.1);
+      color: var(--t1);
       border-color: rgba(255, 255, 255, 0.2);
     }
-    .action-btn.primary {
-      background: rgba(232, 255, 31, 0.1);
-      border-color: rgba(232, 255, 31, 0.35);
+    .micro-btn.primary {
+      background: rgba(232, 255, 31, 0.08);
+      border-color: rgba(232, 255, 31, 0.28);
       color: var(--acc);
     }
-    .action-btn.primary:hover {
-      background: rgba(232, 255, 31, 0.2);
+    .micro-btn.primary:hover {
+      background: rgba(232, 255, 31, 0.18);
       border-color: var(--acc);
     }
 
-    /* ACTIVE AGENT RADAR */
-    .radar-box {
+    /* RADAR ACTIVE AGENT BOX */
+    .radar-content {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-top: 3px;
+    }
+    .agent-active-badge {
       display: flex;
       align-items: center;
-      gap: 9px;
-      padding: 8px 10px;
-      border-radius: 10px;
-      background: rgba(232, 255, 31, 0.05);
-      border: 1px solid rgba(232, 255, 31, 0.2);
-      margin-top: 4px;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 11px;
+      color: var(--t1);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .radar-pulse {
-      width: 9px;
-      height: 9px;
+    .radar-sonar-dot {
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: var(--acc);
-      box-shadow: 0 0 10px var(--acc);
-      animation: pulseAnim 2s infinite ease-in-out;
+      box-shadow: 0 0 8px var(--acc);
+      flex-shrink: 0;
+      animation: sonarPulse 1.8s infinite ease-in-out;
     }
-    @keyframes pulseAnim {
+    .radar-sonar-dot.idle {
+      background: var(--t3);
+      box-shadow: none;
+      animation: none;
+    }
+    @keyframes sonarPulse {
       0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.3); opacity: 0.6; }
+      50% { transform: scale(1.35); opacity: 0.6; }
+    }
+    .agent-tool-text {
+      font-size: 9px;
+      color: var(--t2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    /* MODEL DISTRIBUTION */
-    .model-item {
-      margin-top: 7px;
+    /* HERO TOKEN VOLUME */
+    .hero-tokens {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--t1);
+      margin: 3px 0 6px;
     }
-    .model-info {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      margin-bottom: 3px;
-    }
-    .model-progress {
+    .ratio-bar {
       height: 4px;
       border-radius: 2px;
       background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      overflow: hidden;
+      margin-bottom: 7px;
+    }
+    .ratio-fill-cache { background: var(--emerald); }
+    .ratio-fill-in { background: #ffffff; }
+    .ratio-fill-out { background: var(--acc); }
+
+    .micro-stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 4px;
+      font-size: 9.5px;
+    }
+    .micro-stat-col {
+      display: flex;
+      flex-direction: column;
+    }
+    .micro-stat-label {
+      color: var(--t3);
+      font-size: 8.5px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .micro-stat-label i {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .micro-stat-val {
+      font-weight: 700;
+      color: var(--t2);
+      margin-top: 1px;
+    }
+
+    /* MODEL SHARE BENTO */
+    .model-row {
+      margin-top: 6px;
+    }
+    .model-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      margin-bottom: 2px;
+    }
+    .model-name {
+      font-weight: 600;
+      color: var(--t1);
+      max-width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .model-stat-num {
+      color: var(--t2);
+    }
+    .model-bar-wrap {
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.07);
       overflow: hidden;
     }
-    .model-fill {
+    .model-bar-fill {
       height: 100%;
       border-radius: 2px;
     }
 
-    /* FOOTER STATUS */
+    /* FOOTER BAR */
     .footer-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px 4px 0;
+      padding: 6px 2px 0;
       border-top: 1px solid rgba(255, 255, 255, 0.06);
-      margin-top: 8px;
-      font-size: 10px;
+      margin-top: 4px;
+      font-size: 9.5px;
       color: var(--t3);
     }
-    .footer-link {
+    .reconnect-btn {
       color: var(--t2);
       background: transparent;
       border: none;
       cursor: pointer;
-      font-size: 10.5px;
+      font-size: 9.5px;
       font-weight: 600;
       display: inline-flex;
       align-items: center;
       gap: 4px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: color 0.15s ease;
     }
-    .footer-link:hover { color: var(--acc); }
+    .reconnect-btn:hover {
+      color: var(--acc);
+    }
+
+    .mono { font-family: var(--font-mono); }
   </style>
 </head>
 <body>
@@ -549,7 +635,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   <!-- TOP HEADER -->
   <div class="top-header">
     <div class="brand-mark">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <polygon points="12 2 22 18 2 18" />
         <polygon points="12 7 17 15 7 15" fill="currentColor" opacity="0.3" />
       </svg>
@@ -557,26 +643,31 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     </div>
     <div class="live-pill" id="sideStatusBadge">
       <span class="live-dot"></span>
-      <span id="sideStatusText">Live SSE</span>
+      <span id="sideStatusText">Live Synced</span>
     </div>
   </div>
 
   <!-- DUAL DASHBOARD ACCESS HUB (IN-IDE + BROWSER) -->
   <div class="hub-grid">
-    <div class="hub-tile primary" id="btnOpenFull" onclick="openFullDashboard()" title="Open the full interactive Bento dashboard as an editor tab inside Antigravity IDE">
-      <div class="hub-header">
+    <div class="hub-tile primary" id="btnOpenFull" onclick="openFullDashboard()" title="Open interactive Bento dashboard as an editor tab inside Antigravity IDE">
+      <div class="hub-tile-head">
         <span class="hub-badge">EDITOR TAB</span>
-        <span class="icon-bubble">⚡</span>
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="2" width="12" height="12" rx="2.5"/>
+          <path d="M8 2v12"/>
+        </svg>
       </div>
       <div>
         <div class="hub-title">In-IDE Studio</div>
         <div class="hub-sub">Bento metrics panel</div>
       </div>
     </div>
-    <div class="hub-tile" id="btnOpenBrowser" onclick="openBrowserDashboard()" title="Launch full companion dashboard at http://127.0.0.1:41177 in your web browser">
-      <div class="hub-header">
+    <div class="hub-tile" id="btnOpenBrowser" onclick="openBrowserDashboard()" title="Launch companion dashboard at http://127.0.0.1:41177 in your browser">
+      <div class="hub-tile-head">
         <span class="hub-badge">127.0.0.1</span>
-        <span class="icon-bubble">↗</span>
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 2h4v4M6.5 9.5L14 2M14 8.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h4.5"/>
+        </svg>
       </div>
       <div>
         <div class="hub-title">Web Browser</div>
@@ -585,121 +676,166 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     </div>
   </div>
 
-  <!-- 1. HERO TOKENMAXXING TILE -->
-  <div class="bezel">
-    <div class="core">
-      <div class="core-ambient-glow"></div>
-      <div class="card-top">
-        <span class="eyebrow">SESSION TOKEN VOLUME</span>
-        <span class="tag" style="color:var(--acc); border-color:rgba(232,255,31,0.3);">⚡ TOKENMAXXING</span>
+  <!-- 2-COLUMN SPLIT BENTO (SESSION DURATION + ACTIVE AGENT RADAR) -->
+  <div class="split-bento-grid">
+    <!-- Tile A: Session Duration & Clock Controls -->
+    <div class="split-tile">
+      <div>
+        <div class="card-head" style="margin-bottom:0;">
+          <span class="eyebrow">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <circle cx="8" cy="8" r="6.2"/>
+              <path d="M8 4.5V8l2.5 1.5"/>
+            </svg>
+            SESSION
+          </span>
+          <span class="chip mono" id="sideTimerStatus">RUNNING</span>
+        </div>
+        <div class="clock-display mono" id="sideTimerDisplay">${timeFormatted}</div>
       </div>
-      <div class="hero-metric mono" id="sideTotalTokens">${formatNumber(totalTokens)}</div>
-
-      <!-- Segmented Distribution Ratio Bar -->
-      <div class="segmented-ratio-bar">
-        <div class="ratio-cache" id="barCache" style="width: ${cacheBarRatio}%;"></div>
-        <div class="ratio-in" id="barIn" style="width: ${inRatio}%;"></div>
-        <div class="ratio-out" id="barOut" style="width: ${outRatio}%;"></div>
-      </div>
-
-      <div class="micro-legend">
-        <span><i style="background:var(--emerald);"></i> Cache: <b class="mono" id="sideCacheTokens">${formatNumber(cacheTokens)}</b></span>
-        <span><i style="background:#ffffff;"></i> In: <b class="mono" id="sideInTokens">${formatNumber(inTokens)}</b></span>
-        <span><i style="background:var(--acc);"></i> Out: <b class="mono" id="sideOutTokens">${formatNumber(outTokens)}</b></span>
-      </div>
-
-      <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06);">
-        <span style="font-size:10.5px; color:var(--t3);">Prompt Cache Preserved</span>
-        <span class="tag mono" style="color:var(--emerald); font-weight:700;" id="sideCacheRatio">${cacheRatio}% SAVINGS</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- 2. SESSION CLOCK & 24H RESILIENCE -->
-  <div class="bezel">
-    <div class="core">
-      <div class="card-top">
-        <span class="eyebrow">ACTIVE SESSION DURATION</span>
-        <span class="tag" id="sideRetentionChip" style="color:var(--emerald); border-color:rgba(16,185,129,0.3);">🛡️ 24H RESILIENT</span>
-      </div>
-      <div class="timer-wrap">
-        <div class="clock-num mono" id="sideTimerDisplay">${timeFormatted}</div>
-        <span class="tag" id="sideTimerStatus">ACTIVE</span>
-      </div>
-      <div class="ctrl-strip">
-        <button class="action-btn primary" id="btnPause" onclick="togglePause()">
-          <span id="btnPauseIcon">⏸️</span>
-          <span id="btnPauseLabel">Pause & Leave (24h)</span>
+      <div class="clock-actions">
+        <button class="micro-btn primary" id="btnPause" onclick="togglePause()">
+          <span id="btnPauseIcon">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+              <rect x="4" y="3" width="2.8" height="10" rx="1.2"/>
+              <rect x="9.2" y="3" width="2.8" height="10" rx="1.2"/>
+            </svg>
+          </span>
+          <span id="btnPauseLabel">Pause</span>
         </button>
-        <button class="action-btn" id="btnFresh" onclick="startFresh()">
-          <span>🔄</span>
+        <button class="micro-btn" id="btnFresh" onclick="startFresh()" title="Start fresh session">
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.5 8a5.5 5.5 0 0 1 9.4-3.9L14 6m0-4v4h-4M13.5 8a5.5 5.5 0 0 1-9.4 3.9L2 10m0 4v-4h4"/>
+          </svg>
           <span>Fresh</span>
         </button>
       </div>
     </div>
-  </div>
 
-  <!-- 3. AI AGENT RADAR -->
-  <div class="bezel">
-    <div class="core">
-      <div class="card-top">
-        <span class="eyebrow">AGENT ACTIVITY RADAR</span>
-        <span class="tag" id="sideAgentCountChip">${activeAgents.length} ACTIVE</span>
+    <!-- Tile B: Active Agent Radar -->
+    <div class="split-tile">
+      <div class="card-head" style="margin-bottom:0;">
+        <span class="eyebrow">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+            <path d="M8 1.5l1.6 4.9 4.9 1.6-4.9 1.6L8 14.5l-1.6-4.9-4.9-1.6 4.9-1.6L8 1.5z"/>
+          </svg>
+          AGENTS
+        </span>
+        <span class="chip mono" id="sideAgentCountChip">${activeAgents.length} ACTIVE</span>
       </div>
-      <div id="sideAgentContainer">
+      <div class="radar-content" id="sideAgentContainer">
         ${
           isAgentActive
-            ? `<div class="radar-box">
-                <div class="radar-pulse"></div>
-                <div style="flex:1; overflow:hidden;">
-                  <div style="font-weight:700; font-size:11.5px; color:var(--t1); white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">
-                    ${activeAgent?.model ?? 'AI Agent'}
-                  </div>
-                  <div style="font-size:10px; color:var(--t2);">
-                    ${activeAgent?.activeTool ? `Executing tool: ${activeAgent.activeTool}` : 'Thinking & Planning...'}
-                  </div>
-                </div>
+            ? `<div class="agent-active-badge">
+                <span class="radar-sonar-dot"></span>
+                <span>${activeAgent?.model ?? 'AI Agent'}</span>
+              </div>
+              <div class="agent-tool-text">
+                ${activeAgent?.activeTool ? `Tool: ${activeAgent.activeTool}` : 'Thinking & Planning...'}
               </div>`
-            : `<div style="font-size:10.5px; color:var(--t3); padding:4px 0;">All agents standing by. Context and memory intact.</div>`
+            : `<div class="agent-active-badge">
+                <span class="radar-sonar-dot idle"></span>
+                <span style="color:var(--t2);">Standing By</span>
+              </div>
+              <div class="agent-tool-text">Context intact</div>`
         }
+      </div>
+      <div style="font-size:8.5px; color:var(--t3); margin-top:4px;">Auto-broadcasting</div>
+    </div>
+  </div>
+
+  <!-- HERO TOKEN VOLUME BENTO CARD -->
+  <div class="bento-card hero-card">
+    <div class="card-head">
+      <span class="eyebrow">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+          <ellipse cx="8" cy="4" rx="6" ry="2.2"/>
+          <path d="M2 4v4c0 1.2 2.7 2.2 6 2.2s6-1 6-2.2V4M2 8v4c0 1.2 2.7 2.2 6 2.2s6-1 6-2.2V8"/>
+        </svg>
+        TOKEN VOLUME
+      </span>
+      <span class="chip mono" style="color:var(--emerald); border-color:rgba(16,185,129,0.3);" id="sideCacheRatio">${cacheRatio}% SAVED</span>
+    </div>
+
+    <div class="hero-tokens mono" id="sideTotalTokens">${formatNumber(totalTokens)}</div>
+
+    <!-- Segmented Cache Ratio Bar -->
+    <div class="ratio-bar">
+      <div class="ratio-fill-cache" id="barCache" style="width: ${cacheBarRatio}%;"></div>
+      <div class="ratio-fill-in" id="barIn" style="width: ${inRatio}%;"></div>
+      <div class="ratio-fill-out" id="barOut" style="width: ${outRatio}%;"></div>
+    </div>
+
+    <!-- 3-Column Micro Stats -->
+    <div class="micro-stats-row mono">
+      <div class="micro-stat-col">
+        <span class="micro-stat-label"><i style="background:var(--emerald);"></i> Cache</span>
+        <span class="micro-stat-val" id="sideCacheTokens">${formatCompactNumber(cacheTokens)}</span>
+      </div>
+      <div class="micro-stat-col">
+        <span class="micro-stat-label"><i style="background:#ffffff;"></i> In</span>
+        <span class="micro-stat-val" id="sideInTokens">${formatCompactNumber(inTokens)}</span>
+      </div>
+      <div class="micro-stat-col">
+        <span class="micro-stat-label"><i style="background:var(--acc);"></i> Out</span>
+        <span class="micro-stat-val" id="sideOutTokens">${formatCompactNumber(outTokens)}</span>
       </div>
     </div>
   </div>
 
-  <!-- 4. MODEL DISTRIBUTION ALLOCATION -->
-  <div class="bezel">
-    <div class="core">
-      <div class="card-top">
-        <span class="eyebrow">MODEL TOKEN SHARE</span>
-        <span class="tag" id="sideModelCount">${models.length} MODELS</span>
-      </div>
-      <div id="sideModelList">
-        ${
-          models.length > 0
-            ? models.slice(0, 4).map((m, idx) => {
+  <!-- MODEL TOKEN ALLOCATION BENTO CARD -->
+  <div class="bento-card">
+    <div class="card-head">
+      <span class="eyebrow">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+          <circle cx="8" cy="8" r="6"/>
+          <path d="M8 2a6 6 0 0 1 6 6H8V2z"/>
+        </svg>
+        MODEL SHARE
+      </span>
+      <span class="chip mono" id="sideModelCount">${models.length} MODELS</span>
+    </div>
+
+    <div id="sideModelList">
+      ${
+        models.length > 0
+          ? models
+              .slice(0, 4)
+              .map((m, idx) => {
                 const share = totalTokens > 0 ? Math.round((m.tokens.totalTokens / totalTokens) * 100) : 0;
-                const color = idx === 0 ? 'var(--acc)' : idx === 1 ? 'var(--lavender)' : idx === 2 ? 'var(--coral)' : 'var(--emerald)';
-                return `<div class="model-item">
-                  <div class="model-info">
-                    <span style="font-weight:600; color:var(--t1);">${m.model}</span>
-                    <span class="mono" style="color:var(--t2);">${formatNumber(m.tokens.totalTokens)} (${share}%)</span>
+                const color =
+                  idx === 0
+                    ? 'var(--acc)'
+                    : idx === 1
+                      ? 'var(--cyan)'
+                      : idx === 2
+                        ? 'var(--lavender)'
+                        : 'var(--coral)';
+                return `<div class="model-row">
+                  <div class="model-meta">
+                    <span class="model-name">${m.model}</span>
+                    <span class="model-stat-num mono">${formatCompactNumber(m.tokens.totalTokens)} (${share}%)</span>
                   </div>
-                  <div class="model-progress">
-                    <div class="model-fill" style="width: ${share}%; background: ${color};"></div>
+                  <div class="model-bar-wrap">
+                    <div class="model-bar-fill" style="width: ${share}%; background: ${color};"></div>
                   </div>
                 </div>`;
-              }).join('')
-            : `<div style="font-size:10.5px; color:var(--t3); padding:4px 0;">No model tokens logged yet.</div>`
-        }
-      </div>
+              })
+              .join('')
+          : `<div style="font-size:10px; color:var(--t3); padding:4px 0;">No model tokens logged yet.</div>`
+      }
     </div>
   </div>
 
   <!-- FOOTER STATUS & RECONNECT -->
   <div class="footer-bar">
-    <span id="footerWorkspaceText">1 Workspace connected</span>
-    <button class="footer-link" onclick="reconnectDiscord()">
-      <span>🔄 Reconnect RPC</span>
+    <span id="footerWorkspaceText">1 Workspace active</span>
+    <button class="reconnect-btn" onclick="reconnectDiscord()" title="Reconnect Discord RPC">
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 8a7 7 0 1 1 12 5M15 8A7 7 0 0 1 3 3"/>
+        <path d="M15 3v5h-5M1 13V8h5"/>
+      </svg>
+      <span>Reconnect RPC</span>
     </button>
   </div>
 
@@ -708,10 +844,19 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     let isPaused = false;
     let startedAtIso = "${startedAt}";
     let timerInterval = null;
+    let hasReceivedUpdate = false;
 
     function formatNumberJs(n) {
       if (typeof n !== 'number' || !Number.isFinite(n)) return '0';
       return n.toLocaleString('en-US');
+    }
+
+    function formatCompactJs(n) {
+      if (typeof n !== 'number' || !Number.isFinite(n) || n === 0) return '0';
+      if (n >= 1000000000) return (n / 1000000000).toFixed(n >= 10000000000 ? 1 : 2) + 'B';
+      if (n >= 1000000) return (n / 1000000).toFixed(n >= 100000000 ? 0 : 1) + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+      return String(Math.round(n));
     }
 
     function formatDurationJs(sec) {
@@ -742,8 +887,15 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
 
     function updateFromSnapshot(snap) {
       if (!snap) return;
+      hasReceivedUpdate = true;
+
+      const badge = document.getElementById('sideStatusText');
+      if (badge && (badge.innerText === 'Connecting...' || badge.innerText === 'Initializing')) {
+        badge.innerText = 'Live Synced';
+      }
+
       const tokens = snap.session ? snap.session.tokens : null;
-      if (tokens) {
+      if (tokens && tokens.totalTokens > 0) {
         const tot = tokens.totalTokens || 0;
         const cTok = tokens.cacheReadTokens || 0;
         const inTok = tokens.inputTokens || 0;
@@ -751,10 +903,10 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
         const ratio = inTok + cTok > 0 ? Math.round((cTok / (inTok + cTok)) * 100) : 0;
 
         document.getElementById('sideTotalTokens').innerText = formatNumberJs(tot);
-        document.getElementById('sideCacheTokens').innerText = formatNumberJs(cTok);
-        document.getElementById('sideInTokens').innerText = formatNumberJs(inTok);
-        document.getElementById('sideOutTokens').innerText = formatNumberJs(outTok);
-        document.getElementById('sideCacheRatio').innerText = ratio + '% SAVINGS';
+        document.getElementById('sideCacheTokens').innerText = formatCompactJs(cTok);
+        document.getElementById('sideInTokens').innerText = formatCompactJs(inTok);
+        document.getElementById('sideOutTokens').innerText = formatCompactJs(outTok);
+        document.getElementById('sideCacheRatio').innerText = ratio + '% SAVED';
 
         const inR = tot > 0 ? Math.max(1, Math.round((inTok / tot) * 100)) : 0;
         const outR = tot > 0 ? Math.max(1, Math.round((outTok / tot) * 100)) : 0;
@@ -782,14 +934,21 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       if (agentBox) {
         if (agents.length > 0) {
           const a = agents[0];
-          agentBox.innerHTML = '<div class="radar-box">' +
-            '<div class="radar-pulse"></div>' +
-            '<div style="flex:1; overflow:hidden;">' +
-            '<div style="font-weight:700; font-size:11.5px; color:var(--t1); white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">' + (a.model || 'AI Agent') + '</div>' +
-            '<div style="font-size:10px; color:var(--t2);">' + (a.activeTool ? 'Executing tool: ' + a.activeTool : 'Thinking & Planning...') + '</div>' +
-            '</div></div>';
+          agentBox.innerHTML =
+            '<div class="agent-active-badge">' +
+            '<span class="radar-sonar-dot"></span>' +
+            '<span>' + (a.model || 'AI Agent') + '</span>' +
+            '</div>' +
+            '<div class="agent-tool-text">' +
+            (a.activeTool ? 'Tool: ' + a.activeTool : 'Thinking & Planning...') +
+            '</div>';
         } else {
-          agentBox.innerHTML = '<div style="font-size:10.5px; color:var(--t3); padding:4px 0;">All agents standing by. Context and memory intact.</div>';
+          agentBox.innerHTML =
+            '<div class="agent-active-badge">' +
+            '<span class="radar-sonar-dot idle"></span>' +
+            '<span style="color:var(--t2);">Standing By</span>' +
+            '</div>' +
+            '<div class="agent-tool-text">Context intact</div>';
         }
       }
 
@@ -802,14 +961,14 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
         const totTokens = tokens ? tokens.totalTokens : 1;
         mListEl.innerHTML = models.slice(0, 4).map(function(m, i) {
           const share = totTokens > 0 ? Math.round((m.tokens.totalTokens / totTokens) * 100) : 0;
-          const color = i === 0 ? 'var(--acc)' : i === 1 ? 'var(--lavender)' : i === 2 ? 'var(--coral)' : 'var(--emerald)';
-          return '<div class="model-item">' +
-            '<div class="model-info">' +
-            '<span style="font-weight:600; color:var(--t1);">' + m.model + '</span>' +
-            '<span class="mono" style="color:var(--t2);">' + formatNumberJs(m.tokens.totalTokens) + ' (' + share + '%)</span>' +
+          const color = i === 0 ? 'var(--acc)' : i === 1 ? 'var(--cyan)' : i === 2 ? 'var(--lavender)' : 'var(--coral)';
+          return '<div class="model-row">' +
+            '<div class="model-meta">' +
+            '<span class="model-name">' + m.model + '</span>' +
+            '<span class="model-stat-num mono">' + formatCompactJs(m.tokens.totalTokens) + ' (' + share + '%)</span>' +
             '</div>' +
-            '<div class="model-progress">' +
-            '<div class="model-fill" style="width:' + share + '%; background:' + color + ';"></div>' +
+            '<div class="model-bar-wrap">' +
+            '<div class="model-bar-fill" style="width:' + share + '%; background:' + color + ';"></div>' +
             '</div>' +
             '</div>';
         }).join('');
@@ -822,15 +981,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
         const c = wsInfo && wsInfo.count ? wsInfo.count : 1;
         wsEl.innerText = c > 1 ? c + ' Workspaces active' : '1 Workspace active';
       }
-
-      hasReceivedUpdate = true;
-      const badge = document.getElementById('sideStatusText');
-      if (badge && (badge.innerText === 'Connecting...' || badge.innerText === 'Initializing')) {
-        badge.innerText = 'Live Synced';
-      }
     }
-
-    let hasReceivedUpdate = false;
 
     // Connect to live SSE stream from local dashboard server
     function initSSE() {
@@ -859,7 +1010,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
 
     initSSE();
 
-    // Listen for extension messages
+    // Listen for extension host messages
     window.addEventListener('message', function(event) {
       const msg = event.data;
       if (msg && msg.type === 'update') {
@@ -886,27 +1037,20 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       const icon = document.getElementById('btnPauseIcon');
       const label = document.getElementById('btnPauseLabel');
       const status = document.getElementById('sideTimerStatus');
-      const badge = document.getElementById('sideRetentionChip');
 
       if (isPaused) {
-        if (icon) icon.innerText = '▶️';
+        if (icon) {
+          icon.innerHTML = '<svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.5v9l7.5-4.5L5 3.5z"/></svg>';
+        }
         if (label) label.innerText = 'Resume';
         if (status) status.innerText = 'PAUSED';
-        if (badge) {
-          badge.style.color = 'var(--acc)';
-          badge.style.borderColor = 'rgba(232,255,31,0.3)';
-          badge.innerText = 'PAUSED (24H)';
-        }
         if (vscode) vscode.postMessage({ command: 'pauseSession' });
       } else {
-        if (icon) icon.innerText = '⏸️';
-        if (label) label.innerText = 'Pause & Leave (24h)';
-        if (status) status.innerText = 'ACTIVE';
-        if (badge) {
-          badge.style.color = 'var(--emerald)';
-          badge.style.borderColor = 'rgba(16,185,129,0.3)';
-          badge.innerText = '🛡️ 24H RESILIENT';
+        if (icon) {
+          icon.innerHTML = '<svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="3" width="2.8" height="10" rx="1.2"/><rect x="9.2" y="3" width="2.8" height="10" rx="1.2"/></svg>';
         }
+        if (label) label.innerText = 'Pause';
+        if (status) status.innerText = 'RUNNING';
         if (vscode) vscode.postMessage({ command: 'resumeSession' });
       }
       startTimer(startedAtIso, isPaused);
