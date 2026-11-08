@@ -1,0 +1,17 @@
+.agents/**
+.github/**
+.vscode/**
+components/**
+docs/**
+research/**
+scripts/**
+sidecars/**
+src/**
+tests/**
+tsconfig.json
+tsup.config.ts
+vitest.config.ts
+demo.tsx
+*.vsix
+.git/**
+.gitignore
