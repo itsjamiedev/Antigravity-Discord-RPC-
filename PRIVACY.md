@@ -1,13 +1,13 @@
 # Antigravity Presence — Privacy Policy & Data Guarantees
 
 > **Last Updated:** November 2026  
-> **Commitment:** 100% Local Execution (`127.0.0.1`), Zero Cloud Servers, Zero Telemetry, Zero Data Extraction.
+> **Commitment:** 100% Local Execution (localhost), Zero Cloud Servers, Zero Telemetry, Zero Data Extraction.
 
 ---
 
 ## 1. Executive Summary
 
-**Antigravity Presence** is an open-source, privacy-preserving developer companion for **Google Antigravity IDE**. It connects your local Antigravity environment to **Discord Rich Presence** and provides an offline local observability dashboard (`http://127.0.0.1:41177`).
+**Antigravity Presence** is an open-source, privacy-preserving developer companion for **Google Antigravity IDE**. It connects your local Antigravity environment to **Discord Rich Presence** and provides an offline local observability dashboard (`localhost:41177`).
 
 We believe developers should never have to sacrifice privacy to show off their AI agent workflows. Antigravity Presence is engineered from the ground up with **zero-trust local isolation**:
 

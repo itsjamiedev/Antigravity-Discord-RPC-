@@ -97,7 +97,7 @@ describe('SidebarDashboardProvider (Native Activity Bar Webview View)', () => {
   it('generates rich dark-mode sidebar HTML with KPI tiles and model distribution', () => {
     const html = getSidebarHtml(mockSnapshot);
     expect(html).toContain('<!DOCTYPE html>');
-    expect(html).toContain('Antigravity Telemetry');
+    expect(html).toContain('Antigravity Presence');
     expect(html).toContain('TOKEN VOLUME');
     expect(html).toContain('525,000');
     expect(html).toContain('52.5K session');
@@ -133,7 +133,7 @@ describe('SidebarDashboardProvider (Native Activity Bar Webview View)', () => {
 
     provider.resolveWebviewView(mockWebviewView as any, {} as any, {} as any);
 
-    expect(mockWebview.html).toContain('Antigravity Telemetry');
+    expect(mockWebview.html).toContain('Antigravity Presence');
     expect(typeof messageHandler).toBe('function');
 
     // Simulate clicking "Open Full Dashboard"
@@ -203,6 +203,6 @@ describe('SidebarDashboardProvider (Native Activity Bar Webview View)', () => {
     const html = getSidebarHtml(null);
     expect(html).toContain('Content-Security-Policy');
     expect(html).toContain('http://127.0.0.1:*');
-    expect(html).toContain('Antigravity Telemetry');
+    expect(html).toContain('Antigravity Presence');
   });
 });

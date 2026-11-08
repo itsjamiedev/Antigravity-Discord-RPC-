@@ -4,30 +4,27 @@
   "publisher": "itsjamiefied",
   "version": "1.0.0",
   "icon": "resources/icon.png",
-  "description": "Privacy-safe Discord Rich Presence and real-time observability dashboard for Google Antigravity IDE & agents",
+  "description": "Discord Rich Presence and activity status companion for Google Antigravity",
   "author": "itsjamiefied",
   "license": "MIT",
   "keywords": [
     "antigravity",
-    "google-antigravity",
     "discord",
     "rich-presence",
-    "rpc",
-    "ai-agent",
-    "tokens",
-    "gemini",
-    "dashboard"
+    "presence",
+    "productivity"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/itsjamiedev/Antigravity-Discord-RPC-.git"
+    "url": "https://github.com/itsjamiedev/Antigravity-Discord-RPC-"
   },
   "bugs": {
     "url": "https://github.com/itsjamiedev/Antigravity-Discord-RPC-/issues"
   },
-  "homepage": "https://github.com/itsjamiedev/Antigravity-Discord-RPC-#readme",
+  "homepage": "https://github.com/itsjamiedev/Antigravity-Discord-RPC-",
   "main": "./dist/extension.cjs",
   "categories": [
+    "Visualization",
     "Other"
   ],
   "activationEvents": [
@@ -82,7 +79,7 @@
         {
           "type": "webview",
           "id": "antigravityPresence.sidebarView",
-          "name": "Antigravity Telemetry"
+          "name": "Antigravity Activity"
         }
       ]
     },
@@ -112,7 +109,7 @@
         "antigravityPresence.hideTokens": {
           "type": "boolean",
           "default": true,
-          "description": "Hide token counts on Discord (shown in local dashboard)"
+          "description": "Hide AI model token statistics from Discord status"
         }
       }
     }
@@ -127,20 +124,17 @@
     "package": "npx @vscode/vsce package --no-dependencies"
   },
   "engines": {
-    "vscode": "^1.90.0",
-    "node": ">=20.0.0"
-  },
-  "dependencies": {
-    "better-sqlite3": "^13.0.3",
-    "zod": "^3.24.2"
+    "vscode": "^1.90.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.13.4",
     "@types/vscode": "^1.90.0",
+    "better-sqlite3": "^13.0.3",
     "tsup": "^8.3.6",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
-    "vitest": "^3.0.6"
+    "vitest": "^3.0.6",
+    "zod": "^3.24.2"
   }
 }

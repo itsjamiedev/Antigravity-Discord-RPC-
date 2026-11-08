@@ -21,7 +21,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Antigravity_IDE-Native_Extension-38bdf8?style=flat-square&logo=visualstudiocode&logoColor=white" alt="Antigravity IDE" />
   <img src="https://img.shields.io/badge/Discord-Rich_Presence_IPC-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord RPC" />
-  <img src="https://img.shields.io/badge/Privacy-100%25_Localhost-10b981?style=flat-square" alt="Privacy Safe" />
+  <img src="https://img.shields.io/badge/Privacy-100%25_Offline-10b981?style=flat-square" alt="Privacy Safe" />
   <img src="https://img.shields.io/badge/Architecture-100%25_Hookless-f59e0b?style=flat-square" alt="Hookless" />
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License" />
 </p>
@@ -30,7 +30,7 @@
 
 ## Overview
 
-**Antigravity Presence** is an executive-grade, privacy-first companion extension designed specifically for **Google Antigravity IDE**. It seamlessly connects your local Antigravity workspaces to Discord Rich Presence while hosting a dedicated local usage dashboard (`http://127.0.0.1:41177`) with exact token analytics, per-model consumption tracking, and interactive conversation inspection.
+**Antigravity Presence** is an executive-grade, privacy-first companion extension designed specifically for **Google Antigravity IDE**. It seamlessly connects your local Antigravity workspaces to Discord Rich Presence while hosting a dedicated local usage dashboard with exact token analytics, per-model consumption tracking, and interactive conversation inspection.
 
 Whether your autonomous agents are refactoring codebases, running build tests, or you are manually editing files, Antigravity Presence dynamically broadcasts your activity to Discord with zero lag, zero performance overhead, and zero privacy leaks.
 
@@ -44,7 +44,7 @@ Whether your autonomous agents are refactoring codebases, running build tests, o
   - **AI Agent Mode** *(Priority)*: Displays real-time active agent count (`1 AI agent active`), model names (`Gemini 3.8 Flash`, `Gemini 4 Argon`), and continuous session elapsed time.
   - **Manual Coding Mode** *(Fallback)*: When agents are idle, automatically reflects your active file editing (`Editing types.ts • TypeScript — Line 42 of 150`).
   - **Idle in Antigravity Mode**: Maintains your session timer continuously without resetting to `0:00`.
-- **📊 Real-Time Local Observability Dashboard (`http://127.0.0.1:41177`)**:
+- **📊 Real-Time Local Observability Dashboard**:
   - **Executive OLED Spatial UI**: Designed according to Linear / Apple-grade craft with double-bezel cards, Geist typography, and Minecraft Seven pixel accents.
   - **Click-to-Inspect Conversation Drawer**: Click any conversation to slide open its live agent status, active tool name (`⚡ run_command`, `⚡ edit_file`), token breakdown, and event timeline.
   - **Per-Model Token Breakdown**: Compares token consumption between Gemini 3.8 Flash, Gemini 4 Argon, Claude Sonnet, etc.
@@ -53,7 +53,7 @@ Whether your autonomous agents are refactoring codebases, running build tests, o
   - Stores cumulative token metrics and turn watermarks in `~/.gemini/antigravity/presence-tokens.json` with atomic disk writes.
   - Preserves token history, model distribution, and daily graphs across restarts.
 - **🔒 Zero-Trust Privacy Guarantees**:
-  - 100% local processing (`127.0.0.1` only). Source code, user prompts, command arguments, and workspace paths never leave your computer.
+  - 100% local-only processing. Source code, user prompts, command arguments, and workspace paths never leave your computer.
 
 ---
 
@@ -81,12 +81,12 @@ flowchart TD
         AW["AgentWatcher<br/>(1.0s Real-Time Poller & B-Tree Scanner)"]
         TS["TokenStore Engine<br/>(Step Watermarks & Model Aggregator)"]
         PT["PureTracker (Single Source of Truth)<br/>(Zero C++ Dependencies)"]
-        LE["Leader Election<br/>(Port 41177 Coordinator)"]
+        LE["Leader Election<br/>(Local Coordinator)"]
     end
 
     subgraph Outputs & Presentation
         DISCORD["Discord Desktop Client<br/>(\\\\.\\pipe\\discord-ipc-0..9)"]
-        DASHBOARD["Spatial Web Dashboard<br/>(http://127.0.0.1:41177)"]
+        DASHBOARD["Spatial Web Dashboard<br/>(Local Webview)"]
         DRAWER["Slide-Over Inspect Drawer<br/>(Live Agent & Tool Status)"]
     end
 
@@ -163,7 +163,7 @@ flowchart LR
 
     subgraph External Boundaries
         DISCORD["Discord Rich Presence<br/>(Model, Agent Count, Basename)"]
-        LOCAL["Local Dashboard Only<br/>(127.0.0.1:41177)"]
+        LOCAL["Local Dashboard Only<br/>(Local Storage)"]
     end
 
     P & C & A & F --> DROP
@@ -221,9 +221,9 @@ Antigravity Presence transitions smoothly between three modes:
 
 ---
 
-## Local Dashboard (`http://127.0.0.1:41177`)
+## Local Observability Dashboard
 
-Open **`http://127.0.0.1:41177`** in any browser to access the local observability suite:
+Use the command **Antigravity Presence: Open Dashboard in Browser** or open the IDE sidebar to access the observability suite:
 
 - **Overview Tab**: Live status of active agents, total session tokens, models in use, dual-mode editor activity, and active sessions.
 - **Agents Tab**: Full table of discovered agent conversations across all workspaces.
@@ -244,14 +244,14 @@ Customize Antigravity Presence via **Settings (`Ctrl+,`)** -> search for `Antigr
 | `antigravityPresence.enableManualEditsPresence` | `true` | Show file editing presence when AI agents are idle. |
 | `antigravityPresence.hideFileNamesInManualEdits` | `false` | Mask file names for privacy (displays `"Coding in TypeScript"` instead of file name). |
 | `antigravityPresence.hideModels` | `false` | Hide specific AI model names on Discord (displays `"AI Agent"`). |
-| `antigravityPresence.hideTokens` | `true` | Keep token metrics private to your local dashboard (hidden from Discord). |
+| `antigravityPresence.hideTokens` | `true` | Keep token metrics private to your local dashboard (hidden from public status). |
 
 ---
 
 ## Privacy & Security
 
 Antigravity Presence is built with **zero-trust local isolation**:
-- **100% Localhost (`127.0.0.1`)**: Does not send data to any external server.
+- **100% Offline & Local**: Does not send data to any external server.
 - **No Prompt or Code Logging**: Prompts, bash commands, file diffs, and tool arguments are never read, stored, or sent.
 - **Full Privacy Policy**: Read our detailed [PRIVACY.md](PRIVACY.md) for data guarantees.
 
@@ -259,4 +259,4 @@ Antigravity Presence is built with **zero-trust local isolation**:
 
 ## License
 
-Antigravity Presence is free, open-source software licensed under the **[MIT License](LICENSE)**.
+Antigravity Presence is free, open-source software licensed under the **[MIT License](LICENSE.txt)**.

@@ -1,3 +1,10 @@
+plugins/**
+dist/daemon.cjs
+dist/hook-forwarder.cjs
+scratch/**
+resources/concept*
+resources/logo-1024.png
+resources/logo-master.png
 .agents/**
 .github/**
 .vscode/**
@@ -15,4 +22,5 @@ demo.tsx
 *.vsix
 .git/**
 .gitignore
+PRIVACY.md
 

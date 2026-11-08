@@ -256,7 +256,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src http://127.0.0.1:* http://localhost:* ws:; img-src https: data:;">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Antigravity Telemetry</title>
+  <title>Antigravity Presence</title>
   <style>
     :root {
       --bg: #070709;
@@ -676,7 +676,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
         <polygon points="12 2 22 18 2 18" />
         <polygon points="12 7 17 15 7 15" fill="currentColor" opacity="0.3" />
       </svg>
-      <span>Antigravity Telemetry</span>
+      <span>Antigravity Presence</span>
     </div>
     <div class="live-pill" id="sideStatusBadge">
       <span class="live-dot"></span>

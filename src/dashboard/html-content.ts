@@ -1114,7 +1114,7 @@ export function getDashboardHtml(): string {
         <div class="rim"></div>
         <div class="in-c">
           <div class="card-top">
-            <div class="cap">HISTORICAL USAGE TELEMETRY</div>
+            <div class="cap">HISTORICAL USAGE METRICS</div>
             <span class="chip" id="analyticsTableCount">0 DAYS RECORDED</span>
           </div>
           <div class="ttl">Day-by-Day Token Accounting</div>
