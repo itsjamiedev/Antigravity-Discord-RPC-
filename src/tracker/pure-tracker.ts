@@ -41,16 +41,13 @@ export class PureTracker {
 
   constructor(_isLeader: boolean = false, customTokenStorePath?: string, customSessionFilePath?: string) {
     this.sessionManager = new SessionManager(customSessionFilePath);
-    const sessionState = this.sessionManager.getSessionState();
-    this.startTime = sessionState?.startedAt || new Date().toISOString();
+    const now = new Date().toISOString();
+    this.startTime = now;
     this.tokenStore = new TokenStore(customTokenStorePath);
     this.startHeartbeat();
     const initialTokens = this.tokenStore.getTotalCumulativeTokens();
-    this.initialLifetimeTokens =
-      typeof sessionState?.initialLifetimeTokens === 'number'
-        ? sessionState.initialLifetimeTokens
-        : initialTokens.totalTokens;
-    this.sessionTokens = sessionState?.sessionTokens || {
+    this.initialLifetimeTokens = initialTokens.totalTokens;
+    this.sessionTokens = {
       inputTokens: 0,
       cacheReadTokens: 0,
       outputTokens: 0,
@@ -67,7 +64,7 @@ export class PureTracker {
       this.sessionTokens.outputTokens = diff;
     }
     this.session = {
-      sessionId: sessionState?.sessionId || ('ext-session-' + Date.now()),
+      sessionId: 'ext-session-' + Date.now(),
       startedAt: this.startTime,
       lastActivityAt: new Date().toISOString(),
       activeAgentCount: 0,

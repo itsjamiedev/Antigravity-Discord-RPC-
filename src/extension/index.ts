@@ -356,9 +356,6 @@ async function tryAcquireLeaderRole(): Promise<boolean> {
     // Leader registers its own open workspace folders
     dashboardServer.registerWindowWorkspaces(windowSessionId, getCurrentWorkspaceFolders());
 
-    // Check if a previous session from within 24h should be resumed
-    checkAndPromptSessionResumption();
-
     updateStatusBar();
     return true;
   } catch {
