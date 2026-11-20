@@ -1,28 +1,29 @@
 /**
- * Antigravity Presence — Central Daemon Entrypoint
+ * Antigravity Presence — Standalone Background Daemon
  *
- * Bootstraps:
- *   1. ConfigManager (loads privacy settings with safe defaults)
- *   2. CentralTracker (SQLite WAL single source of truth)
- *   3. DiscordIpcClient (pipes 0..9 auto-reconnect)
- *   4. PresenceManager (dual-mode formatter + 15s debouncer)
- *   5. DashboardServer (127.0.0.1:41177 Web UI, SSE live stream, and REST ingest)
- *   6. Staleness & timeout watchdog loop (evaluates every 5 seconds)
+ * Provides hookless Discord Rich Presence and local dashboard monitoring
+ * for Antigravity 2.0 desktop app and Antigravity IDE without requiring
+ * an IDE extension host window.
+ *
+ * Uses PureTracker and AgentWatcher for 100% native TypeScript execution
+ * with zero C++ dependencies and zero CLI hooks.
  */
 
 import { ConfigManager } from '../config/privacy-config.js';
 import { DashboardServer } from '../dashboard/server.js';
 import { DiscordIpcClient } from '../discord/ipc-client.js';
 import { PresenceManager } from '../discord/presence-manager.js';
-import { CentralTracker } from '../tracker/tracker.js';
+import { PureTracker } from '../tracker/pure-tracker.js';
+import { AgentWatcher, type AgentWatcherState } from '../extension/agent-watcher.js';
+import type { CentralTracker } from '../tracker/tracker.js';
 
 async function bootstrap(): Promise<void> {
   const configManager = new ConfigManager();
   const settings = configManager.getSettings();
 
-  const tracker = new CentralTracker();
+  const tracker = new PureTracker();
   if (settings.pauseTracking) {
-    tracker.setPaused(true);
+    tracker.pauseSession();
   }
 
   const discordClient = new DiscordIpcClient({
@@ -31,18 +32,23 @@ async function bootstrap(): Promise<void> {
 
   const presenceManager = new PresenceManager(discordClient, configManager);
 
-  // Initialize initial presence
+  // Initialize initial presence from disk/session state
   presenceManager.updateFromSnapshot(tracker.getSnapshot());
 
   const server = new DashboardServer({
-    tracker,
+    port: 41177,
+    tracker: tracker as unknown as CentralTracker,
     presenceManager,
     discordClient,
     configManager,
   });
 
-  const boundPort = await server.start();
-  console.log(`[Antigravity Presence] Local Dashboard active at: http://127.0.0.1:${boundPort}`);
+  try {
+    const boundPort = await server.start();
+    console.log(`[Antigravity Presence] Local Dashboard active at: http://127.0.0.1:${boundPort}`);
+  } catch (err) {
+    console.warn('[Antigravity Presence] Port 41177 already occupied (likely an active IDE window). Daemon running in companion mode.');
+  }
 
   // Connect to Discord IPC if rich presence is not disabled
   if (!settings.disableRichPresence) {
@@ -50,18 +56,23 @@ async function bootstrap(): Promise<void> {
     console.log('[Antigravity Presence] Scanning Discord IPC pipes (0..9)...');
   }
 
-  // Periodic watchdog timer for staleness & approval estimates (runs every 5s)
-  const watchdogInterval = setInterval(() => {
-    tracker.evaluateTimeouts();
-  }, 5000);
-  watchdogInterval.unref();
+  // Hookless agent watcher polling ~/.gemini/antigravity/ (shared by Antigravity 2.0 & IDE)
+  const agentWatcher = new AgentWatcher();
+  agentWatcher.on('change', (state: AgentWatcherState) => {
+    tracker.updateFromAgentWatcher(state);
+    presenceManager.updateFromSnapshot(tracker.getSnapshot());
+  });
+  agentWatcher.start();
+  tracker.updateFromAgentWatcher(agentWatcher.getState());
+  presenceManager.updateFromSnapshot(tracker.getSnapshot());
 
   const shutdown = async (signal: string): Promise<void> => {
     console.log(`\n[Antigravity Presence] Shutting down (${signal})...`);
-    clearInterval(watchdogInterval);
+    agentWatcher.stop();
     presenceManager.destroy();
     discordClient.destroy();
     await server.stop();
+    tracker.getSessionManager().saveOnShutdown();
     tracker.close();
     process.exit(0);
   };
@@ -74,4 +85,3 @@ void bootstrap().catch((err) => {
   console.error('[Antigravity Presence] Fatal daemon error:', err);
   process.exit(1);
 });
-
