@@ -52,6 +52,9 @@ async function bootstrap(): Promise<void> {
 
   // Connect to Discord IPC if rich presence is not disabled
   if (!settings.disableRichPresence) {
+    discordClient.onStateChange((state) => {
+      console.log(`[Antigravity Presence] Discord IPC state: ${state}`);
+    });
     discordClient.connect();
     console.log('[Antigravity Presence] Scanning Discord IPC pipes (0..9)...');
   }
