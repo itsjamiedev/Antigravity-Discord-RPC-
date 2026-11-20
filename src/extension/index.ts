@@ -428,6 +428,7 @@ export function deactivate(): void {
     presenceManager = null;
   }
   if (discordClient) {
+    discordClient.clearActivity();
     discordClient.destroy();
     discordClient = null;
   }

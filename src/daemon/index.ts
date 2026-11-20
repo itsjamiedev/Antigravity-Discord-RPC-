@@ -5,10 +5,13 @@
  * for Antigravity 2.0 desktop app and Antigravity IDE without requiring
  * an IDE extension host window.
  *
- * Uses PureTracker and AgentWatcher for 100% native TypeScript execution
- * with zero C++ dependencies and zero CLI hooks.
+ * Automatically monitors Antigravity process lifecycle:
+ * - When Antigravity 2.0 or IDE is active -> Broadcasts live rich presence.
+ * - When Antigravity is closed -> Clears Discord activity immediately.
+ * - Zero C++ dependencies and zero CLI hooks.
  */
 
+import cp from 'node:child_process';
 import { ConfigManager } from '../config/privacy-config.js';
 import { DashboardServer } from '../dashboard/server.js';
 import { DiscordIpcClient } from '../discord/ipc-client.js';
@@ -16,6 +19,21 @@ import { PresenceManager } from '../discord/presence-manager.js';
 import { PureTracker } from '../tracker/pure-tracker.js';
 import { AgentWatcher, type AgentWatcherState } from '../extension/agent-watcher.js';
 import type { CentralTracker } from '../tracker/tracker.js';
+
+export function isAntigravityRunning(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (process.platform === 'win32') {
+      cp.execFile('tasklist', ['/FI', 'IMAGENAME eq Antigravity*', '/FO', 'CSV', '/NH'], (err, stdout) => {
+        if (err || !stdout) return resolve(false);
+        resolve(/Antigravity/i.test(stdout));
+      });
+    } else {
+      cp.execFile('pgrep', ['-i', 'antigravity'], (err, stdout) => {
+        resolve(!err && !!stdout && stdout.trim().length > 0);
+      });
+    }
+  });
+}
 
 async function bootstrap(): Promise<void> {
   const configManager = new ConfigManager();
@@ -31,9 +49,6 @@ async function bootstrap(): Promise<void> {
   });
 
   const presenceManager = new PresenceManager(discordClient, configManager);
-
-  // Initialize initial presence from disk/session state
-  presenceManager.updateFromSnapshot(tracker.getSnapshot());
 
   const server = new DashboardServer({
     port: 41177,
@@ -59,19 +74,49 @@ async function bootstrap(): Promise<void> {
     console.log('[Antigravity Presence] Scanning Discord IPC pipes (0..9)...');
   }
 
+  // Initial process check
+  let wasRunning = await isAntigravityRunning();
+  if (wasRunning) {
+    presenceManager.updateFromSnapshot(tracker.getSnapshot());
+  } else {
+    discordClient.clearActivity();
+    console.log('[Antigravity Presence] Antigravity is not currently running. Waiting for launch...');
+  }
+
   // Hookless agent watcher polling ~/.gemini/antigravity/ (shared by Antigravity 2.0 & IDE)
   const agentWatcher = new AgentWatcher();
-  agentWatcher.on('change', (state: AgentWatcherState) => {
+  agentWatcher.on('change', async (state: AgentWatcherState) => {
     tracker.updateFromAgentWatcher(state);
-    presenceManager.updateFromSnapshot(tracker.getSnapshot());
+    const isRunning = await isAntigravityRunning();
+    if (isRunning) {
+      presenceManager.updateFromSnapshot(tracker.getSnapshot());
+    } else {
+      discordClient.clearActivity();
+    }
   });
   agentWatcher.start();
-  tracker.updateFromAgentWatcher(agentWatcher.getState());
-  presenceManager.updateFromSnapshot(tracker.getSnapshot());
+
+  // Watchdog loop: checks if Antigravity application was closed or opened every 2.5s
+  const processWatcherInterval = setInterval(async () => {
+    const isRunning = await isAntigravityRunning();
+    if (!isRunning && wasRunning) {
+      console.log('[Antigravity Presence] Antigravity closed. Cleared Discord RPC.');
+      discordClient.clearActivity();
+      wasRunning = false;
+    } else if (isRunning && !wasRunning) {
+      console.log('[Antigravity Presence] Antigravity launched. Restored Discord RPC.');
+      wasRunning = true;
+      tracker.updateFromAgentWatcher(agentWatcher.getState());
+      presenceManager.updateFromSnapshot(tracker.getSnapshot());
+    }
+  }, 2500);
+  processWatcherInterval.unref();
 
   const shutdown = async (signal: string): Promise<void> => {
     console.log(`\n[Antigravity Presence] Shutting down (${signal})...`);
+    clearInterval(processWatcherInterval);
     agentWatcher.stop();
+    discordClient.clearActivity();
     presenceManager.destroy();
     discordClient.destroy();
     await server.stop();
