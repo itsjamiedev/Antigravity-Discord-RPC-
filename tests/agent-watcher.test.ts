@@ -344,5 +344,78 @@ describe('Hookless AgentWatcher & PureTracker', () => {
 
     watcher.stop();
   });
+
+  it('detects new Google model releases and <USER_SETTINGS_CHANGE> switches dynamically', () => {
+    const convId = 'd1e2f3a4-1234-5678-90ab-cdef12345678';
+    const convDir = path.join(tempBrainDir, convId, '.system_generated', 'logs');
+    fs.mkdirSync(convDir, { recursive: true });
+
+    const transcriptFile = path.join(convDir, 'transcript.jsonl');
+    const step1 = JSON.stringify({
+      step_index: 1,
+      source: 'MODEL',
+      type: 'PLANNER_RESPONSE',
+      model: 'gemini-4-neon-low',
+      input_tokens: 1200,
+      cache_read_tokens: 4000,
+      output_tokens: 300,
+      tool_calls: [{ name: 'run_cmd' }],
+    });
+    const step2 = JSON.stringify({
+      step_index: 2,
+      source: 'MODEL',
+      type: 'PLANNER_RESPONSE',
+      model: 'gemini-4-hydrogen-tiered-xhigh',
+      input_tokens: 900,
+      cache_read_tokens: 2000,
+      output_tokens: 200,
+      tool_calls: [{ name: 'edit_file' }],
+    });
+    const step3 = JSON.stringify({
+      step_index: 3,
+      source: 'MODEL',
+      type: 'PLANNER_RESPONSE',
+      model: 'gemini-5-quantum-high',
+      input_tokens: 600,
+      cache_read_tokens: 1000,
+      output_tokens: 150,
+      tool_calls: [{ name: 'read_file' }],
+    });
+    fs.writeFileSync(transcriptFile, `${step1}\n${step2}\n${step3}\n`, 'utf8');
+
+    const watcher = new AgentWatcher({
+      brainDir: tempBrainDir,
+      activeThresholdMs: 30000,
+    });
+    watcher.scan();
+    let state = watcher.getState();
+
+    expect(state.activeAgentCount).toBe(1);
+    expect(state.activeModels).toContain('Gemini 5 Quantum');
+    const agent = state.agents[0]!;
+    expect(agent.modelsUsed).toContain('Gemini 4 Neon');
+    expect(agent.modelsUsed).toContain('Gemini 4 Hydrogen');
+    expect(agent.modelsUsed).toContain('Gemini 5 Quantum');
+    expect(agent.modelTokens?.['Gemini 4 Neon']?.totalTokens).toBe(5500);
+    expect(agent.modelTokens?.['Gemini 4 Hydrogen']?.totalTokens).toBe(3100);
+    expect(agent.modelTokens?.['Gemini 5 Quantum']?.totalTokens).toBe(1750);
+
+    // Now simulate switching model mid-turn via <USER_SETTINGS_CHANGE> while waiting for response
+    const step4 = JSON.stringify({
+      step_index: 4,
+      source: 'USER_EXPLICIT',
+      type: 'USER_INPUT',
+      content:
+        'Please continue.\n<USER_SETTINGS_CHANGE>\nThe user changed setting `Model Selection` from Gemini 5 Quantum (High) to Gemini 4 Neon (Low). No need to comment on this change.\n</USER_SETTINGS_CHANGE>',
+    });
+    fs.appendFileSync(transcriptFile, `${step4}\n`, 'utf8');
+
+    watcher.scan();
+    state = watcher.getState();
+    expect(state.activeModels).toContain('Gemini 4 Neon');
+    expect(state.activeModels).not.toContain('Gemini 5 Quantum');
+
+    watcher.stop();
+  });
 });
 

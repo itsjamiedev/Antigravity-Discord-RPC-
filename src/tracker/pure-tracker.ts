@@ -73,6 +73,7 @@ export class PureTracker {
       tokens: initialTokens,
       sessionTokens: { ...this.sessionTokens },
       lifetimeTokens: { ...initialTokens },
+      lifetimeActiveSeconds: this.sessionManager.getLifetimeActiveSeconds(),
     };
   }
 
@@ -181,6 +182,10 @@ export class PureTracker {
           snap.session.lifetimeTokens ??
           snap.lifetimeTokens ??
           this.session.lifetimeTokens,
+        lifetimeActiveSeconds:
+          typeof snap.session.lifetimeActiveSeconds === 'number'
+            ? snap.session.lifetimeActiveSeconds
+            : this.session.lifetimeActiveSeconds,
       };
       if (snap.session.sessionTokens || snap.sessionTokens) {
         this.sessionTokens = {
@@ -428,6 +433,10 @@ export class PureTracker {
         tokens: effectiveTokens,
         sessionTokens: { ...this.sessionTokens },
         lifetimeTokens: { ...effectiveTokens },
+        lifetimeActiveSeconds: Math.max(
+          this.session.lifetimeActiveSeconds ?? 0,
+          this.sessionManager.getLifetimeActiveSeconds()
+        ),
       },
       sessionTokens: { ...this.sessionTokens },
       lifetimeTokens: { ...effectiveTokens },

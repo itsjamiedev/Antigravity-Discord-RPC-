@@ -23,11 +23,13 @@ export interface PersistentSessionState {
   savedTokens?: TokenUsageRecord;
   sessionTokens?: TokenUsageRecord;
   initialLifetimeTokens?: number;
+  lifetimeActiveSeconds?: number;
 }
 
 export class SessionManager {
   private filePath: string;
   private state: PersistentSessionState;
+  private lastTickMs: number = Date.now();
 
   constructor(customFilePath?: string) {
     this.filePath =
@@ -48,6 +50,7 @@ export class SessionManager {
         lastHeartbeatMs: now,
         isPaused: false,
         savedAt: startedAt,
+        lifetimeActiveSeconds: 0,
       };
       this.saveToDisk(this.state);
     }
@@ -85,6 +88,10 @@ export class SessionManager {
               typeof raw.initialLifetimeTokens === 'number'
                 ? raw.initialLifetimeTokens
                 : undefined,
+            lifetimeActiveSeconds:
+              typeof raw.lifetimeActiveSeconds === 'number'
+                ? raw.lifetimeActiveSeconds
+                : elapsedSeconds || 0,
           };
         }
       }
@@ -144,8 +151,27 @@ export class SessionManager {
     return Math.max(0, currentElapsed);
   }
 
+  private getPendingLifetimeDeltaSeconds(now: number): number {
+    if (this.state.isPaused) return 0;
+    const deltaSec = Math.floor((now - this.lastTickMs) / 1000);
+    return deltaSec > 0 && deltaSec <= 120 ? deltaSec : 0;
+  }
+
+  private flushLifetimeDelta(now: number): void {
+    const delta = this.getPendingLifetimeDeltaSeconds(now);
+    if (delta > 0) {
+      this.state.lifetimeActiveSeconds = (this.state.lifetimeActiveSeconds || 0) + delta;
+    }
+    this.lastTickMs = now;
+  }
+
+  public getLifetimeActiveSeconds(): number {
+    return (this.state.lifetimeActiveSeconds || 0) + this.getPendingLifetimeDeltaSeconds(Date.now());
+  }
+
   public recordHeartbeat(): void {
     const now = Date.now();
+    this.flushLifetimeDelta(now);
     if (!this.state.isPaused) {
       this.state.elapsedSeconds = this.getElapsedSeconds();
     }
@@ -174,10 +200,12 @@ export class SessionManager {
     const now = Date.now();
     const nowIso = new Date(now).toISOString();
     if (!this.state.isPaused) {
+      this.flushLifetimeDelta(now);
       this.state.elapsedSeconds = this.getElapsedSeconds();
       this.state.isPaused = true;
       this.state.pausedAt = nowIso;
     }
+    this.lastTickMs = now;
     this.state.lastHeartbeatMs = now;
     this.state.savedAt = nowIso;
     if (tokens) {
@@ -202,6 +230,7 @@ export class SessionManager {
     this.state.startedAt = adjustedStartedAt;
     this.state.isPaused = false;
     this.state.pausedAt = undefined;
+    this.lastTickMs = now;
     this.state.lastHeartbeatMs = now;
     this.state.savedAt = new Date(now).toISOString();
 
@@ -213,12 +242,14 @@ export class SessionManager {
   }
 
   /**
-   * Resets elapsed time and starts a brand new session.
+   * Resets elapsed time and starts a brand new session while preserving lifetime active hours.
    */
   public startFreshSession(
     initialLifetimeTokens?: number
   ): { startedAt: string; elapsedSeconds: number } {
     const now = Date.now();
+    this.flushLifetimeDelta(now);
+    const preservedLifetimeSeconds = this.state.lifetimeActiveSeconds || 0;
     const startedAt = new Date(now).toISOString();
 
     this.state = {
@@ -240,6 +271,7 @@ export class SessionManager {
       },
       initialLifetimeTokens:
         typeof initialLifetimeTokens === 'number' ? initialLifetimeTokens : 0,
+      lifetimeActiveSeconds: preservedLifetimeSeconds,
     };
 
     this.saveToDisk(this.state);

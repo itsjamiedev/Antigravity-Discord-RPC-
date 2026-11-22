@@ -844,6 +844,7 @@ export function getDashboardHtml(): string {
             <div>
               <div class="big-num mono" id="kpiSessionTimer">00:00:00</div>
               <div class="muted" id="kpiSessionSub" style="margin-top:2px;">Auto-saved for 24h shutdown recovery</div>
+              <div class="mono" id="kpiLifetimeHours" style="margin-top:4px; font-size:11.5px; color:var(--acc); font-weight:600;">Overall: 0m</div>
             </div>
           </div>
         </div>
@@ -1362,6 +1363,14 @@ export function getDashboardHtml(): string {
       if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
       if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
       return Math.round(num).toString();
+    }
+
+    function formatLifetimeHours(seconds) {
+      if (typeof seconds !== 'number' || !isFinite(seconds) || seconds <= 0) return '0m';
+      if (seconds < 3600) {
+        return Math.max(1, Math.floor(seconds / 60)) + 'm';
+      }
+      return (seconds / 3600).toFixed(1).replace(/\.0$/, '') + 'h';
     }
 
     function formatTime(isoStr) {
@@ -1976,6 +1985,13 @@ export function getDashboardHtml(): string {
       // KPI Conversations
       document.getElementById('kpiConvsCount').innerText = data.session.totalConversations;
       document.getElementById('kpiConvsSub').innerText = data.conversations.length + ' registered sessions';
+
+      // KPI Lifetime Hours
+      const lifetimeEl = document.getElementById('kpiLifetimeHours');
+      if (lifetimeEl && data.session) {
+        const lifeSecs = typeof data.session.lifetimeActiveSeconds === 'number' ? data.session.lifetimeActiveSeconds : 0;
+        lifetimeEl.innerText = 'Overall: ' + formatLifetimeHours(lifeSecs);
+      }
 
       // 5. Mirrored Wave Flow, Sparklines & Hourly Activity
       renderFlowChart(data);

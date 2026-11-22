@@ -174,87 +174,114 @@ export function getGroundTruthConversationStatuses(customDbDir?: string): Map<st
   return runningMap;
 }
 
+const MODEL_CHANGE_REGEX =
+  /<USER_SETTINGS_CHANGE>[\s\S]*?The user changed setting `Model Selection` from [^\r\n]+? to ([^\r\n]+?)\. No need to comment[\s\S]*?<\/USER_SETTINGS_CHANGE>/;
+const MODEL_PB_SINGLE_REGEX =
+  /\x9a\x01[\x01-\x30]((?:gemini|claude|gemma|gpt|o\d|deepseek|llama|mistral|qwen|veo|imagen|learnlm)[a-z0-9\.\-]+)\xa2\x01/;
+const MODEL_PB_GLOBAL_REGEX =
+  /\x9a\x01[\x01-\x30]((?:gemini|claude|gemma|gpt|o\d|deepseek|llama|mistral|qwen|veo|imagen|learnlm)[a-z0-9\.\-]+)\xa2\x01/g;
+
 function normalizeModelName(raw: string): string {
   return formatModelDisplayName(raw);
 }
 
 /**
  * Extracts the real model name for a conversation by:
- * 1. Parsing SQLite B-Tree leaf cells (`0x0d`) of `gen_metadata` in `.db` and `.db-wal`
+ * 1. Checking the tail of `transcript_full.jsonl` & `transcript.jsonl` for an explicit
+ *    `<USER_SETTINGS_CHANGE>` model switch or `PLANNER_RESPONSE.model`.
+ * 2. Parsing SQLite B-Tree leaf cells (`0x0d`) of `gen_metadata` in `.db` and `.db-wal`
  *    (validating active WAL header `salt-1`/`salt-2` so stale WAL frames are skipped)
  *    and selecting the protobuf model slug with the strictly highest `rowid` (`idx`).
  *    (Fixes the bug where SQLite downward cell allocation placed older rows at higher
  *    byte offsets than newer rows within a 4096-byte page.)
- * 2. Checking the tail of `transcript_full.jsonl` for an explicit `<USER_SETTINGS_CHANGE>`
- *    model switch in the latest user turn.
  */
-export function extractModelForConversation(conversationId: string): string {
+export function extractModelForConversation(
+  conversationId: string,
+  customBrainDir?: string
+): string {
   const antigravityDir = path.join(os.homedir(), '.gemini', 'antigravity');
+  const brainBase = customBrainDir ?? path.join(antigravityDir, 'brain');
   const convDir = path.join(antigravityDir, 'conversations');
   const dbFile = path.join(convDir, `${conversationId}.db`);
   const walFile = path.join(convDir, `${conversationId}.db-wal`);
 
-  // 1. Check USER_INPUT steps in transcript_full.jsonl for <USER_SETTINGS_CHANGE>
-  // Antigravity logs every model selection & mid-conversation model switch in USER_INPUT at t=0ms.
-  const fullTranscript = path.join(
-    antigravityDir,
-    'brain',
-    conversationId,
-    '.system_generated',
-    'logs',
-    'transcript_full.jsonl'
-  );
-  let settingsChangeModel: string | null = null;
-  let lastUserInputHadSettingsChange = false;
-  if (fs.existsSync(fullTranscript)) {
+  const scanTranscriptTail = (
+    transcriptFile: string
+  ): {
+    settingsChangeModel: string | null;
+    lastUserInputHadSettingsChange: boolean;
+    latestModel: string | null;
+  } => {
+    let settingsChangeModel: string | null = null;
+    let lastUserInputHadSettingsChange = false;
+    let latestModel: string | null = null;
+
+    if (!fs.existsSync(transcriptFile)) {
+      return { settingsChangeModel, lastUserInputHadSettingsChange, latestModel };
+    }
     try {
-      const fStat = fs.statSync(fullTranscript);
-      if (fStat.size > 0) {
-        const readLen = Math.min(fStat.size, 262144); // last 256 KB
-        const buf = Buffer.alloc(readLen);
-        const fd = fs.openSync(fullTranscript, 'r');
+      const fStat = fs.statSync(transcriptFile);
+      if (fStat.size <= 0) {
+        return { settingsChangeModel, lastUserInputHadSettingsChange, latestModel };
+      }
+      const readLen = Math.min(fStat.size, 262144); // last 256 KB
+      const buf = Buffer.alloc(readLen);
+      const fd = fs.openSync(transcriptFile, 'r');
+      try {
+        fs.readSync(fd, buf, 0, readLen, fStat.size - readLen);
+      } finally {
+        fs.closeSync(fd);
+      }
+      const allLines = buf.toString('utf8').split('\n');
+      const lines = fStat.size > readLen && allLines.length > 1 ? allLines.slice(1) : allLines;
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line) continue;
         try {
-          fs.readSync(fd, buf, 0, readLen, fStat.size - readLen);
-        } finally {
-          fs.closeSync(fd);
-        }
-        const lines = buf.toString('utf8').split('\n');
-        const changeRegex =
-          /<USER_SETTINGS_CHANGE>[\s\S]*?The user changed setting `Model Selection` from [^\r\n]+? to ([^\r\n]+?)\. No need to comment[\s\S]*?<\/USER_SETTINGS_CHANGE>/;
-        for (const rawLine of lines) {
-          const line = rawLine.trim();
-          if (!line || !line.includes('USER_INPUT')) {
-            continue;
-          }
-          try {
-            const parsed = JSON.parse(line);
-            if (
-              parsed &&
-              parsed.type === 'USER_INPUT' &&
-              typeof parsed.content === 'string'
-            ) {
-              const m = changeRegex.exec(parsed.content);
-              if (m && m[1]) {
-                settingsChangeModel = normalizeModelName(m[1]);
-                lastUserInputHadSettingsChange = true;
-              } else {
-                lastUserInputHadSettingsChange = false;
-              }
+          const parsed = JSON.parse(line);
+          if (!parsed || typeof parsed !== 'object') continue;
+          if (parsed.type === 'USER_INPUT' && typeof parsed.content === 'string') {
+            const m = MODEL_CHANGE_REGEX.exec(parsed.content);
+            if (m && m[1]) {
+              settingsChangeModel = normalizeModelName(m[1]);
+              latestModel = settingsChangeModel;
+              lastUserInputHadSettingsChange = true;
+            } else {
+              lastUserInputHadSettingsChange = false;
             }
-          } catch {
-            // ignore partial line
           }
+          if (
+            parsed.type === 'PLANNER_RESPONSE' &&
+            typeof parsed.model === 'string' &&
+            parsed.model.trim().length > 0
+          ) {
+            latestModel = normalizeModelName(parsed.model);
+          }
+        } catch {
+          // ignore partial line
         }
       }
     } catch {
       // ignore read error
     }
-  }
+    return { settingsChangeModel, lastUserInputHadSettingsChange, latestModel };
+  };
+
+  // 1. Check transcript_full.jsonl and transcript.jsonl for settings switches and PLANNER_RESPONSE models
+  const logsDir = path.join(brainBase, conversationId, '.system_generated', 'logs');
+  const fullInfo = scanTranscriptTail(path.join(logsDir, 'transcript_full.jsonl'));
+  const compactInfo = scanTranscriptTail(path.join(logsDir, 'transcript.jsonl'));
+
+  const settingsChangeModel = compactInfo.settingsChangeModel ?? fullInfo.settingsChangeModel;
+  const lastUserInputHadSettingsChange =
+    compactInfo.settingsChangeModel !== null
+      ? compactInfo.lastUserInputHadSettingsChange
+      : fullInfo.lastUserInputHadSettingsChange;
+  const latestTranscriptModel = compactInfo.latestModel ?? fullInfo.latestModel;
 
   // 2. Scan SQLite B-Tree leaf cells (0x0d) for highest rowid (idx) in gen_metadata
   let maxIdx = -1;
   let latestBtreeModel: string | null = null;
-  const pbSingleRegex = /\x9a\x01[\x01-\x30]((?:gemini|claude)[a-z0-9\.\-]+)\xa2\x01/;
 
   function readVarint(buf: Buffer, offset: number): { val: number; len: number } {
     let val = 0;
@@ -295,7 +322,7 @@ export function extractModelForConversation(conversationId: string): string {
 
       const cellEnd = Math.min(offset + pageSize, buf.length, ptr + payloadSize.val);
       const sliceStr = buf.subarray(ptr, cellEnd).toString('latin1');
-      const m = pbSingleRegex.exec(sliceStr);
+      const m = MODEL_PB_SINGLE_REGEX.exec(sliceStr);
       if (m && m[1]) {
         maxIdx = rowId.val;
         latestBtreeModel = m[1];
@@ -341,6 +368,14 @@ export function extractModelForConversation(conversationId: string): string {
     // ignore B-Tree scan errors
   }
 
+  if (lastUserInputHadSettingsChange && settingsChangeModel) {
+    return settingsChangeModel;
+  }
+
+  if (latestTranscriptModel) {
+    return latestTranscriptModel;
+  }
+
   if (latestBtreeModel) {
     return normalizeModelName(latestBtreeModel);
   }
@@ -366,10 +401,10 @@ export function extractModelForConversation(conversationId: string): string {
       }
 
       const str = buf.toString('latin1');
-      const pbRegex = /\x9a\x01[\x01-\x30]((?:gemini|claude)[a-z0-9\.\-]+)\xa2\x01/g;
+      MODEL_PB_GLOBAL_REGEX.lastIndex = 0;
       let match: RegExpExecArray | null;
       let lastPbModel: string | null = null;
-      while ((match = pbRegex.exec(str)) !== null) {
+      while ((match = MODEL_PB_GLOBAL_REGEX.exec(str)) !== null) {
         if (match[1]) lastPbModel = match[1];
       }
 
@@ -395,7 +430,7 @@ export function getConversationStepModelMap(conversationId: string): Map<number,
   const dbFile = path.join(convDir, `${conversationId}.db`);
   const walFile = path.join(convDir, `${conversationId}.db-wal`);
 
-  const pbSingleRegex = /\x9a\x01[\x01-\x30]((?:gemini|claude)[a-z0-9\.\-]+)\xa2\x01/;
+  const pbSingleRegex = MODEL_PB_SINGLE_REGEX;
 
   function readVarint(buf: Buffer, offset: number): { val: number; len: number } {
     let val = 0;
@@ -696,7 +731,7 @@ export class AgentWatcher extends EventEmitter {
             this.activeAgentsGrace.delete(dir);
           }
 
-          const model = parsedTail?.model ?? extractModelForConversation(dir);
+          const model = parsedTail?.model ?? extractModelForConversation(dir, this.brainDir);
           const agentStatus: 'thinking' | 'running_tool' | 'idle' | 'error' = isActive
             ? (parsedTail?.activeTool ? 'running_tool' : 'thinking')
             : 'idle';
@@ -805,7 +840,7 @@ export class AgentWatcher extends EventEmitter {
       const lines = fileSize > readLength && allLines.length > 1 ? allLines.slice(1) : allLines;
 
       const stepModelMap = this.getStepModelMap(conversationId);
-      const activeGroundTruthModel = extractModelForConversation(conversationId);
+      const activeGroundTruthModel = extractModelForConversation(conversationId, this.brainDir);
       let latestModel: string = activeGroundTruthModel;
       let plannerTurnIndex = 0;
 
@@ -839,6 +874,13 @@ export class AgentWatcher extends EventEmitter {
             }
           }
 
+          if (parsed.type === 'USER_INPUT' && typeof parsed.content === 'string') {
+            const switchMatch = MODEL_CHANGE_REGEX.exec(parsed.content);
+            if (switchMatch && switchMatch[1]) {
+              latestModel = formatModelDisplayName(switchMatch[1]);
+            }
+          }
+
           if (parsed.type === 'PLANNER_RESPONSE') {
             const stepKey = typeof parsed.step_index === 'number' ? parsed.step_index : seenSteps.size;
             if (!seenSteps.has(stepKey)) {
@@ -854,10 +896,11 @@ export class AgentWatcher extends EventEmitter {
                 sumOutput += outTok;
               }
 
-              // Determine exact model for this generation turn
+              // Determine exact model for this generation turn (preferring explicit parsed.model from transcript)
               const turnRawModel =
-                stepModelMap.get(plannerTurnIndex) ||
-                (typeof parsed.model === 'string' ? parsed.model : activeGroundTruthModel);
+                typeof parsed.model === 'string' && parsed.model.trim().length > 0
+                  ? parsed.model
+                  : (stepModelMap.get(plannerTurnIndex) || activeGroundTruthModel);
               const turnModel = formatModelDisplayName(turnRawModel);
               latestModel = turnModel;
               plannerTurnIndex++;

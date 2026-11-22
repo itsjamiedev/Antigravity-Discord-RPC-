@@ -173,6 +173,7 @@ export interface Session {
   tokens: TokenUsageRecord;
   sessionTokens?: TokenUsageRecord;
   lifetimeTokens?: TokenUsageRecord;
+  lifetimeActiveSeconds?: number;
 }
 
 export interface DailyUsage {

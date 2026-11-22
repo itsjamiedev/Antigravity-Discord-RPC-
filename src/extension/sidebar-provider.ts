@@ -12,7 +12,7 @@ import path from 'node:path';
 import type * as vscode from 'vscode';
 import type { TrackerSnapshot, ModelStats, TokenUsageRecord, Agent } from '../shared/types.js';
 import { getGroundTruthConversationStatuses } from './agent-watcher.js';
-import { formatModelDisplayName } from '../discord/presence-manager.js';
+import { formatLifetimeHours, formatModelDisplayName } from '../discord/presence-manager.js';
 
 export function formatNumber(n: number): string {
   if (typeof n !== 'number' || !Number.isFinite(n)) return '0';
@@ -59,6 +59,7 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
       source: 'transcript_exact',
     };
     let initialLifetimeTokens: number | undefined;
+    let lifetimeActiveSeconds = 0;
 
     if (fs.existsSync(sessionFile)) {
       try {
@@ -72,6 +73,11 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
           }
           if (typeof sessData.initialLifetimeTokens === 'number') {
             initialLifetimeTokens = sessData.initialLifetimeTokens;
+          }
+          if (typeof sessData.lifetimeActiveSeconds === 'number') {
+            lifetimeActiveSeconds = sessData.lifetimeActiveSeconds;
+          } else if (typeof sessData.elapsedSeconds === 'number') {
+            lifetimeActiveSeconds = sessData.elapsedSeconds;
           }
         }
       } catch {}
@@ -173,6 +179,7 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
         tokens: tokenRec,
         sessionTokens,
         lifetimeTokens: tokenRec,
+        lifetimeActiveSeconds,
       },
       sessionTokens,
       lifetimeTokens: tokenRec,
@@ -249,6 +256,11 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   const startedAt = effective.session.startedAt ?? new Date().toISOString();
   const elapsedSec = Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000));
   const timeFormatted = formatDuration(elapsedSec);
+  const lifetimeActiveSecs =
+    snapshot?.session?.lifetimeActiveSeconds ??
+    diskFallback?.session?.lifetimeActiveSeconds ??
+    0;
+  const lifetimeHoursFormatted = formatLifetimeHours(lifetimeActiveSecs);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -729,6 +741,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
           <span class="chip mono" id="sideTimerStatus">RUNNING</span>
         </div>
         <div class="clock-display mono" id="sideTimerDisplay">${timeFormatted}</div>
+        <div class="mono" id="sideLifetimeHours" style="font-size:10px; color:var(--acc); font-weight:600; margin-top:2px;">Overall: ${lifetimeHoursFormatted}</div>
       </div>
       <div class="clock-actions">
         <button class="micro-btn primary" id="btnPause" onclick="togglePause()">
@@ -907,6 +920,14 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       return pad(hrs) + ':' + pad(mins) + ':' + pad(s);
     }
 
+    function formatLifetimeHoursJs(sec) {
+      if (typeof sec !== 'number' || !isFinite(sec) || sec <= 0) return '0m';
+      if (sec < 3600) {
+        return Math.max(1, Math.floor(sec / 60)) + 'm';
+      }
+      return (sec / 3600).toFixed(1).replace(/\.0$/, '') + 'h';
+    }
+
     function startTimer(startedIso, paused) {
       if (timerInterval) clearInterval(timerInterval);
       const startMs = Date.parse(startedIso) || Date.now();
@@ -977,6 +998,10 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       if (snap.session && snap.session.startedAt) {
         startedAtIso = snap.session.startedAt;
         startTimer(startedAtIso, isPaused);
+      }
+      const lifeHoursEl = document.getElementById('sideLifetimeHours');
+      if (lifeHoursEl && snap.session && typeof snap.session.lifetimeActiveSeconds === 'number') {
+        lifeHoursEl.innerText = 'Overall: ' + formatLifetimeHoursJs(snap.session.lifetimeActiveSeconds);
       }
 
       // Update Active Agents Radar

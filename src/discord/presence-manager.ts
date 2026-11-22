@@ -24,7 +24,11 @@ export function formatModelDisplayName(model: string): string {
 
   // If already contains spaces, it's a human-readable display name (e.g. 'Claude Sonnet 5.5 (Medium)' or 'Gemini 3.8 Flash High')
   if (str.includes(' ')) {
-    str = str.replace(/\s*\(?(?:High|Medium|Low|Thinking|Default|Trial|Preview|Exp|Tiered)\)?$/gi, '').trim();
+    const spaceSuffixRegex =
+      /\s*\(?(?:X-?High|X-?Low|Extra\s+High|High|Medium|Low|Thinking|Default|Trial|Preview|Exp|Minimal|Max|Latest|Beta|Alpha|Fast|Tiered)\)?$/i;
+    while (spaceSuffixRegex.test(str)) {
+      str = str.replace(spaceSuffixRegex, '').trim();
+    }
     if (/claude\s+sonnet\s+3\.5/i.test(str)) {
       str = str.replace(/claude\s+sonnet\s+3\.5/gi, 'Claude Sonnet 5.5');
     }
@@ -32,7 +36,11 @@ export function formatModelDisplayName(model: string): string {
   }
 
   // Strip trailing tier / variant / trial / preview suffixes from slugs
-  str = str.replace(/-(?:high|medium|low|trial|preview|exp|thinking|tiered|custom|default|n|a|b)$/i, '');
+  const slugSuffixRegex =
+    /-(?:x-?high|x-?low|high|medium|low|trial|preview|exp|thinking|tiered|custom|default|minimal|max|latest|beta|alpha|fast|n|a|b)$/i;
+  while (slugSuffixRegex.test(str)) {
+    str = str.replace(slugSuffixRegex, '');
+  }
 
   // Convert version hyphens between numbers like '5-5' or '4-6' or '3-8' to '5.5' or '4.6' or '3.8'
   str = str.replace(/(\d+)-(\d+)/g, (_m, a, b) => a + '.' + b);
@@ -54,6 +62,9 @@ export function formatModelDisplayName(model: string): string {
     if (lower === 'pro') return 'Pro';
     if (lower === 'ultra') return 'Ultra';
     if (lower === 'argon') return 'Argon';
+    if (lower === 'neon') return 'Neon';
+    if (lower === 'hydrogen') return 'Hydrogen';
+    if (lower === 'nano') return 'Nano';
     if (lower === 'sonnet') return 'Sonnet';
     if (lower === 'opus') return 'Opus';
     if (lower === 'haiku') return 'Haiku';
@@ -89,6 +100,14 @@ export function formatTokenNumberShort(tokens: number): string {
     return (tokens / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
   }
   return `${tokens}`;
+}
+
+export function formatLifetimeHours(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) return '0m';
+  if (seconds < 3600) {
+    return `${Math.max(1, Math.floor(seconds / 60))}m`;
+  }
+  return `${(seconds / 3600).toFixed(1).replace(/\.0$/, '')}h`;
 }
 
 export function buildDiscordActivity(
@@ -131,9 +150,15 @@ export function buildDiscordActivity(
   const lifetimeStr = formatTokenNumberShort(lifetimeTotal);
   const isTokenmaxxing = lifetimeTotal > 0 || sessionTotal > 0;
   const dualTokenStr = `⚡ ${sessionStr} session • ${lifetimeStr} lifetime`;
-  const tokenmaxxingHover = isTokenmaxxing
-    ? `Tokenmaxxing: ${sessionStr} session • ${lifetimeStr} lifetime tokens spent in Antigravity (${wsText})`
-    : `Antigravity • ${wsText}`;
+
+  const lifetimeSecs = snapshot.session?.lifetimeActiveSeconds ?? 0;
+  const lifetimeHoursStr = lifetimeSecs > 0 ? formatLifetimeHours(lifetimeSecs) : null;
+  const overallSuffix = lifetimeHoursStr ? ` • ${lifetimeHoursStr} overall` : '';
+
+  const tokenmaxxingHover =
+    (isTokenmaxxing
+      ? `Tokenmaxxing: ${sessionStr} session • ${lifetimeStr} lifetime tokens spent in Antigravity (${wsText})`
+      : `Antigravity • ${wsText}`) + overallSuffix;
 
   // MODE 1: AI Agent Mode (Active whenever agents are running)
   if (snapshot.activeAgents.length > 0) {
@@ -209,9 +234,10 @@ export function buildDiscordActivity(
   }
 
   // MODE 3: Idle in Antigravity (Preserves elapsed session timer!)
-  const idleState = isTokenmaxxing && !settings.hideTokens
+  const idleBaseState = isTokenmaxxing && !settings.hideTokens
     ? dualTokenStr
     : 'In Antigravity';
+  const idleState = idleBaseState + overallSuffix;
 
   return {
     name: 'Antigravity',

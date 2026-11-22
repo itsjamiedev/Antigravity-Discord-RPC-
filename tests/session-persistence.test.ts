@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -239,6 +239,41 @@ describe('SessionManager (24-Hour Pause & Leave Resumption)', () => {
     expect(state?.isPaused).toBe(true);
     expect(state?.sessionTokens?.totalTokens).toBe(104_000);
     expect(state?.initialLifetimeTokens).toBe(500_000_000);
+  });
+
+  it('accumulates lifetimeActiveSeconds across heartbeats, ignores >120s sleep gaps, and preserves on startFreshSession', () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-11-22T10:00:00.000Z'));
+      const manager = new SessionManager(sessionFilePath);
+      expect(manager.getLifetimeActiveSeconds()).toBe(0);
+
+      // Simulate 3 normal 30-second heartbeats (90s active time)
+      vi.advanceTimersByTime(30_000);
+      manager.recordHeartbeat();
+      vi.advanceTimersByTime(30_000);
+      manager.recordHeartbeat();
+      vi.advanceTimersByTime(30_000);
+      manager.recordHeartbeat();
+      expect(manager.getLifetimeActiveSeconds()).toBe(90);
+
+      // Simulate a 2-hour sleep gap (> 120s clamp) -> must NOT count sleep duration
+      vi.advanceTimersByTime(7_200_000);
+      manager.recordHeartbeat();
+      expect(manager.getLifetimeActiveSeconds()).toBe(90);
+
+      // Add another 45s active interval before starting fresh session
+      vi.advanceTimersByTime(45_000);
+      manager.startFreshSession();
+      expect(manager.getSessionState()!.elapsedSeconds).toBe(0);
+      expect(manager.getLifetimeActiveSeconds()).toBe(135);
+
+      // Reload from disk simulating full restart -> lifetimeActiveSeconds persists!
+      const reloaded = new SessionManager(sessionFilePath);
+      expect(reloaded.getLifetimeActiveSeconds()).toBe(135);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

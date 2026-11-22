@@ -9,7 +9,12 @@ import {
   IPC_OPCODES,
   parseIpcPackets,
 } from '../src/discord/ipc-client.js';
-import { buildDiscordActivity, PresenceManager } from '../src/discord/presence-manager.js';
+import {
+  buildDiscordActivity,
+  formatLifetimeHours,
+  formatModelDisplayName,
+  PresenceManager,
+} from '../src/discord/presence-manager.js';
 import type {
   Agent,
   DiscordActivity,
@@ -486,6 +491,39 @@ describe('Phase 4: Discord Rich Presence (IPC)', () => {
       } finally {
         client.destroy();
       }
+    });
+  });
+
+  describe('4. Dynamic New Model Formatting & Lifetime Hours Presence', () => {
+    it('formats new Google model slugs and display names cleanly', () => {
+      expect(formatModelDisplayName('gemini-4-neon-low')).toBe('Gemini 4 Neon');
+      expect(formatModelDisplayName('Gemini 4 Neon (Low)')).toBe('Gemini 4 Neon');
+      expect(formatModelDisplayName('gemini-4-hydrogen-tiered-xhigh')).toBe('Gemini 4 Hydrogen');
+      expect(formatModelDisplayName('gemini-5-quantum-high')).toBe('Gemini 5 Quantum');
+      expect(formatModelDisplayName('gemini-3.5-flash-lite-preview')).toBe('Gemini 3.5 Flash Lite');
+    });
+
+    it('formats lifetime active seconds concisely with formatLifetimeHours', () => {
+      expect(formatLifetimeHours(0)).toBe('0m');
+      expect(formatLifetimeHours(900)).toBe('15m');
+      expect(formatLifetimeHours(3600)).toBe('1h');
+      expect(formatLifetimeHours(51120)).toBe('14.2h');
+    });
+
+    it('surfaces new models and overall lifetime hours in Discord activity', () => {
+      const settings = new ConfigManager(':memory:').getSettings();
+      const activeSnap = makeMockSnapshot([{ model: 'gemini-4-neon-low' }]);
+      activeSnap.session.lifetimeActiveSeconds = 51120; // 14.2h
+
+      const activeAct = buildDiscordActivity(activeSnap, null, settings);
+      expect(activeAct?.state).toBe('Gemini 4 Neon');
+      expect(activeAct?.assets?.large_text).toContain('14.2h overall');
+
+      const idleSnap = makeMockSnapshot([]);
+      idleSnap.session.lifetimeActiveSeconds = 51120;
+      const idleAct = buildDiscordActivity(idleSnap, null, settings);
+      expect(idleAct?.state).toBe('In Antigravity • 14.2h overall');
+      expect(idleAct?.assets?.large_text).toContain('14.2h overall');
     });
   });
 });
