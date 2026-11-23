@@ -1,12 +1,12 @@
-# Mascot Expressions Engine, Liquid Glass Notch & 32-Movement Kinematics Master Plan
+# Mascot Expressions Engine, Apple Aesthetic Liquid Glass Notch & Tactile Sound Suite Master Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Permanently eliminate the Windows 11 overlay white line, fix the mascot popover menu viewport-boundary clipping, implement a dynamic natural smile and facial expression layer, engineer true walking kinematics and an exhaustive 32-movement choreography engine with procedural 8-bit audio, overhaul the Apple Liquid Glass Dynamic Island Notch with specular highlights, and wire task-completion callouts that guide users back to Antigravity IDE.
+**Goal:** Permanently eliminate the Windows 11 overlay white line, fix the mascot popover menu viewport-boundary clipping, implement a dynamic natural smile and facial expression layer, engineer true walking kinematics and an exhaustive 32-movement choreography engine, overhaul the Dynamic Island Notch with Apple-grade fluid spring animations and liquid glass refraction, and build a 10-sound Apple-inspired tactile UI sound palette (procedural Web Audio API).
 
-**Architecture:** Electron overlay window (`desktop-app/overlay.html`, `desktop-app/main.cjs`) updated to clean frameless mode without DWM caption injection; dynamic SVG facial expression overlay (smile, laugh, curious, surprised, sleepy, wink) mapped directly onto the authentic master PNG mascot; true walking waddle physics with leg strides and directional flips; JavaScript boundary-aware clamping algorithm for `.ag-mascot-menu` preventing screen overflow; procedural 8-bit Web Audio synthesizer for typing chirps, launch jumps, and task completion chimes; real-time SSE hook listener streaming prompt and agent lifecycle events from the Antigravity daemon to trigger mascot reactions dynamically.
+**Architecture:** Electron overlay window (`desktop-app/overlay.html`, `desktop-app/main.cjs`) updated to clean frameless mode without DWM caption injection; Apple-inspired fluid spring physics (`cubic-bezier(0.16, 1, 0.3, 1)`) for Dynamic Island morphing and mascot inertia; dynamic SVG facial expression overlay (smile, laugh, curious, surprised, sleepy, wink) mapped directly onto the authentic master PNG mascot; true walking waddle physics with leg strides and directional flips; JavaScript boundary-aware clamping algorithm for `.ag-mascot-menu` preventing screen overflow; procedural 8-bit / tactile Web Audio synthesizer replicating Apple's organic, woody, glassy audio feedback; real-time SSE hook listener streaming prompt and agent lifecycle events from the Antigravity daemon to trigger mascot reactions dynamically.
 
-**Tech Stack:** Electron 35, HTML5/CSS3 (Glassmorphism, hardware-accelerated transforms, KaTeX/Minecraft typography), Web Audio API (procedural synthesis), Node.js, TypeScript/Vitest.
+**Tech Stack:** Electron 35, HTML5/CSS3 (Apple Glassmorphism, hardware-accelerated transforms, KaTeX/Minecraft typography), Web Audio API (procedural synthesis), Node.js, TypeScript/Vitest.
 
 **Spec:** Current session requirements, `f:\Antigravity Extension\.agents\AGENTS.md` (Design taste, Minecraft Seven font, no placeholders, full output).
 
@@ -15,6 +15,7 @@
 ## Global Constraints
 
 - **Zero White Line**: The desktop transparent overlay must never render any native border, DWM caption line, or accent strip. `titleBarStyle: 'hidden'` must be completely removed in favor of pure `frame: false, transparent: true`.
+- **Apple Aesthetics**: Animations must use Apple's fluid spring timing curves (`cubic-bezier(0.16, 1, 0.3, 1)` and `cubic-bezier(0.32, 0.72, 0, 1)`); sound design must be organic, tactile, and warm (never harsh, grating, or dissonant).
 - **Zero Menu Clipping**: The mascot popover menu must never overflow off-screen (`Math.max(12, Math.min(window.innerWidth - menuWidth - 12, ...))`).
 - **Authentic Master PNG + Natural Expressions**: Keep the user's authentic high-DPI master PNG (`resources/mascot.png`) as the base body, with a responsive SVG facial expression layer (natural smile, open laugh, curious tilt, surprised 'o', sleepy curve) overlaid directly onto the face.
 - **Pure Procedural Audio**: Zero external `.wav` or `.mp3` dependencies; all typing chirps, launch leaps, and task chimes synthesized in real-time via Web Audio API oscillators.
@@ -24,7 +25,47 @@
 
 ---
 
-## Section 1: Detailed Specifications of All 32 Movements
+## Section 1: Apple Aesthetics Animation & Motion System
+
+### Apple Fluid Spring Physics Curves
+Apple's interface language relies on natural mass, inertia, and non-linear damping:
+- **`--spring-island: cubic-bezier(0.16, 1, 0.3, 1)`**: The primary Apple Dynamic Island expansion curve. Starts fast with high energy, then softly and fluidly settles into resting dimensions without harsh ringing.
+- **`--spring-snap: cubic-bezier(0.34, 1.56, 0.64, 1)`**: High-elasticity snap for button clicks, mascot pokes, and popover opens (delightful overshoot).
+- **`--spring-smooth: cubic-bezier(0.32, 0.72, 0, 1)`**: Apple Sheet / Drawer transition curve for menu slides and status badge fades.
+- **`--spring-mascot: cubic-bezier(0.22, 1, 0.36, 1)`**: Physics-based flight trajectory for mascot jumps and docking maneuvers.
+
+### Liquid Glass Morphing & Refraction
+- **Continuous Curvature (Squircle Simulation)**: Transitioning between collapsed pill (`border-radius: 999px`) and expanded island (`border-radius: 28px`) with hardware-accelerated SVG/CSS curves.
+- **Specular Highlight Glides**: A subtle `linear-gradient` highlight along the top rim that glides `translateY(-1px)` during expansion, simulating real light refraction across curved glass.
+- **Liquid Obsidian Depth**:
+  - `backdrop-filter: blur(30px) saturate(210%)`
+  - Base: `linear-gradient(180deg, rgba(16, 20, 32, 0.88) 0%, rgba(8, 10, 18, 0.94) 100%)`
+  - Refraction border: `1px solid rgba(255, 255, 255, 0.18)`
+  - Inner glow: `inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 2px 8px rgba(255, 255, 255, 0.08)`
+  - Drop shadow: `0 16px 42px -6px rgba(0, 0, 0, 0.85), 0 0 24px rgba(52, 245, 164, 0.12)`
+
+---
+
+## Section 2: Apple-Inspired Tactile UI Sound Suite (10 Procedural SFX)
+
+All sound effects are synthesized in real-time with Web Audio API, using organic multi-pole filters, warm harmonics, and gentle envelope shaping:
+
+| ID | Sound Name | Aesthetic Inspiration | Acoustic Character & Web Audio Synthesis | Trigger Event |
+| :--- | :--- | :--- | :--- | :--- |
+| **S01** | `island_expand_pop` | Apple Dynamic Island expand | Organic resonant glass tick. Dual sine oscillators at `780Hz` & `1170Hz` with fast 18ms exponential decay. | Hover / Click Dynamic Island expand |
+| **S02** | `island_collapse_tuck` | iOS sheet dismissal | Soft cushioned tuck. `340Hz` sine wave with low-pass dampening at `450Hz`, duration 24ms. | Dynamic Island shrinks back to pill |
+| **S03** | `marimba_typing_tap` | Apple keyboard haptic tap | Subtle wooden marimba tap. Short triangle wave blip (`480Hz – 620Hz`), duration 14ms, gain `0.018` (throttled to 120ms). | User typing prompt in Antigravity |
+| **S04** | `air_drop_chime` | Apple AirDrop send swoosh | Gentle airy swoosh into uplifting chord (`F4 → C5 → F5`), sine + soft white noise rush, duration 260ms. | User submits prompt (Send Enter) |
+| **S05** | `apple_pay_triumph` | Apple Pay / iOS Success Bell | Crystalline triumph bell. High-purity dual harmonics (`E6: 1318Hz` & `B6: 1975Hz`) with warm 680ms natural exponential ring. | Agent completes task (All done) |
+| **S06** | `haptic_switch_click` | iOS Settings toggle switch | Crisp mechanical tick. Micro noise impulse + `240Hz` damped thump, duration 12ms. | Toggling Notch or Mascot in UI |
+| **S07** | `organic_purr_rumble` | Apple Taptic Engine rumble | Low soothing haptic vibration. Modulated sine wave at `52Hz` pulsed at `8Hz`, duration 800ms. | Hovering mascot for pet interaction |
+| **S08** | `warm_alert_ping` | macOS Notification chime | Pleasant warm chime. Two-tone warm interval (`A5: 880Hz` to `C#6: 1108Hz`), duration 190ms. | Agent requests user input / confirmation |
+| **S09** | `magnetic_dock_snap` | MagSafe snapping sound | Satisfying magnetic snap. Pitch drop `880Hz → 440Hz` with bandpass resonance, duration 60ms. | Mascot docks into Dynamic Notch |
+| **S10** | `bubble_undock_pop` | iOS message send bubble | Round cheerful water droplet pop. Pitch slide `380Hz → 720Hz` with resonant bandpass, duration 45ms. | Mascot ejects from Notch to desktop |
+
+---
+
+## Section 3: Detailed Specifications of All 32 Movements
 
 Each movement is specified with its trigger condition, keyframe trajectory, CSS transforms, facial expression, procedural audio signature, and recovery transition:
 
@@ -49,7 +90,7 @@ Each movement is specified with its trigger condition, keyframe trajectory, CSS 
   - `50%`: Quick perky head-bob (`transform: scale(1.06, 0.94) rotate(-3deg)`).
   - `100%`: Bounces back (`transform: scale(1, 1) rotate(0deg)`).
 - **Facial Expression**: `smile` with quick cheerful blinks.
-- **Procedural Audio**: Inquisitive 8-bit chirp: triangle wave, frequency ramping `440Hz → 620Hz` in `45ms`, gain `0.028`.
+- **Procedural Audio**: `S03: marimba_typing_tap` (tactile marimba tap `480Hz – 620Hz`, 14ms).
 - **Particle / FX**: Micro-sparkle emit at top tip (`#34F5A4`).
 - **Recovery**: Instant (50ms) return to typing hover stance.
 
@@ -62,7 +103,7 @@ Each movement is specified with its trigger condition, keyframe trajectory, CSS 
   - `85%`: Descending glide with soft cushion landing (`transform: scale(1.08, 0.92) translateY(2px)`).
   - `100%`: Settles into active thinking pose (`transform: scale(1) translateY(0)`).
 - **Facial Expression**: `laugh` (joyful wide open crescent smile `:D`).
-- **Procedural Audio**: Ascending power arpeggio: square wave with low-pass filter, notes `C4 (261Hz) → G4 (392Hz) → C5 (523Hz) → E5 (659Hz)`, `60ms` per note, total `240ms`, gain `0.045`.
+- **Procedural Audio**: `S04: air_drop_chime` (uplifting chord `F4 → C5 → F5`, duration 260ms).
 - **Particle / FX**: Golden launch dust particles burst downward (`#FFB84D`).
 - **Recovery**: Seamlessly hands off to `M07: agent_thinking_levitate`.
 
@@ -97,7 +138,7 @@ Each movement is specified with its trigger condition, keyframe trajectory, CSS 
   - `50%`: `transform: scale(0.96, 1.04) translateY(-3px)`.
   - Total cycle duration: `1.4s` infinite ease-in-out.
 - **Facial Expression**: `smile` with closed joyful curved eye crescents (`^ _ ^`).
-- **Procedural Audio**: Calming low-frequency rhythmic purr: dual triangle oscillators modulated at `8Hz`, base pitch `110Hz`, gain `0.018`.
+- **Procedural Audio**: `S07: organic_purr_rumble` (gentle haptic rumble `52Hz` modulated at `8Hz`).
 - **Particle / FX**: Soft pink floating heart bubble floating up `28px` before fading.
 - **Recovery**: Fades purr and returns to `idle_breathe` when cursor leaves.
 
@@ -161,9 +202,9 @@ Each movement is specified with its trigger condition, keyframe trajectory, CSS 
   - `65%`: Completes full 360° rotation in air (`transform: scale(1.05) translateY(-40px) rotate(-360deg)`).
   - `85%`: Soft bounce landing (`transform: scale(1.12, 0.9) translateY(4px)`).
   - `100%`: Stands tall with raised hands/arms pose (`transform: scale(1) translateY(0)`).
-  - Duration: `850ms` cubic-bezier(0.22, 1, 0.36, 1).
+  - Duration: `850ms` cubic-bezier(0.16, 1, 0.3, 1).
 - **Facial Expression**: `laugh` (broad ecstatic open smile `:D`).
-- **Procedural Audio**: Triumph fanfare chord arpeggio: square wave + warm triangle, notes `C5 (523Hz) → E5 (659Hz) → G5 (784Hz) → C6 (1046Hz)`, total `360ms`, gain `0.05`.
+- **Procedural Audio**: `S05: apple_pay_triumph` (crystalline bell `E6: 1318Hz` & `B6: 1975Hz` with warm natural decay).
 - **Particle / FX**: 8 multi-color confetti sprites shower outward (emerald, gold, cyan, coral).
 - **Recovery**: Instantly triggers `M12: agent_done_callout`.
 
@@ -174,7 +215,7 @@ Each movement is specified with its trigger condition, keyframe trajectory, CSS 
   - Mascot gentle float bobbing (`translateY(-3px)` to `translateY(1px)`).
 - **Facial Expression**: `smile` with warm eye contact toward the user.
 - **Visual Bubble & Typography**:
-  - Frosted glass bubble (`backdrop-filter: blur(24px) saturate(180%)`, border `rgba(52, 245, 164, 0.35)`).
+  - Frosted glass bubble (`backdrop-filter: blur(28px) saturate(190%)`, border `rgba(52, 245, 164, 0.35)`).
   - Header in Minecraft Seven: `"TASK COMPLETE!"` in emerald `#34F5A4`.
   - Body: `"Return to Antigravity to review changes"`.
   - CTA Button: `[Back to IDE]` with emerald glow.
@@ -253,7 +294,7 @@ Each movement is specified with its trigger condition, keyframe trajectory, CSS 
   - At peak, bubble pops and mascot drops with a cute parachute bounce.
   - Duration: `3.6s`.
 - **Facial Expression**: `laugh` (delighted open smile).
-- **Procedural Audio**: Pop sound: filtered noise pulse + `980Hz` blip, `40ms`, gain `0.035`.
+- **Procedural Audio**: `S10: bubble_undock_pop` (droplet pop `380Hz → 720Hz`).
 - **Particle / FX**: 4 iridescent bubble droplet particles dissipate outwards.
 - **Recovery**: Lands safely and resumes `idle_breathe`.
 
@@ -310,9 +351,9 @@ Each movement is specified with its trigger condition, keyframe trajectory, CSS 
   - Mascot accelerates upward in a graceful parabolic arc toward top-center (`translate(dx, dy) scale(0.45)`).
   - Dynamic Island Notch expands its pill to receive mascot.
   - Mascot smoothly docks into the left icon slot of the notch.
-  - Duration: `550ms` cubic-bezier(0.22, 1, 0.36, 1).
+  - Duration: `550ms` cubic-bezier(0.16, 1, 0.3, 1).
 - **Facial Expression**: `laugh` (excited flight smile).
-- **Procedural Audio**: Suction / docking snap: frequency sweep `320Hz → 840Hz` with low-pass pop, `90ms`, gain `0.035`.
+- **Procedural Audio**: `S09: magnetic_dock_snap` (satisfying magnetic snap `880Hz → 440Hz`).
 - **Particle / FX**: Notch border pulses with emerald ripple wave.
 - **Recovery**: Mascot icon inside notch becomes the active telemetry avatar.
 
@@ -344,9 +385,9 @@ Each movement is specified with its trigger condition, keyframe trajectory, CSS 
   - Notch expands; mascot leaps out downward with a graceful superhero landing in the corner.
   - Scales `0.45 → 1.0` during flight.
   - Soft bounce squash on ground contact (`scale(1.15, 0.85)`).
-  - Duration: `600ms` cubic-bezier(0.22, 1, 0.36, 1).
+  - Duration: `600ms` cubic-bezier(0.16, 1, 0.3, 1).
 - **Facial Expression**: `smile` with superhero determination.
-- **Procedural Audio**: Descending whoosh into punchy landing beat: `600Hz → 180Hz` swept wave + soft bass thump, gain `0.04`.
+- **Procedural Audio**: `S10: bubble_undock_pop` (cheerful water droplet pop `380Hz → 720Hz`).
 - **Particle / FX**: Impact dust ring on ground contact.
 - **Recovery**: Establishes ground position in active corner.
 
@@ -362,7 +403,7 @@ Each movement is specified with its trigger condition, keyframe trajectory, CSS 
   - Hop 2: `translateY(-30px)` with spin.
   - Duration: `620ms`.
 - **Facial Expression**: `surprised` with alert wide eyes.
-- **Procedural Audio**: Two-tone notification chime: `A5 (880Hz)` followed by `E6 (1318Hz)`, duration `180ms`, gain `0.045`.
+- **Procedural Audio**: `S08: warm_alert_ping` (warm two-tone chime `A5: 880Hz` to `C#6: 1108Hz`).
 - **Particle / FX**: Flashing amber exclamation mark bubble above head (`!`).
 - **Recovery**: Holds attention until user responds or interacts.
 
@@ -422,7 +463,7 @@ Each movement is specified with its trigger condition, keyframe trajectory, CSS 
 
 ---
 
-## Section 2: True Walking Kinematics Engine
+## Section 4: True Walking Kinematics Engine
 
 ### Stride Mechanics & Physics Implementation
 When the mascot is in `walk_follow` mode following the cursor:
@@ -441,7 +482,7 @@ When the mascot is in `walk_follow` mode following the cursor:
 
 ---
 
-## Section 3: Natural Smile & Dynamic Facial Expression Overlay
+## Section 5: Natural Smile & Dynamic Facial Expression Overlay
 
 ### Responsive SVG Facial Architecture
 The facial layer is an SVG positioned over the authentic master PNG:
@@ -459,7 +500,7 @@ Transitions between expressions use CSS opacity cross-fades and path interpolati
 
 ---
 
-## Section 4: Screen-Boundary Clamped Popover Menu
+## Section 6: Screen-Boundary Clamped Popover Menu
 
 ### Mathematical Viewport Clamping Algorithm
 To permanently fix the menu slicing bug seen in `media_1795413278776_0e12d7e0.png`:
@@ -496,7 +537,7 @@ function updateMenuPosition() {
 
 ---
 
-## Section 5: White Line Permanent Fix Specification
+## Section 7: White Line Permanent Fix Specification
 
 ### Root Cause
 `titleBarStyle: 'hidden'` instructs Windows 11 DWM to inject an inactive window caption border line along the top of transparent Electron windows.
@@ -520,18 +561,7 @@ function updateMenuPosition() {
 
 ---
 
-## Section 6: Apple Liquid Glass Dynamic Island Polish
-
-### Refraction & Glass Styling
-- Refraction background: `linear-gradient(180deg, rgba(16, 20, 32, 0.88) 0%, rgba(8, 10, 18, 0.94) 100%)`.
-- Specular highlights: `inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 2px 8px rgba(255, 255, 255, 0.08)`.
-- Refraction border: `1px solid rgba(255, 255, 255, 0.18)`.
-- Caustic shadow: `0 14px 34px -4px rgba(0, 0, 0, 0.82), 0 0 20px rgba(52, 245, 164, 0.1)`.
-- Smooth spring transitions: `cubic-bezier(0.22, 1, 0.36, 1)`.
-
----
-
-## Section 7: Task-by-Task Implementation Roadmap
+## Section 8: Task-by-Task Implementation Roadmap
 
 ### Task 1: Fix Viewport Menu Boundary Clamping & Eliminate White Line
 - [ ] In `desktop-app/main.cjs`:
@@ -557,29 +587,28 @@ function updateMenuPosition() {
   - Implement CSS `@keyframes` and transform states for all 32 movements (M01 – M32).
   - Connect movement transitions to daemon event stream.
 
-### Task 4: Procedural 8-Bit Web Audio Synthesizer Suite
+### Task 4: Apple Tactile Sound Suite (10 Procedural SFX)
 - [ ] In `desktop-app/overlay.html`:
-  - Implement procedural Web Audio synth functions:
-    - Typing chirps (throttled to 120ms).
-    - Launch arpeggios (C4 → E5).
-    - Victory celebration fanfare (C5 → C6).
-    - Error buzzers, surprise squeaks, and purr frequencies.
-  - Wire master mute control.
+  - Implement Web Audio synthesizers for all 10 Apple-inspired tactile sounds (S01 – S10):
+    - `island_expand_pop`, `island_collapse_tuck`, `marimba_typing_tap`, `air_drop_chime`, `apple_pay_triumph`, `haptic_switch_click`, `organic_purr_rumble`, `warm_alert_ping`, `magnetic_dock_snap`, `bubble_undock_pop`.
+  - Wire sounds to their corresponding movement and interaction events.
+  - Provide master mute toggle honoring user preference.
 
 ### Task 5: Apple Liquid Glass Dynamic Island Overhaul
 - [ ] In `desktop-app/overlay.html`:
   - Apply multi-layer specular glass gradients and 28px blur.
+  - Add Apple fluid spring curve `cubic-bezier(0.16, 1, 0.3, 1)`.
   - Integrate dynamic halo color matching agent state.
   - Polish collapsed (196×34px) and expanded (384×138px) island layouts.
 
 ### Task 6: Task-Completion "Return to Antigravity" Callout
 - [ ] In `desktop-app/overlay.html`:
   - Build liquid glass speech bubble anchored to mascot.
-  - Trigger `agent_done_celebration` (M11) + `agent_done_callout` (M12) on `PostInvocation`.
+  - Trigger `agent_done_celebration` (M11) + `agent_done_callout` (M12) + `apple_pay_triumph` (S05) on `PostInvocation`.
   - Connect 1-click focus button calling `window.electronAPI.focusIde()`.
 
 ### Task 7: Full Verification, Packaging & GitHub Release
 - [ ] Run test suite (`npm test`) ensuring 86+ tests pass with 100% green status.
 - [ ] Rebuild standalone Windows installer (`Antigravity Presence Setup 2.3.0.exe`) and portable exe (`Antigravity Presence 2.3.0.exe`).
-- [ ] Test locally to confirm zero white line, zero menu clipping, natural smile, and working movements.
+- [ ] Test locally to confirm zero white line, zero menu clipping, natural smile, working kinematics, and Apple audio palette.
 - [ ] Commit all code changes, push to `main`, and publish release assets to GitHub Release `v2.3.0`.
