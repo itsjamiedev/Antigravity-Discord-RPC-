@@ -32,19 +32,23 @@ import {
   type ManualEditorState,
   type PrivacySettings,
   type TrackerSnapshot,
+  type UpdateStatusReport,
   type WhitelistedHookPayload,
 } from '../shared/types.js';
 import { IdeInstaller, type IdeInstallerOptions } from '../installer/ide-installer.js';
+import { GitHubUpdater, type GitHubUpdaterOptions } from '../updater/github-updater.js';
 import type { CentralTracker } from '../tracker/tracker.js';
 import { getDashboardHtml } from './html-content.js';
 
 export const DEFAULT_COMPANION_SETTINGS: CompanionSettings = {
   enabled: true,
+  notchEnabled: true,
+  mascotEnabled: true,
   mode: 'mascot',
   behavior: 'sit_corner',
   corner: 'bottom-right',
   sfxMuted: false,
-  scanlines: true,
+  scanlines: false,
   isAntigravityRunning: true,
 };
 
@@ -54,6 +58,7 @@ export interface DashboardServerOptions {
   spoolPath?: string;
   companionConfigPath?: string;
   ideInstallerOptions?: IdeInstallerOptions;
+  updaterOptions?: GitHubUpdaterOptions;
   tracker: CentralTracker;
   presenceManager?: PresenceManager;
   discordClient?: DiscordIpcClient;
@@ -69,6 +74,7 @@ export interface DashboardFullState extends TrackerSnapshot {
   settings: PrivacySettings;
   companion?: CompanionSettings;
   ideStatus?: IdeInstallerReport;
+  updater?: UpdateStatusReport;
   isAntigravityRunning?: boolean;
   workspaces?: {
     count: number;
@@ -87,6 +93,7 @@ export class DashboardServer {
   private readonly discordClient?: DiscordIpcClient;
   private readonly configManager: ConfigManager;
   private readonly ideInstaller: IdeInstaller;
+  private readonly githubUpdater: GitHubUpdater;
   private lastIdeStatus: IdeInstallerReport;
   private companionSettings: CompanionSettings;
   private readonly sseClients = new Set<http.ServerResponse>();
@@ -109,6 +116,10 @@ export class DashboardServer {
     this.configManager = options.configManager;
     this.ideInstaller = new IdeInstaller(options.ideInstallerOptions);
     this.lastIdeStatus = this.ideInstaller.inspectStatus();
+    this.githubUpdater = new GitHubUpdater({
+      ...options.updaterOptions,
+      ideInstaller: this.ideInstaller,
+    });
     this.companionSettings = this.loadCompanionSettings();
   }
 
@@ -132,6 +143,14 @@ export class DashboardServer {
         if (raw && typeof raw === 'object') {
           return {
             enabled: typeof raw.enabled === 'boolean' ? raw.enabled : DEFAULT_COMPANION_SETTINGS.enabled,
+            notchEnabled:
+              typeof raw.notchEnabled === 'boolean'
+                ? raw.notchEnabled
+                : DEFAULT_COMPANION_SETTINGS.notchEnabled,
+            mascotEnabled:
+              typeof raw.mascotEnabled === 'boolean'
+                ? raw.mascotEnabled
+                : DEFAULT_COMPANION_SETTINGS.mascotEnabled,
             mode: raw.mode === 'notch' ? 'notch' : 'mascot',
             behavior:
               raw.behavior === 'walk_follow' || raw.behavior === 'sleep'
@@ -142,7 +161,7 @@ export class DashboardServer {
                 ? raw.corner
                 : 'bottom-right',
             sfxMuted: typeof raw.sfxMuted === 'boolean' ? raw.sfxMuted : false,
-            scanlines: typeof raw.scanlines === 'boolean' ? raw.scanlines : true,
+            scanlines: typeof raw.scanlines === 'boolean' ? raw.scanlines : false,
             isAntigravityRunning: true,
           };
         }
@@ -193,6 +212,8 @@ export class DashboardServer {
     const next: CompanionSettings = {
       ...this.companionSettings,
       ...(typeof partial.enabled === 'boolean' ? { enabled: partial.enabled } : {}),
+      ...(typeof partial.notchEnabled === 'boolean' ? { notchEnabled: partial.notchEnabled } : {}),
+      ...(typeof partial.mascotEnabled === 'boolean' ? { mascotEnabled: partial.mascotEnabled } : {}),
       ...(partial.mode === 'mascot' || partial.mode === 'notch' ? { mode: partial.mode } : {}),
       ...(incomingBehavior === 'sit_corner' ||
       incomingBehavior === 'walk_follow' ||
@@ -278,6 +299,7 @@ export class DashboardServer {
       settings,
       companion,
       ideStatus: this.lastIdeStatus,
+      updater: this.githubUpdater.getStatus(),
       isAntigravityRunning: companion.isAntigravityRunning ?? true,
       workspaces,
     };
@@ -311,6 +333,11 @@ export class DashboardServer {
 
     // 3. Listen for Discord state changes to broadcast to dashboard
     this.discordClient?.onStateChange(() => {
+      this.broadcastUpdate();
+    });
+
+    // 4. Start 30-Minute GitHub Auto-Update Polling Loop
+    this.githubUpdater.startAutoCheck(() => {
       this.broadcastUpdate();
     });
 
@@ -517,6 +544,85 @@ export class DashboardServer {
             const report = this.installIdeExtension(force);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true, ideStatus: report }));
+          });
+          return;
+        }
+
+        // REST API: 30-Minute GitHub Auto-Updater Status (GET)
+        if (method === 'GET' && url === '/api/updater/status') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(this.githubUpdater.getStatus()));
+          return;
+        }
+
+        // REST API: 30-Minute GitHub Auto-Updater Manual Check (POST)
+        if (method === 'POST' && url === '/api/updater/check') {
+          this.readBody(req, res, 4096, (body) => {
+            let ignoreSkipped = true;
+            if (body && body.trim()) {
+              try {
+                const parsed = JSON.parse(body) as { ignoreSkipped?: boolean };
+                if (typeof parsed.ignoreSkipped === 'boolean') {
+                  ignoreSkipped = parsed.ignoreSkipped;
+                }
+              } catch {}
+            }
+            void this.githubUpdater.checkForUpdates(ignoreSkipped).then((status) => {
+              this.broadcastUpdate();
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: true, updater: status }));
+            });
+          });
+          return;
+        }
+
+        // REST API: 30-Minute GitHub Auto-Updater Config & Token (POST)
+        if (method === 'POST' && url === '/api/updater/config') {
+          this.readBody(req, res, 8192, (body) => {
+            try {
+              const parsed = JSON.parse(body || '{}') as {
+                githubToken?: string;
+                autoCheckEnabled?: boolean;
+                clearSkipped?: boolean;
+              };
+              const status = this.githubUpdater.updateConfig(parsed);
+              this.broadcastUpdate();
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: true, updater: status }));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: String(err) }));
+            }
+          });
+          return;
+        }
+
+        // REST API: Skip Release Version / Stay on Current Version (POST)
+        if (method === 'POST' && url === '/api/updater/skip') {
+          this.readBody(req, res, 4096, (body) => {
+            let version: string | undefined;
+            if (body && body.trim()) {
+              try {
+                const parsed = JSON.parse(body) as { version?: string };
+                if (typeof parsed.version === 'string') {
+                  version = parsed.version;
+                }
+              } catch {}
+            }
+            const status = this.githubUpdater.skipVersion(version);
+            this.broadcastUpdate();
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: true, updater: status }));
+          });
+          return;
+        }
+
+        // REST API: Download & Apply Release Update (POST)
+        if (method === 'POST' && url === '/api/updater/apply') {
+          void this.githubUpdater.downloadAndApplyUpdate().then((result) => {
+            this.broadcastUpdate();
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ...result, updater: this.githubUpdater.getStatus() }));
           });
           return;
         }
@@ -788,6 +894,7 @@ export class DashboardServer {
   }
 
   public async stop(): Promise<void> {
+    this.githubUpdater.stopAutoCheck();
     if (this.unsubscribeTracker) {
       this.unsubscribeTracker();
       this.unsubscribeTracker = undefined;

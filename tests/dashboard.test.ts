@@ -106,6 +106,43 @@ describe('Phase 5: Local Usage Dashboard (127.0.0.1)', () => {
     expect(Array.isArray(statusJson.targets)).toBe(true);
   });
 
+  it('exposes 30-minute GitHub Auto-Updater status, token config, and skip version endpoints', async () => {
+    const statusRes = await fetch(`${baseUrl}/api/updater/status`);
+    expect(statusRes.status).toBe(200);
+    const statusJson = (await statusRes.json()) as {
+      checkIntervalMinutes: number;
+      autoCheckEnabled: boolean;
+    };
+    expect(statusJson.checkIntervalMinutes).toBe(30);
+
+    const cfgRes = await fetch(`${baseUrl}/api/updater/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ githubToken: 'ghp_testToken12345678' }),
+    });
+    expect(cfgRes.status).toBe(200);
+    const cfgJson = (await cfgRes.json()) as {
+      ok: boolean;
+      updater: { hasGithubToken: boolean; maskedToken: string };
+    };
+    expect(cfgJson.ok).toBe(true);
+    expect(cfgJson.updater.hasGithubToken).toBe(true);
+    expect(cfgJson.updater.maskedToken).toBe('ghp_••••5678');
+
+    const skipRes = await fetch(`${baseUrl}/api/updater/skip`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ version: '2.9.0' }),
+    });
+    expect(skipRes.status).toBe(200);
+    const skipJson = (await skipRes.json()) as {
+      ok: boolean;
+      updater: { skippedVersion: string };
+    };
+    expect(skipJson.ok).toBe(true);
+    expect(skipJson.updater.skippedVersion).toBe('2.9.0');
+  });
+
   it('serves REST endpoints with accurate domain data', async () => {
     // Inject a sample agent event
     const sampleEvent: WhitelistedHookPayload = {

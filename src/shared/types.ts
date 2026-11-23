@@ -154,6 +154,8 @@ export interface TokenBreakdown {
 
 export interface CompanionSettings {
   enabled: boolean;
+  notchEnabled?: boolean;
+  mascotEnabled?: boolean;
   mode: 'mascot' | 'notch';
   behavior: 'sit_corner' | 'walk_follow' | 'sleep';
   corner: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
@@ -298,4 +300,35 @@ export interface IdeInstallerReport {
   allTargetsSynced: boolean;
   targets: IdeTargetStatus[];
   checkedAt: string;
+}
+
+export interface ReleaseAssetInfo {
+  id: number;
+  name: string;
+  size: number;
+  browserDownloadUrl: string;
+  apiUrl: string;
+  contentType: string;
+}
+
+export interface UpdateStatusReport {
+  currentVersion: string;
+  latestVersion: string | null;
+  releaseName: string | null;
+  releaseNotes: string | null;
+  releaseNotesLines: string[];
+  publishedAt: string | null;
+  releaseHtmlUrl: string | null;
+  updateAvailable: boolean;
+  isSkipped: boolean;
+  skippedVersion: string | null;
+  hasGithubToken: boolean;
+  maskedToken: string | null;
+  autoCheckEnabled: boolean;
+  checkIntervalMinutes: number;
+  lastCheckedAt: string | null;
+  isDownloading: boolean;
+  downloadProgressPct: number;
+  lastError: string | null;
+  assets: ReleaseAssetInfo[];
 }

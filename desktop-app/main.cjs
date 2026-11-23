@@ -52,6 +52,8 @@ let cursorTrackInterval = null;
 let isQuitting = false;
 let currentCompanion = {
   enabled: true,
+  notchEnabled: true,
+  mascotEnabled: true,
   mode: 'mascot',
   mascotBehavior: 'sit_corner',
   corner: 'bottom-right',
@@ -224,14 +226,15 @@ function createInstallerWindow() {
   }
 
   installerWindow = new BrowserWindow({
-    width: 580,
-    height: 500,
+    width: 460,
+    height: 390,
     resizable: false,
     maximizable: false,
     minimizable: false,
     frame: false,
-    title: 'Antigravity Presence Setup',
-    backgroundColor: '#0B0C11',
+    titleBarStyle: 'hidden',
+    title: 'Antigravity Setup',
+    backgroundColor: '#0B0D14',
     icon: getAppIcon(),
     center: true,
     show: false,
@@ -332,7 +335,10 @@ function createOverlayWindow() {
     width,
     height,
     transparent: true,
+    backgroundColor: '#00000000',
     frame: false,
+    titleBarStyle: 'hidden',
+    thickFrame: false,
     resizable: false,
     movable: false,
     minimizable: false,
@@ -350,6 +356,8 @@ function createOverlayWindow() {
       backgroundThrottling: false,
     },
   });
+
+  overlayWindow.setMenuBarVisibility(false);
 
   overlayWindow.setAlwaysOnTop(true, 'screen-saver');
   overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -393,58 +401,70 @@ function rebuildTrayMenu() {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Antigravity Presence v2.1',
+      label: 'Antigravity Presence v2.2',
       enabled: false,
     },
     {
-      label: 'Open Antigravity Dashboard Studio',
+      label: 'Open Antigravity Studio',
       click: () => showDashboardWindow(),
     },
     {
-      label: 'Open Antigravity Setup & Extension Installer',
+      label: 'Open Antigravity Setup',
       click: () => createInstallerWindow(),
     },
     {
-      label: 'Force Sync Antigravity IDE Extension',
+      label: 'Check for GitHub Updates (30m Auto)',
+      click: () => {
+        const req = http.request(
+          {
+            hostname: API_HOST,
+            port: API_PORT,
+            path: '/api/updater/check',
+            method: 'POST',
+            timeout: 4000,
+          },
+          (res) => res.resume()
+        );
+        req.on('error', () => {});
+        req.end();
+        showDashboardWindow();
+      },
+    },
+    {
+      label: 'Sync Antigravity IDE Extension',
       click: () => triggerIdeExtensionAutoInstall(true),
     },
     { type: 'separator' },
     {
-      label: 'Enable Desktop Overlay (Mascot / Notch)',
+      label: 'Enable Liquid Glass Dynamic Notch',
       type: 'checkbox',
-      checked: Boolean(currentCompanion.enabled),
-      click: (item) => updateCompanionApi({ enabled: item.checked }),
+      checked: currentCompanion.enabled && currentCompanion.notchEnabled !== false,
+      click: (item) => updateCompanionApi({ enabled: true, notchEnabled: Boolean(item.checked) }),
     },
     {
-      label: 'Mode: Desktop Mascot Pet',
-      type: 'radio',
-      checked: currentCompanion.mode === 'mascot',
-      click: () => updateCompanionApi({ enabled: true, mode: 'mascot' }),
-    },
-    {
-      label: 'Mode: Windows Dynamic Notch',
-      type: 'radio',
-      checked: currentCompanion.mode === 'notch',
-      click: () => updateCompanionApi({ enabled: true, mode: 'notch' }),
+      label: 'Enable Desktop Mascot Pet',
+      type: 'checkbox',
+      checked: currentCompanion.enabled && currentCompanion.mascotEnabled !== false,
+      click: (item) => updateCompanionApi({ enabled: true, mascotEnabled: Boolean(item.checked) }),
     },
     { type: 'separator' },
     {
-      label: 'Mascot: Sit in Desktop Corner',
+      label: 'Mascot: Sit in Corner',
       type: 'radio',
       checked: currentCompanion.mascotBehavior === 'sit_corner',
-      click: () => updateCompanionApi({ enabled: true, mode: 'mascot', mascotBehavior: 'sit_corner' }),
+      click: () => updateCompanionApi({ enabled: true, mascotEnabled: true, mascotBehavior: 'sit_corner' }),
     },
     {
       label: 'Mascot: Walk & Follow Cursor',
       type: 'radio',
       checked: currentCompanion.mascotBehavior === 'walk_follow',
-      click: () => updateCompanionApi({ enabled: true, mode: 'mascot', mascotBehavior: 'walk_follow' }),
+      click: () => updateCompanionApi({ enabled: true, mascotEnabled: true, mascotBehavior: 'walk_follow' }),
     },
     {
       label: 'Mascot: Sleep Mode',
       type: 'radio',
       checked: currentCompanion.mascotBehavior === 'sleep',
-      click: () => updateCompanionApi({ enabled: true, mode: 'mascot', mascotBehavior: 'sleep' }),
+      click: () => updateCompanionApi({ enabled: true, mascotEnabled: true, mascotBehavior: 'sleep' }),
     },
     { type: 'separator' },
     {

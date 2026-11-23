@@ -336,43 +336,46 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   <title>Antigravity Presence</title>
   <style>
     :root {
-      --bg: #0B0C11;
-      --card: #131620;
-      --card-inner: #0D0F17;
-      --border: #252A3D;
-      --border-hover: rgba(255, 184, 77, 0.5);
+      --bg: #07090F;
+      --card: rgba(16, 20, 32, 0.58);
+      --card-inner: rgba(10, 13, 21, 0.65);
+      --border: rgba(255, 255, 255, 0.11);
+      --border-hover: rgba(52, 245, 164, 0.45);
       --acc: #FFB84D;
       --acc-glow: rgba(255, 184, 77, 0.16);
       --emerald: #34F5A4;
       --lavender: #B4A2FF;
       --cyan: #38E4FF;
       --coral: #FF5E7E;
-      --t1: #F6F1E9;
-      --t2: rgba(246, 241, 233, 0.72);
-      --t3: rgba(246, 241, 233, 0.42);
-      --ease: cubic-bezier(0.32, 0.72, 0, 1);
+      --t1: #F8FAFC;
+      --t2: rgba(248, 250, 252, 0.72);
+      --t3: rgba(248, 250, 252, 0.44);
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --font-mc: 'Minecraft', 'Minecraft Seven', 'Minecraftia', 'Silkscreen', 'Geist Mono', monospace;
       --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
     ${sideMascotCss}
 
-    /* RETRO SIDEBAR MASCOT STAGE & NOTCH DOCK */
+    /* LIQUID GLASS SIDEBAR MASCOT STAGE & NOTCH DOCK */
     .side-mascot-stage {
-      background: linear-gradient(145deg, #161A27 0%, #0E1018 100%);
-      border: 2px solid var(--border);
-      border-radius: 10px;
+      background: var(--card);
+      backdrop-filter: blur(20px) saturate(175%);
+      -webkit-backdrop-filter: blur(20px) saturate(175%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
       padding: 8px 9px;
       margin-bottom: 7px;
       display: flex;
       align-items: center;
       gap: 9px;
-      box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
       cursor: pointer;
       transition: border-color 0.2s var(--ease);
     }
     .side-mascot-stage:hover {
-      border-color: var(--acc);
+      border-color: var(--border-hover);
     }
     .side-mascot-info {
       flex: 1;
@@ -382,10 +385,9 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       gap: 3px;
     }
     .side-mascot-speech {
-      font-family: var(--font-mono);
+      font-family: var(--font-mc);
       font-size: 9.5px;
-      font-weight: 700;
-      color: var(--acc);
+      color: var(--t1);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -396,14 +398,13 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       flex-wrap: wrap;
     }
     .side-time-pill {
-      font-family: var(--font-mono);
+      font-family: var(--font-mc);
       font-size: 8.5px;
-      font-weight: 700;
-      padding: 2px 5px;
-      border-radius: 4px;
-      background: rgba(255, 184, 77, 0.1);
-      border: 1px solid rgba(255, 184, 77, 0.28);
-      color: var(--t1);
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(52, 245, 164, 0.1);
+      border: 1px solid rgba(52, 245, 164, 0.28);
+      color: var(--emerald);
     }
     .side-companion-bar {
       display: grid;
@@ -413,30 +414,30 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     }
     .side-retro-btn {
       background: var(--card);
-      border: 1.5px solid var(--border);
-      border-radius: 7px;
-      padding: 5px 6px;
-      font-family: var(--font-mono);
-      font-size: 9px;
-      font-weight: 700;
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 5.5px 6px;
+      font-family: var(--font-mc);
+      font-size: 8.5px;
       color: var(--t2);
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 4px;
-      box-shadow: 2px 2px 0 rgba(0,0,0,0.45);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
       transition: all 0.15s var(--ease);
     }
     .side-retro-btn:hover {
-      border-color: var(--acc);
+      border-color: rgba(255, 255, 255, 0.24);
       color: var(--t1);
       transform: translateY(-1px);
     }
     .side-retro-btn.active {
-      border-color: var(--emerald);
+      border-color: rgba(52, 245, 164, 0.4);
       color: var(--emerald);
-      background: rgba(52, 245, 164, 0.08);
+      background: rgba(52, 245, 164, 0.1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1120,13 +1121,14 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     function syncSideCompanionUi(comp) {
       if (!comp) return;
       currentCompanion = comp;
+      const notchOn = comp.enabled !== false && comp.notchEnabled !== false;
       const chip = document.getElementById('sideCompModeChip');
-      if (chip) chip.innerText = !comp.enabled ? 'Overlay Off' : (comp.mode === 'notch' ? 'Notch Active' : 'Mascot Active');
+      if (chip) chip.innerText = !comp.enabled ? 'Overlay Off' : (notchOn ? 'Notch Active' : 'Mascot Active');
       const btnN = document.getElementById('btnSideNotch');
       const lblN = document.getElementById('lblSideNotch');
       if (btnN && lblN) {
-        btnN.classList.toggle('active', comp.enabled && comp.mode === 'notch');
-        lblN.innerText = (comp.enabled && comp.mode === 'notch') ? 'Notch: On' : 'Toggle Notch';
+        btnN.classList.toggle('active', notchOn);
+        lblN.innerText = notchOn ? 'Notch: On' : 'Toggle Notch';
       }
       const lblB = document.getElementById('lblSideBehavior');
       if (lblB) {
@@ -1136,8 +1138,8 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     }
 
     function toggleSideNotch() {
-      const nextMode = (currentCompanion.enabled && currentCompanion.mode === 'notch') ? 'mascot' : 'notch';
-      postSideCompanion({ enabled: true, mode: nextMode });
+      const curNotch = currentCompanion.enabled !== false && currentCompanion.notchEnabled !== false;
+      postSideCompanion({ enabled: true, notchEnabled: !curNotch });
       if (vscode) vscode.postMessage({ command: 'toggleNotch' });
     }
 

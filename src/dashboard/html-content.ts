@@ -26,19 +26,22 @@ export function getDashboardHtml(): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Antigravity Presence — Local Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;700&family=Geist:wght@400;500;600;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0B0C11;
-      --card-bg: #131620;
-      --card-inner: #08090D;
+      --bg: #07090F;
+      --card-bg: rgba(16, 20, 32, 0.58);
+      --card-inner: rgba(10, 13, 21, 0.65);
       --acc: #FFB84D;
       --t1: #F8FAFC;
-      --t2: rgba(248, 250, 252, 0.72);
-      --t3: rgba(148, 163, 184, 0.56);
-      --hair: #2A3142;
-      --hair-subtle: #1D2230;
-      --ease: cubic-bezier(0.32, 0.72, 0, 1);
-      
+      --t2: rgba(248, 250, 252, 0.74);
+      --t3: rgba(148, 163, 184, 0.54);
+      --hair: rgba(255, 255, 255, 0.11);
+      --hair-subtle: rgba(255, 255, 255, 0.06);
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
       --flash: #FFB84D;
       --argon: #38BDF8;
       --sonnet: #FF5E7E;
@@ -48,40 +51,31 @@ export function getDashboardHtml(): string {
       --rose: #FF5E7E;
       --amber: #FFB84D;
 
-      --font-sans: "Space Grotesk", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --font-mono: "JetBrains Mono", "Geist Mono", SFMono-Regular, monospace;
-      --font-pixel: "Minecraft Seven", "Press Start 2P", "JetBrains Mono", monospace;
+      --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "Geist Mono", "JetBrains Mono", SFMono-Regular, monospace;
+      --font-pixel: "Minecraft", "Minecraft Seven", "Minecraftia", "Silkscreen", "Geist Mono", monospace;
     }
 
     ${mascotStyles}
 
-    /* RETRO CRT SCANLINE OVERLAY & HARDWARE BEZELS */
-    body.crt-scanlines::after {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 9999;
-      background: repeating-linear-gradient(
-        0deg,
-        rgba(0, 0, 0, 0.14) 0px,
-        rgba(0, 0, 0, 0.14) 1px,
-        transparent 1px,
-        transparent 3px
-      );
-      opacity: 0.45;
+    /* Hide legacy kicker/eyebrow labels per /impeccable craft-floor */
+    .cap {
+      display: none !important;
     }
 
+    /* LIQUID GLASS HERO & 5-WINDOW MATRIX */
     .retro-hero-stage {
       grid-column: span 12;
-      background: linear-gradient(180deg, #161A26 0%, #10131C 100%);
-      border: 2px solid #2D364B;
-      box-shadow: 0 4px 0 #050609, inset 0 1px 0 rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 18px 22px;
+      background: var(--card-bg);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid var(--hair);
+      box-shadow: 0 14px 36px -8px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      border-radius: 18px;
+      padding: 16px 20px;
       display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 22px;
+      grid-template-columns: 230px 1fr;
+      gap: 18px;
       align-items: center;
       position: relative;
       overflow: hidden;
@@ -93,82 +87,41 @@ export function getDashboardHtml(): string {
     }
     .mascot-pedestal {
       display: flex;
-      align-items: center;
-      gap: 16px;
-      background: #08090D;
-      border: 2px solid #252C3D;
-      box-shadow: inset 0 2px 6px rgba(0,0,0,0.65);
-      border-radius: 12px;
-      padding: 10px 16px;
-      min-width: 295px;
-    }
-    .mascot-speech-box {
-      display: flex;
       flex-direction: column;
-      gap: 5px;
-    }
-    .mascot-speech-tag {
-      font-family: var(--font-pixel);
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      color: var(--emerald);
-      text-transform: uppercase;
-      display: inline-flex;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
+      gap: 8px;
+      background: var(--card-inner);
+      border: 1px solid var(--hair);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 12px 14px;
+      cursor: pointer;
+      position: relative;
+      text-align: center;
     }
-    .mascot-speech-text {
-      font-family: var(--font-mono);
-      font-size: 12.5px;
-      font-weight: 700;
+    .mascot-pedestal-tag {
+      font-family: var(--font-pixel);
+      font-size: 9.5px;
+      color: var(--emerald);
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(52, 245, 164, 0.1);
+      border: 1px solid rgba(52, 245, 164, 0.3);
+    }
+    .mascot-speech {
+      font-family: var(--font-pixel);
+      font-size: 10.5px;
       color: var(--t1);
-      line-height: 1.35;
     }
-    .mascot-speech-sub {
-      font-family: var(--font-mono);
+    .mascot-sub {
       font-size: 11px;
-      color: var(--acc);
+      color: var(--t3);
     }
     .retro-time-matrix {
       display: flex;
       flex-direction: column;
       gap: 10px;
-    }
-    .retro-range-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .retro-range-btns {
-      display: inline-flex;
-      background: #08090D;
-      border: 2px solid #2A3142;
-      border-radius: 8px;
-      padding: 3px;
-      gap: 4px;
-    }
-    .retro-range-btn {
-      background: transparent;
-      border: 1px solid transparent;
-      color: var(--t2);
-      font-family: var(--font-pixel);
-      font-size: 11px;
-      padding: 5px 11px;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .retro-range-btn:hover {
-      color: var(--t1);
-      background: rgba(255, 184, 77, 0.08);
-    }
-    .retro-range-btn.active {
-      background: var(--acc);
-      color: #08090D;
-      font-weight: 800;
-      box-shadow: 0 2px 0 #9E6300;
     }
     .retro-5col-strip {
       display: grid;
@@ -180,84 +133,97 @@ export function getDashboardHtml(): string {
         grid-template-columns: repeat(2, 1fr);
       }
     }
-    .retro-well-cell {
-      background: #08090D;
-      border: 2px solid #232938;
-      border-radius: 8px;
-      padding: 8px 11px;
+    .retro-time-cell {
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid var(--hair);
+      border-radius: 12px;
+      padding: 9px 12px;
       cursor: pointer;
-      transition: border-color 0.15s ease, transform 0.15s ease;
+      transition: all 0.18s var(--ease);
     }
-    .retro-well-cell:hover,
-    .retro-well-cell.active {
-      border-color: var(--acc);
+    .retro-time-cell:hover,
+    .retro-time-cell.active {
+      border-color: rgba(52, 245, 164, 0.45);
+      background: rgba(52, 245, 164, 0.08);
       transform: translateY(-1px);
     }
-    .retro-well-lbl {
+    .retro-time-cell .w-lbl {
       font-family: var(--font-pixel);
-      font-size: 9.5px;
+      font-size: 9px;
       color: var(--t3);
-      letter-spacing: 0.06em;
     }
-    .retro-well-hrs {
-      font-family: var(--font-mono);
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--acc);
-      margin-top: 2px;
+    .retro-time-cell .w-hrs {
+      font-family: var(--font-pixel);
+      font-size: 15px;
+      color: var(--t1);
+      margin-top: 3px;
     }
-    .retro-well-tok {
+    .retro-time-cell .w-tok {
       font-family: var(--font-mono);
       font-size: 11px;
       color: var(--emerald);
-      margin-top: 1px;
+      margin-top: 2px;
     }
     .retro-companion-controls {
       display: flex;
-      flex-direction: column;
+      flex-wrap: wrap;
       gap: 7px;
-      min-width: 210px;
     }
-    .retro-hw-btn {
-      background: #1B2030;
-      border: 2px solid #323B54;
-      box-shadow: 0 2px 0 #07080C;
-      color: var(--t1);
-      font-family: var(--font-mono);
+    .retro-btn {
+      background: rgba(255, 255, 255, 0.045);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--hair);
+      color: var(--t2);
+      font-family: var(--font-sans);
       font-size: 11.5px;
-      font-weight: 700;
-      padding: 7px 12px;
-      border-radius: 7px;
+      font-weight: 600;
+      padding: 6px 11px;
+      border-radius: 10px;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      transition: all 0.15s ease;
+      gap: 6px;
+      transition: all 0.16s var(--ease);
     }
-    .retro-hw-btn:hover {
-      border-color: var(--acc);
-      color: var(--acc);
+    .retro-btn:hover {
+      border-color: rgba(255, 255, 255, 0.26);
+      color: var(--t1);
+      background: rgba(255, 255, 255, 0.09);
     }
-    .retro-hw-btn:active {
-      transform: translateY(1px);
-      box-shadow: 0 1px 0 #07080C;
+    .retro-btn.active {
+      border-color: rgba(52, 245, 164, 0.4);
+      color: var(--emerald);
+      background: rgba(52, 245, 164, 0.1);
     }
-    .retro-led {
-      width: 8px;
-      height: 8px;
-      border-radius: 2px;
-      background: var(--emerald);
-      box-shadow: 0 0 6px var(--emerald);
-      display: inline-block;
+
+    /* LIQUID GLASS UPDATE & RELEASE NOTES BANNER */
+    .glass-update-banner {
+      grid-column: span 12;
+      background: linear-gradient(135deg, rgba(52, 245, 164, 0.12) 0%, rgba(16, 20, 32, 0.72) 100%);
+      backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(52, 245, 164, 0.38);
+      border-radius: 16px;
+      padding: 14px 18px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.18);
     }
-    .retro-led.amber {
-      background: var(--acc);
-      box-shadow: 0 0 6px var(--acc);
+    .glass-update-banner.visible {
+      display: flex;
     }
-    .retro-led.off {
-      background: var(--rose);
-      box-shadow: 0 0 6px var(--rose);
+    .update-notes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 120px;
+      overflow-y: auto;
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid var(--hair);
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--t2);
     }
 
     * {
@@ -456,15 +422,38 @@ export function getDashboardHtml(): string {
 
     .card {
       position: relative;
-      border-radius: 28px;
+      border-radius: 18px;
       overflow: hidden;
       background: var(--card-bg);
+      backdrop-filter: blur(22px) saturate(170%);
+      -webkit-backdrop-filter: blur(22px) saturate(170%);
       border: 1px solid var(--hair);
-      transition: border-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
+      box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      transition: border-color 0.22s var(--ease), box-shadow 0.22s var(--ease);
     }
 
     .card:hover {
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+
+    .ttl {
+      font-family: var(--font-pixel);
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .big-num {
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      font-family: var(--font-pixel);
+      font-variant-numeric: tabular-nums;
+      color: #fff;
     }
 
     .rim {
@@ -914,7 +903,7 @@ export function getDashboardHtml(): string {
     }
   </style>
 </head>
-<body class="crt-scanlines">
+<body>
 
   <!-- HEADER -->
   <header>
@@ -923,9 +912,9 @@ export function getDashboardHtml(): string {
         <svg viewBox="0 0 24 24"><path d="M12 2L2 19.5h20L12 2zm0 3.8L18.5 17H5.5L12 5.8z"/></svg>
       </div>
       <div>
-        <div class="brand-title">
+        <div class="brand-title" style="font-family:var(--font-pixel); font-size:0.95rem;">
           Antigravity Presence
-          <span class="pixel-tag">Local 127.0.0.1</span>
+          <span class="pixel-tag">127.0.0.1</span>
         </div>
       </div>
     </div>
@@ -937,10 +926,6 @@ export function getDashboardHtml(): string {
         </span>
         <span id="pauseText">Pause &amp; Leave</span>
       </button>
-      <div class="status-pill" id="tokenmaxxingPill" style="border-color:rgba(255,184,77,0.3); background:rgba(255,184,77,0.06);">
-        <svg class="ag-vec-icon ag-vec-bolt" style="color:var(--acc);" viewBox="0 0 16 16" fill="currentColor"><polygon points="9.5,1 3,9 8,9 6.5,15 13,7 8,7"/></svg>
-        <span style="color:var(--acc); font-weight:700;" id="tokenmaxxingText">Tokenmaxxing • 0</span>
-      </div>
       <div class="status-pill" id="workspacePill" title="Open workspaces">
         <span id="workspaceText">1 Workspace</span>
       </div>
@@ -977,32 +962,49 @@ export function getDashboardHtml(): string {
     <section id="tab-overview" class="view-panel active">
       <div class="bento-grid">
 
-        <!-- 0. RETRO ARCADE MASCOT STAGE & 5-WINDOW TIME/TOKEN MATRIX (span 12) -->
+        <!-- 30-MINUTE GITHUB AUTO-UPDATE & RELEASE NOTES CARD (VISIBLE WHEN UPDATE AVAILABLE) -->
+        <div class="glass-update-banner" id="glassUpdateBanner">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span class="chip" style="color:var(--emerald); border-color:rgba(52,245,164,0.4);" id="updateVersionDiff">v2.1.0 → v2.2.0</span>
+              <span class="ttl" id="updateReleaseTitle">Antigravity Update Available</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="retro-btn active" id="btnApplyUpdate" onclick="applyGithubUpdate()">
+                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10"/></svg>
+                <span id="lblApplyUpdate">Install Update</span>
+              </button>
+              <button type="button" class="retro-btn" onclick="skipGithubUpdate()">
+                <span>Stay on Current Version (Skip)</span>
+              </button>
+            </div>
+          </div>
+          <div class="update-notes-list" id="updateNotesList"></div>
+        </div>
+
+        <!-- 0. LIQUID GLASS MASCOT STAGE & 5-WINDOW TIME/TOKEN MATRIX (span 12) -->
         <div class="retro-hero-stage" id="retroHeroStage">
-          <!-- Mascot Interactive Pedestal -->
-          <div class="mascot-pedestal" onclick="interactDashMascot()" title="Click to interact with Antigravity Mascot (Chiptune SFX)">
+          <!-- Authentic Master PNG Mascot Stage -->
+          <div class="mascot-pedestal" onclick="interactDashMascot()" title="Click Antigravity Mascot">
             <span class="mascot-pedestal-tag" id="dashMascotStateTag">Idle</span>
             ${mascotHeroSvg}
-            <div class="mascot-speech" id="dashMascotSpeech">"Ready in Antigravity"</div>
-            <div class="mascot-sub" id="dashMascotSub">Click mascot to chirp • Antigravity Companion v2.1</div>
+            <div class="mascot-speech" id="dashMascotSpeech">Ready</div>
+            <div class="mascot-sub" id="dashMascotSub">Antigravity</div>
           </div>
 
           <!-- 5-Window Time & Token Analytics Matrix (24H | WEEK | MONTH | YEAR | OVERALL) -->
           <div class="retro-time-matrix">
             <div class="card-top" style="margin-bottom:0;">
-              <div>
-                <div class="cap">Antigravity Time &amp; Token Telemetry Matrix</div>
-                <div class="ttl" style="margin-top:2px;">
-                  <span id="matrixTitle">Multi-Range Time &amp; Token Ledger</span>
-                  <span class="chip" style="margin-left:8px; color:var(--emerald); border-color:rgba(52,245,164,0.35);" id="agRunningChip">● Antigravity Online</span>
-                </div>
+              <div class="ttl">
+                <span id="matrixTitle">Activity &amp; Time</span>
+                <span class="chip" style="margin-left:8px; color:var(--emerald); border-color:rgba(52,245,164,0.35);" id="agRunningChip">● Online</span>
               </div>
               <div class="seg" id="timeRangeSeg">
                 <button type="button" data-range="24h" aria-pressed="false" onclick="setTimeRange('24h')">24H</button>
-                <button type="button" data-range="weekly" aria-pressed="false" onclick="setTimeRange('weekly')">WEEK</button>
-                <button type="button" data-range="monthly" aria-pressed="false" onclick="setTimeRange('monthly')">MONTH</button>
-                <button type="button" data-range="yearly" aria-pressed="false" onclick="setTimeRange('yearly')">YEAR</button>
-                <button type="button" data-range="overall" aria-pressed="true" onclick="setTimeRange('overall')">OVERALL</button>
+                <button type="button" data-range="weekly" aria-pressed="false" onclick="setTimeRange('weekly')">7D</button>
+                <button type="button" data-range="monthly" aria-pressed="false" onclick="setTimeRange('monthly')">30D</button>
+                <button type="button" data-range="yearly" aria-pressed="false" onclick="setTimeRange('yearly')">1Y</button>
+                <button type="button" data-range="overall" aria-pressed="true" onclick="setTimeRange('overall')">ALL</button>
               </div>
             </div>
 
@@ -1035,29 +1037,29 @@ export function getDashboardHtml(): string {
             </div>
 
             <div class="retro-companion-controls">
-              <button type="button" class="retro-btn active" id="btnCompEnabled" onclick="toggleCompanionEnabled()">
-                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>
-                <span id="lblCompEnabled">Desktop Companion: On</span>
+              <button type="button" class="retro-btn active" id="btnNotchToggle" onclick="toggleNotchEnabled()">
+                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="4.5" width="12" height="7" rx="3.5"/></svg>
+                <span id="lblNotchToggle">Liquid Notch: On</span>
               </button>
-              <button type="button" class="retro-btn" id="btnCompMode" onclick="toggleCompanionMode()">
-                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M5 3v2.5h6V3"/></svg>
-                <span id="lblCompMode">Mode: Mascot Pet</span>
+              <button type="button" class="retro-btn active" id="btnMascotToggle" onclick="toggleMascotEnabled()">
+                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2L3 13h10L8 2z"/></svg>
+                <span id="lblMascotToggle">Mascot: On</span>
               </button>
               <button type="button" class="retro-btn" id="btnCompBehavior" onclick="cycleCompanionBehavior()">
-                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2L3 13h10L8 2z"/></svg>
-                <span id="lblCompBehavior">Action: Sit in Corner</span>
+                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 13l3.5-5.5L9.5 10 13 4"/></svg>
+                <span id="lblCompBehavior">Sit Corner</span>
               </button>
               <button type="button" class="retro-btn" id="btnCompCorner" onclick="cycleCompanionCorner()">
                 <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6V3h3M13 6V3h-3M3 10v3h3M13 10v3h-3"/></svg>
-                <span id="lblCompCorner">Corner: Bottom-Right</span>
+                <span id="lblCompCorner">Bottom-Right</span>
               </button>
               <button type="button" class="retro-btn active" id="btnCompSfx" onclick="toggleCompanionSfx()">
                 <svg class="ag-vec-icon ag-vec-wave" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="7" width="2.4" height="6" rx="0.8"/><rect x="6.8" y="3" width="2.4" height="10" rx="0.8"/><rect x="11.6" y="5" width="2.4" height="8" rx="0.8"/></svg>
-                <span id="lblCompSfx">8-Bit Audio: On</span>
+                <span id="lblCompSfx">Audio: On</span>
               </button>
-              <button type="button" class="retro-btn active" id="btnIdeExtensionSync" onclick="reinstallIdeExtension()" title="Click to auto-detect Antigravity IDE and sync extension bundle">
+              <button type="button" class="retro-btn active" id="btnIdeExtensionSync" onclick="reinstallIdeExtension()">
                 <svg class="ag-vec-icon" id="iconIdeSync" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 0 1-9.4 3.9L2.5 10.5M2.5 8a5.5 5.5 0 0 1 9.4-3.9l1.6 1.4"/></svg>
-                <span id="lblIdeExtensionSync">Antigravity IDE Extension: Synced</span>
+                <span id="lblIdeExtensionSync">IDE Synced</span>
               </button>
             </div>
           </div>
@@ -1070,14 +1072,9 @@ export function getDashboardHtml(): string {
           <div class="in-c">
             <div class="card-top">
               <div>
-                <div class="cap">Cumulative Tokens Stream</div>
                 <div class="ttl" style="margin-top:2px;">
-                  <span id="nwTitleText">Session Token Volume</span>
-                  <span class="delta" id="nwDelta">+0 this turn</span>
-                  <span class="chip" style="margin-left:8px; font-size:11px; color:var(--acc); border-color:var(--acc); display:inline-flex; align-items:center; gap:4px;" id="nwMaxxingChip">
-                    <svg class="ag-vec-icon ag-vec-bolt" viewBox="0 0 16 16" fill="currentColor"><polygon points="9.5,1 3,9 8,9 6.5,15 13,7 8,7"/></svg>
-                    AI Maxxing
-                  </span>
+                  <span id="nwTitleText">Tokens</span>
+                  <span class="delta" id="nwDelta">+0 out</span>
                 </div>
               </div>
               <div class="seg" id="nwSeg">
@@ -1525,50 +1522,34 @@ export function getDashboardHtml(): string {
         </div>
       </div>
 
-      <!-- DESKTOP COMPANION, MASCOT PET & WINDOWS DYNAMIC NOTCH CONTROLS -->
+      <!-- LIQUID GLASS DYNAMIC NOTCH & DESKTOP MASCOT CONTROLS -->
       <div class="card full-width" style="height: auto; margin-top: 16px;">
         <div class="rim"></div>
         <div class="in-c">
           <div class="card-top">
-            <div class="cap">DESKTOP COMPANION &amp; WINDOWS DYNAMIC NOTCH</div>
-            <span class="chip">STANDALONE APP &amp; OVERLAY</span>
+            <div class="ttl">Liquid Glass Notch &amp; Mascot Companion</div>
+            <span class="chip">Desktop Overlay</span>
           </div>
-          <div class="ttl">Interactive Mascot Pet &amp; Top-Screen Notch</div>
-          <div style="display:flex; flex-direction:column; gap:16px; margin-top:20px; max-width:680px;">
+          <div style="display:flex; flex-direction:column; gap:14px; margin-top:12px; max-width:680px;">
             <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
-              <div>
-                <div style="font-weight:600;">Enable Desktop Overlay (Mascot / Notch)</div>
-                <div style="font-size:0.75rem; color:var(--t3);">Show the interactive Antigravity Mascot or Windows Dynamic Notch on your desktop.</div>
-              </div>
-              <input type="checkbox" id="settingCompEnabled" onchange="updateCompanion({ enabled: this.checked })" checked>
+              <div style="font-weight:600;">Enable Liquid Glass Dynamic Island Notch</div>
+              <input type="checkbox" id="settingNotchEnabled" onchange="updateCompanion({ enabled: true, notchEnabled: this.checked })" checked>
             </label>
             <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
-              <div>
-                <div style="font-weight:600;">Active Overlay Mode</div>
-                <div style="font-size:0.75rem; color:var(--t3);">Switch between the desktop Mascot pet and the top-center Windows Dynamic Notch.</div>
-              </div>
-              <select id="settingCompMode" onchange="updateCompanion({ mode: this.value })" style="background:var(--card-inner); color:var(--t1); border:2px solid var(--hair); border-radius:6px; padding:6px 10px; font-family:var(--font-mono); font-size:12px;">
-                <option value="mascot">Desktop Mascot Pet</option>
-                <option value="notch">Windows Dynamic Notch</option>
-              </select>
+              <div style="font-weight:600;">Enable Desktop Mascot Companion</div>
+              <input type="checkbox" id="settingMascotEnabled" onchange="updateCompanion({ enabled: true, mascotEnabled: this.checked })" checked>
             </label>
             <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
-              <div>
-                <div style="font-weight:600;">Mascot Behavior Command</div>
-                <div style="font-size:0.75rem; color:var(--t3);">Command the mascot to sit in a corner, walk &amp; follow your mouse cursor, or sleep.</div>
-              </div>
-              <select id="settingCompBehavior" onchange="updateCompanion({ mascotBehavior: this.value })" style="background:var(--card-inner); color:var(--t1); border:2px solid var(--hair); border-radius:6px; padding:6px 10px; font-family:var(--font-mono); font-size:12px;">
-                <option value="sit_corner">Sit in Desktop Corner</option>
+              <div style="font-weight:600;">Mascot Behavior</div>
+              <select id="settingCompBehavior" onchange="updateCompanion({ mascotBehavior: this.value })" style="background:var(--card-inner); color:var(--t1); border:1px solid var(--hair); border-radius:8px; padding:6px 10px; font-family:var(--font-mono); font-size:12px;">
+                <option value="sit_corner">Sit in Corner</option>
                 <option value="walk_follow">Walk &amp; Follow Cursor</option>
-                <option value="sleep">Sleep Mode (Zzz)</option>
+                <option value="sleep">Sleep Mode</option>
               </select>
             </label>
             <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
-              <div>
-                <div style="font-weight:600;">Desktop Corner Anchor</div>
-                <div style="font-size:0.75rem; color:var(--t3);">Choose which corner of your screen the mascot sits in.</div>
-              </div>
-              <select id="settingCompCorner" onchange="updateCompanion({ corner: this.value })" style="background:var(--card-inner); color:var(--t1); border:2px solid var(--hair); border-radius:6px; padding:6px 10px; font-family:var(--font-mono); font-size:12px;">
+              <div style="font-weight:600;">Corner Anchor</div>
+              <select id="settingCompCorner" onchange="updateCompanion({ corner: this.value })" style="background:var(--card-inner); color:var(--t1); border:1px solid var(--hair); border-radius:8px; padding:6px 10px; font-family:var(--font-mono); font-size:12px;">
                 <option value="bottom-right">Bottom Right</option>
                 <option value="bottom-left">Bottom Left</option>
                 <option value="top-right">Top Right</option>
@@ -1576,19 +1557,35 @@ export function getDashboardHtml(): string {
               </select>
             </label>
             <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
-              <div>
-                <div style="font-weight:600;">Mute 8-Bit Chiptune Sound Effects</div>
-                <div style="font-size:0.75rem; color:var(--t3);">Silence procedural retro sound effects on mascot clicks, morphs, and agent turns.</div>
-              </div>
+              <div style="font-weight:600;">Mute 8-Bit Audio</div>
               <input type="checkbox" id="settingCompMuteSfx" onchange="updateCompanion({ soundMuted: this.checked })">
             </label>
-            <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
-              <div>
-                <div style="font-weight:600;">CRT Phosphor Scanline Overlay</div>
-                <div style="font-size:0.75rem; color:var(--t3);">Toggle subtle retro CRT scanline texture across the dashboard.</div>
-              </div>
-              <input type="checkbox" id="settingCrtScanlines" onchange="document.body.classList.toggle('crt-scanlines', this.checked)" checked>
-            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 30-MINUTE GITHUB TOKEN AUTO-UPDATER & RELEASE CHANGELOG -->
+      <div class="card full-width" style="height: auto; margin-top: 16px;">
+        <div class="rim"></div>
+        <div class="in-c">
+          <div class="card-top">
+            <div class="ttl">GitHub Auto-Updater (Every 30 Minutes)</div>
+            <span class="chip" id="settingsUpdaterBadge">30m Auto-Check Active</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px; max-width:680px;">
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <input type="password" id="inputGithubToken" placeholder="GitHub Token (ghp_...)" style="flex:1; min-width:240px; background:var(--card-inner); color:var(--t1); border:1px solid var(--hair); border-radius:9px; padding:8px 12px; font-family:var(--font-mono); font-size:12px; outline:none;" />
+              <button type="button" class="retro-btn active" onclick="saveGithubToken()">
+                <span>Save Token</span>
+              </button>
+              <button type="button" class="retro-btn" onclick="checkGithubUpdatesNow()">
+                <span>Check Now</span>
+              </button>
+            </div>
+            <div class="mono" style="font-size:11.5px; color:var(--t2);" id="settingsUpdaterMeta">
+              Current: v2.1.0 • Polling every 30 minutes
+            </div>
+            <div class="update-notes-list" id="settingsReleaseNotesBox" style="display:none;"></div>
           </div>
         </div>
       </div>
@@ -1598,18 +1595,14 @@ export function getDashboardHtml(): string {
         <div class="rim"></div>
         <div class="in-c">
           <div class="card-top">
-            <div class="cap">Antigravity IDE Integration &amp; Auto-Installer</div>
-            <span class="chip" id="settingsIdeSyncChip">Auto-Provisioning Ready</span>
+            <div class="ttl">Antigravity IDE Extension Sync</div>
+            <span class="chip" id="settingsIdeSyncChip">Synced</span>
           </div>
-          <div class="ttl">Antigravity IDE Extension Auto-Detector</div>
-          <div style="font-size:0.8rem; color:var(--t2); margin-top:6px; max-width:680px;">
-            The standalone Antigravity Desktop App automatically detects your installed Google Antigravity IDE profiles and keeps the <span class="mono" style="color:var(--acc);">itsjamiefied.antigravity-presence</span> extension installed and synchronized.
-          </div>
-          <div id="settingsIdeTargetsList" style="display:flex; flex-direction:column; gap:10px; margin-top:16px; max-width:680px;"></div>
-          <div style="display:flex; gap:10px; margin-top:16px;">
+          <div id="settingsIdeTargetsList" style="display:flex; flex-direction:column; gap:8px; margin-top:10px; max-width:680px;"></div>
+          <div style="display:flex; gap:10px; margin-top:12px;">
             <button type="button" class="retro-btn active" onclick="reinstallIdeExtension()">
               <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 0 1-9.4 3.9L2.5 10.5M2.5 8a5.5 5.5 0 0 1 9.4-3.9l1.6 1.4"/></svg>
-              <span>Force Reinstall &amp; Sync Antigravity Extension</span>
+              <span>Sync Antigravity Extension</span>
             </button>
           </div>
         </div>
@@ -1872,28 +1865,150 @@ export function getDashboardHtml(): string {
     }
 
     function setDashMascotState(state, speechText, subText) {
-      const rig = document.getElementById('mascot-rig-dash');
+      const rig = document.getElementById('mascot-rig-dashHero') || document.getElementById('mascot-rig-dash');
       const tag = document.getElementById('dashMascotStateTag');
       const speech = document.getElementById('dashMascotSpeech');
       const sub = document.getElementById('dashMascotSub');
       if (rig) rig.setAttribute('data-state', state);
       if (tag) tag.innerText = state.charAt(0).toUpperCase() + state.slice(1);
-      if (speech && speechText) speech.innerText = speechText;
+      if (speech && speechText) speech.innerText = speechText.replace(/^"|"$/g, '');
       if (sub && subText) sub.innerText = subText;
     }
 
     function interactDashMascot() {
       if (window.agMascotAudio) window.agMascotAudio.playWake();
-      const rig = document.getElementById('mascot-rig-dash');
-      const prevState = rig ? (rig.getAttribute('data-state') || 'idle') : 'idle';
-      setDashMascotState('surprised', '"Antigravity Systems Ready"', 'Chiptune synth active • Click controls to morph');
+      setDashMascotState('surprised', 'Antigravity Ready', 'Active');
       setTimeout(function() {
         if (currentData) {
           renderOverview(currentData);
         } else {
-          setDashMascotState(prevState, '"Ready in Antigravity"', 'Click mascot to chirp • Antigravity Companion v2.1');
+          setDashMascotState('idle', 'Ready', 'Antigravity');
         }
-      }, 1100);
+      }, 950);
+    }
+
+    async function saveGithubToken() {
+      const inp = document.getElementById('inputGithubToken');
+      if (!inp) return;
+      const tokenVal = inp.value.trim();
+      try {
+        const res = await fetch(API_BASE + '/api/updater/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ githubToken: tokenVal, clearSkipped: true })
+        });
+        if (res.ok) {
+          inp.value = '';
+          await checkGithubUpdatesNow();
+        }
+      } catch {}
+    }
+
+    async function checkGithubUpdatesNow() {
+      if (window.agMascotAudio) window.agMascotAudio.playClick();
+      const badge = document.getElementById('settingsUpdaterBadge');
+      if (badge) badge.innerText = 'Checking GitHub...';
+      try {
+        const res = await fetch(API_BASE + '/api/updater/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ignoreSkipped: true })
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.updater) renderUpdaterUi(json.updater);
+        }
+      } catch {}
+    }
+
+    async function skipGithubUpdate() {
+      if (window.agMascotAudio) window.agMascotAudio.playClick();
+      const latest = (currentData && currentData.updater && currentData.updater.latestVersion) || '';
+      try {
+        const res = await fetch(API_BASE + '/api/updater/skip', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ version: latest })
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.updater) renderUpdaterUi(json.updater);
+        }
+      } catch {}
+    }
+
+    async function applyGithubUpdate() {
+      if (window.agMascotAudio) window.agMascotAudio.playWake();
+      const lbl = document.getElementById('lblApplyUpdate');
+      if (lbl) lbl.innerText = 'Downloading Update...';
+      try {
+        const res = await fetch(API_BASE + '/api/updater/apply', {
+          method: 'POST'
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.action === 'open_release_url' && json.installerPath) {
+            window.open(json.installerPath, '_blank');
+          }
+          if (json.updater) renderUpdaterUi(json.updater);
+        }
+      } catch {}
+      if (lbl) lbl.innerText = 'Install Update';
+    }
+
+    function renderUpdaterUi(up) {
+      if (!up) return;
+      if (currentData) currentData.updater = up;
+
+      const banner = document.getElementById('glassUpdateBanner');
+      const diffEl = document.getElementById('updateVersionDiff');
+      const titleEl = document.getElementById('updateReleaseTitle');
+      const notesEl = document.getElementById('updateNotesList');
+
+      if (banner) {
+        banner.classList.toggle('visible', !!up.updateAvailable);
+      }
+      if (diffEl && up.latestVersion) {
+        diffEl.innerText = 'v' + up.currentVersion + ' → v' + up.latestVersion;
+      }
+      if (titleEl) {
+        titleEl.innerText = up.releaseName || ('Antigravity v' + (up.latestVersion || up.currentVersion));
+      }
+
+      const lines = Array.isArray(up.releaseNotesLines) && up.releaseNotesLines.length > 0
+        ? up.releaseNotesLines
+        : (up.releaseNotes ? [up.releaseNotes] : ['New release available on GitHub']);
+
+      const notesHtml = lines.map(function(line) {
+        const safe = String(line).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return '<div style="display:flex; gap:8px; align-items:baseline;"><span style="color:var(--emerald);">•</span><span>' + safe + '</span></div>';
+      }).join('');
+
+      if (notesEl) notesEl.innerHTML = notesHtml;
+
+      const settingsNotes = document.getElementById('settingsReleaseNotesBox');
+      if (settingsNotes) {
+        if (up.latestVersion) {
+          settingsNotes.style.display = 'flex';
+          settingsNotes.innerHTML = '<div style="font-weight:700; color:var(--t1); margin-bottom:4px;">Release Notes (v' + up.latestVersion + ')</div>' + notesHtml;
+        } else {
+          settingsNotes.style.display = 'none';
+        }
+      }
+
+      const badge = document.getElementById('settingsUpdaterBadge');
+      if (badge) {
+        badge.innerText = up.updateAvailable
+          ? 'Update Ready: v' + up.latestVersion
+          : (up.isSkipped ? 'Skipped v' + up.skippedVersion : 'Every ' + up.checkIntervalMinutes + 'm Auto-Check');
+      }
+
+      const meta = document.getElementById('settingsUpdaterMeta');
+      if (meta) {
+        const tokPart = up.hasGithubToken ? ('Token: ' + (up.maskedToken || 'Configured')) : 'Token: Public API';
+        const latestPart = up.latestVersion ? ('Latest: v' + up.latestVersion) : 'Up to date';
+        meta.innerText = 'Current: v' + up.currentVersion + ' • ' + latestPart + ' • ' + tokPart;
+      }
     }
 
     async function reinstallIdeExtension() {
@@ -1993,28 +2108,30 @@ export function getDashboardHtml(): string {
       }
     }
 
-    function toggleCompanionEnabled() {
-      const comp = (currentData && currentData.companion) ? currentData.companion : { enabled: true };
-      updateCompanion({ enabled: !comp.enabled });
+    function toggleNotchEnabled() {
+      const comp = (currentData && currentData.companion) ? currentData.companion : { notchEnabled: true };
+      const next = comp.notchEnabled === false ? true : false;
+      updateCompanion({ enabled: true, notchEnabled: next });
     }
 
-    function toggleCompanionMode() {
-      const comp = (currentData && currentData.companion) ? currentData.companion : { mode: 'mascot' };
-      updateCompanion({ mode: comp.mode === 'notch' ? 'mascot' : 'notch', enabled: true });
+    function toggleMascotEnabled() {
+      const comp = (currentData && currentData.companion) ? currentData.companion : { mascotEnabled: true };
+      const next = comp.mascotEnabled === false ? true : false;
+      updateCompanion({ enabled: true, mascotEnabled: next });
     }
 
     function cycleCompanionBehavior() {
       const comp = (currentData && currentData.companion) ? currentData.companion : { mascotBehavior: 'sit_corner' };
       const order = ['sit_corner', 'walk_follow', 'sleep'];
       const next = order[(order.indexOf(comp.mascotBehavior) + 1) % order.length];
-      updateCompanion({ mascotBehavior: next, mode: 'mascot', enabled: true });
+      updateCompanion({ mascotBehavior: next, mascotEnabled: true, enabled: true });
     }
 
     function cycleCompanionCorner() {
       const comp = (currentData && currentData.companion) ? currentData.companion : { corner: 'bottom-right' };
       const order = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
       const next = order[(order.indexOf(comp.corner) + 1) % order.length];
-      updateCompanion({ corner: next, mascotBehavior: 'sit_corner', enabled: true });
+      updateCompanion({ corner: next, mascotBehavior: 'sit_corner', mascotEnabled: true, enabled: true });
     }
 
     function toggleCompanionSfx() {
@@ -2027,28 +2144,31 @@ export function getDashboardHtml(): string {
       if (currentData) currentData.companion = comp;
       if (window.agMascotAudio) window.agMascotAudio.setMuted(!!comp.soundMuted);
 
-      const btnEnabled = document.getElementById('btnCompEnabled');
-      const lblEnabled = document.getElementById('lblCompEnabled');
-      if (btnEnabled && lblEnabled) {
-        btnEnabled.classList.toggle('active', !!comp.enabled);
-        lblEnabled.innerText = 'Desktop Companion: ' + (comp.enabled ? 'On' : 'Off');
+      const notchOn = comp.enabled !== false && comp.notchEnabled !== false;
+      const mascotOn = comp.enabled !== false && comp.mascotEnabled !== false;
+
+      const btnNotch = document.getElementById('btnNotchToggle');
+      const lblNotch = document.getElementById('lblNotchToggle');
+      if (btnNotch && lblNotch) {
+        btnNotch.classList.toggle('active', notchOn);
+        lblNotch.innerText = 'Liquid Notch: ' + (notchOn ? 'On' : 'Off');
       }
 
-      const btnMode = document.getElementById('btnCompMode');
-      const lblMode = document.getElementById('lblCompMode');
-      if (btnMode && lblMode) {
-        btnMode.classList.toggle('active', comp.mode === 'notch');
-        lblMode.innerText = comp.mode === 'notch' ? 'Mode: Dynamic Notch' : 'Mode: Mascot Pet';
+      const btnMascot = document.getElementById('btnMascotToggle');
+      const lblMascot = document.getElementById('lblMascotToggle');
+      if (btnMascot && lblMascot) {
+        btnMascot.classList.toggle('active', mascotOn);
+        lblMascot.innerText = 'Mascot: ' + (mascotOn ? 'On' : 'Off');
       }
 
       const lblBeh = document.getElementById('lblCompBehavior');
       if (lblBeh) {
         const bMap = {
-          'sit_corner': 'Action: Sit in Corner',
-          'walk_follow': 'Action: Walk & Follow',
-          'sleep': 'Action: Sleep Mode'
+          'sit_corner': 'Sit Corner',
+          'walk_follow': 'Walk & Follow',
+          'sleep': 'Sleep Mode'
         };
-        lblBeh.innerText = bMap[comp.mascotBehavior] || 'Action: Sit in Corner';
+        lblBeh.innerText = bMap[comp.mascotBehavior] || 'Sit Corner';
       }
 
       const lblCorner = document.getElementById('lblCompCorner');
@@ -2056,29 +2176,28 @@ export function getDashboardHtml(): string {
         const cName = (comp.corner || 'bottom-right').split('-').map(function(w) {
           return w.charAt(0).toUpperCase() + w.slice(1);
         }).join('-');
-        lblCorner.innerText = 'Corner: ' + cName;
+        lblCorner.innerText = cName;
       }
 
       const btnSfx = document.getElementById('btnCompSfx');
       const lblSfx = document.getElementById('lblCompSfx');
       if (btnSfx && lblSfx) {
         btnSfx.classList.toggle('active', !comp.soundMuted);
-        lblSfx.innerText = comp.soundMuted ? '8-Bit Audio: Muted' : '8-Bit Audio: On';
+        lblSfx.innerText = comp.soundMuted ? 'Audio: Muted' : 'Audio: On';
       }
 
       const agChip = document.getElementById('agRunningChip');
       if (agChip) {
         const online = isAgRunning !== false;
-        agChip.innerText = online ? '● Antigravity Online' : '○ Antigravity Closed';
+        agChip.innerText = online ? '● Online' : '○ Closed';
         agChip.style.color = online ? 'var(--emerald)' : 'var(--coral)';
         agChip.style.borderColor = online ? 'rgba(52,245,164,0.35)' : 'rgba(255,94,126,0.35)';
       }
 
-      // Sync Settings tab inputs
-      const setEn = document.getElementById('settingCompEnabled');
-      if (setEn) setEn.checked = !!comp.enabled;
-      const setMode = document.getElementById('settingCompMode');
-      if (setMode) setMode.value = comp.mode || 'mascot';
+      const setNotch = document.getElementById('settingNotchEnabled');
+      if (setNotch) setNotch.checked = notchOn;
+      const setMascot = document.getElementById('settingMascotEnabled');
+      if (setMascot) setMascot.checked = mascotOn;
       const setBeh = document.getElementById('settingCompBehavior');
       if (setBeh) setBeh.value = comp.mascotBehavior || 'sit_corner';
       const setCor = document.getElementById('settingCompCorner');
@@ -2706,12 +2825,15 @@ export function getDashboardHtml(): string {
         lifetimeEl.innerText = '24h: ' + formatLifetimeHours(tb.last24h || 0) + ' • Overall: ' + formatLifetimeHours(lifeSecs);
       }
 
-      // Update Mascot Pedestal state, Companion controls & IDE status
+      // Update Mascot Pedestal state, Companion controls, IDE status & GitHub Auto-Updater
       if (data.companion) {
         renderCompanionUi(data.companion, data.isAntigravityRunning);
       }
       if (data.ideStatus) {
         renderIdeStatusUi(data.ideStatus);
+      }
+      if (data.updater) {
+        renderUpdaterUi(data.updater);
       }
       if (lastActiveAgentCount > 0 && activeCount === 0 && window.agMascotAudio) {
         window.agMascotAudio.playComplete();
