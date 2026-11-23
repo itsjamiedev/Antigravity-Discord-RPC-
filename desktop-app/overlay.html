@@ -65,7 +65,7 @@
     /* ================================================================== */
     .ag-notch-wrapper {
       position: fixed;
-      top: 10px;
+      top: 0;
       left: 50%;
       transform: translateX(-50%);
       z-index: 9999;
@@ -79,7 +79,7 @@
 
     .ag-notch-wrapper.hidden {
       opacity: 0;
-      transform: translate(-50%, -140%) scale(0.92);
+      transform: translate(-50%, -100%) scale(0.92);
       pointer-events: none !important;
     }
 
@@ -88,48 +88,40 @@
       backdrop-filter: blur(28px) saturate(200%);
       -webkit-backdrop-filter: blur(28px) saturate(200%);
       border: 1px solid var(--glass-border);
-      border-radius: 999px;
-      padding: 5px 13px;
-      min-width: 196px;
+      border-top: none !important;
+      border-top-left-radius: 0 !important;
+      border-top-right-radius: 0 !important;
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
+      padding: 6px 16px 8px;
+      min-width: 204px;
       box-shadow:
-        0 14px 34px -4px rgba(0, 0, 0, 0.82),
-        inset 0 1px 0 rgba(255, 255, 255, 0.35),
-        inset 0 2px 8px rgba(255, 255, 255, 0.08);
+        0 14px 34px -4px rgba(0, 0, 0, 0.85),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.12);
       cursor: pointer;
       position: relative;
       overflow: hidden;
       transition:
         min-width 0.36s var(--spring-island),
-        border-radius 0.36s var(--spring-island),
+        border-bottom-left-radius 0.36s var(--spring-island),
+        border-bottom-right-radius 0.36s var(--spring-island),
         padding 0.36s var(--spring-island),
         border-color 0.22s ease,
         box-shadow 0.26s ease;
     }
 
-    /* Dynamic Halo Glowing Rim */
-    .ag-notch-pill::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.5) 50%, transparent 100%);
-      opacity: 0.8;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-    }
-
     .ag-notch-pill:hover,
     .ag-notch-pill.expanded {
       border-color: var(--glass-border-strong);
-      border-radius: 26px;
-      min-width: 374px;
-      padding: 10px 15px 13px;
+      border-top: none !important;
+      border-bottom-left-radius: 26px;
+      border-bottom-right-radius: 26px;
+      min-width: 380px;
+      padding: 10px 18px 14px;
       box-shadow:
-        0 20px 48px -6px rgba(0, 0, 0, 0.88),
-        inset 0 1px 0 rgba(255, 255, 255, 0.42),
-        0 0 24px rgba(52, 245, 164, 0.15);
+        0 20px 48px -6px rgba(0, 0, 0, 0.9),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.2),
+        0 0 24px rgba(52, 245, 164, 0.12);
     }
 
     .ag-notch-bar {
@@ -496,6 +488,47 @@
       color: var(--coral);
       background: rgba(255, 94, 126, 0.14);
       border-color: rgba(255, 94, 126, 0.35);
+    }
+
+    .ag-menu-section-title {
+      font-family: var(--font-mc);
+      font-size: 8.5px;
+      color: var(--t3);
+      padding: 6px 4px 2px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      margin-top: 4px;
+    }
+
+    .ag-menu-quick-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 3px 0 2px;
+    }
+
+    .ag-menu-chip {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 4px 5px;
+      color: var(--t1);
+      font-family: var(--font-sans);
+      font-size: 9.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: all 0.14s ease;
+    }
+
+    .ag-menu-chip:hover {
+      background: rgba(52, 245, 164, 0.14);
+      border-color: rgba(52, 245, 164, 0.4);
+      color: #FFF;
+      transform: translateY(-1px);
     }
 
     /* ================================================================== */
@@ -892,6 +925,18 @@
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
         <span>Hide Mascot</span>
       </button>
+
+      <div class="ag-menu-section-title">
+        <span>Play Movements</span>
+      </div>
+      <div class="ag-menu-quick-grid">
+        <button type="button" class="ag-menu-chip" onclick="playMovementAction('launch')">🦘 Hop / Jump</button>
+        <button type="button" class="ag-menu-chip" onclick="playMovementAction('celebrate')">🎉 Backflip</button>
+        <button type="button" class="ag-menu-chip" onclick="playMovementAction('wave')">👋 Wave</button>
+        <button type="button" class="ag-menu-chip" onclick="playMovementAction('coffee')">☕ Coffee</button>
+        <button type="button" class="ag-menu-chip" onclick="playMovementAction('look')">👀 Look</button>
+        <button type="button" class="ag-menu-chip" onclick="playMovementAction('yawn')">🥱 Stretch</button>
+      </div>
     </div>
 
     <!-- Authentic Transparent Master PNG Mascot + Responsive SVG Facial Overlay -->
@@ -1081,12 +1126,12 @@
     /*  3. DYNAMIC FACIAL EXPRESSIONS & NATURAL SMILE CONTROLLER          */
     /* ================================================================== */
     const FACE_PATHS = {
-      smile: '<path class="ag-face-mouth" d="M 44,61 Q 50,67 56,61" fill="none" stroke="#0B1020" stroke-width="2.4" stroke-linecap="round" />',
-      laugh: '<path class="ag-face-mouth" d="M 43,60 Q 50,70 57,60 Z" fill="#0B1020" stroke="#0B1020" stroke-width="1.5" /><path d="M 46,65 Q 50,68 54,65" fill="#FF5E7E" />',
-      curious: '<path class="ag-face-mouth" d="M 45,63 Q 51,66 57,60" fill="none" stroke="#0B1020" stroke-width="2.4" stroke-linecap="round" />',
-      surprised: '<ellipse class="ag-face-mouth" cx="50" cy="63" rx="3.5" ry="4.5" fill="#0B1020" stroke="none" />',
-      sleepy: '<path class="ag-face-mouth" d="M 45,62 L 55,62" fill="none" stroke="#0B1020" stroke-width="2.2" stroke-linecap="round" />',
-      wink: '<path class="ag-face-mouth" d="M 44,62 Q 50,67 56,60" fill="none" stroke="#0B1020" stroke-width="2.4" stroke-linecap="round" /><path class="ag-face-eye-wink" d="M 40,49 Q 43,45 46,49" stroke="#0B1020" stroke-width="2.6" fill="none" stroke-linecap="round" />'
+      smile: '<path class="ag-face-mouth" d="M 44,57 Q 50,63 56,57" fill="none" stroke="#0B1020" stroke-width="2.4" stroke-linecap="round" />',
+      laugh: '<path class="ag-face-mouth" d="M 43,56 Q 50,65 57,56 Z" fill="#0B1020" stroke="#0B1020" stroke-width="1.5" /><path d="M 46,60 Q 50,63 54,60" fill="#FF5E7E" />',
+      curious: '<path class="ag-face-mouth" d="M 45,58 Q 51,61 57,56" fill="none" stroke="#0B1020" stroke-width="2.4" stroke-linecap="round" />',
+      surprised: '<ellipse class="ag-face-mouth" cx="50" cy="58" rx="3.5" ry="4.5" fill="#0B1020" stroke="none" />',
+      sleepy: '<path class="ag-face-mouth" d="M 45,58 L 55,58" fill="none" stroke="#0B1020" stroke-width="2.2" stroke-linecap="round" />',
+      wink: '<path class="ag-face-mouth" d="M 44,57 Q 50,63 56,56" fill="none" stroke="#0B1020" stroke-width="2.4" stroke-linecap="round" /><path class="ag-face-eye-wink" d="M 40,46 Q 43,42 46,46" stroke="#0B1020" stroke-width="2.8" fill="none" stroke-linecap="round" />'
     };
 
     function setMascotFacialState(state) {
@@ -1101,12 +1146,25 @@
     /*  4. 32-MOVEMENT ENGINE & TRUE WALKING KINEMATICS                   */
     /* ================================================================== */
     let currentMovementTimeout = null;
+    let tempBubbleTimer = null;
+
+    function showMascotTempBubble(text, durationMs = 2800) {
+      const bubble = document.getElementById('mascotBubble');
+      if (!bubble) return;
+      if (tempBubbleTimer) clearTimeout(tempBubbleTimer);
+      bubble.innerText = text;
+      bubble.style.opacity = '1';
+      bubble.style.transform = 'translateX(-50%) translateY(-2px)';
+      tempBubbleTimer = setTimeout(function() {
+        syncMascotVisualState();
+      }, durationMs);
+    }
 
     function setMascotMovement(movClass, facialState, durationMs, pairedSound) {
       if (!mascotRig) return;
       if (currentMovementTimeout) clearTimeout(currentMovementTimeout);
 
-      // Remove existing movement classes
+      // Apply animated keyframe class
       mascotRig.className = 'ag-mascot-rig ' + movClass;
       setMascotFacialState(facialState || 'smile');
 
@@ -1118,6 +1176,28 @@
         currentMovementTimeout = setTimeout(function() {
           syncMascotVisualState();
         }, durationMs);
+      }
+    }
+
+    function playMovementAction(action) {
+      if (action === 'launch') {
+        setMascotMovement('ag-m-prompt-launch', 'laugh', 850, 'apple_pay_triumph');
+        showMascotTempBubble('🦘 Hop & Jump!');
+      } else if (action === 'celebrate') {
+        setMascotMovement('ag-m-done-celebrate', 'laugh', 1200, 'apple_pay_triumph');
+        showTaskCompleteCallout();
+      } else if (action === 'wave') {
+        setMascotMovement('ag-m-goodbye-wave', 'smile', 950, 'airdrop_chime');
+        showMascotTempBubble('👋 Hello Jamie!');
+      } else if (action === 'coffee') {
+        setMascotMovement('ag-m-coffee-toast', 'smile', 1200, 'marimba_tap');
+        showMascotTempBubble('☕ Coffee Break!');
+      } else if (action === 'look') {
+        setMascotMovement('ag-m-perch-look', 'curious', 1400, 'haptic_switch');
+        showMascotTempBubble('👀 Looking around');
+      } else if (action === 'yawn') {
+        setMascotMovement('ag-m-stretch-yawn', 'sleepy', 1600, 'organic_purr');
+        showMascotTempBubble('🥱 Yaaawn~');
       }
     }
 
@@ -1186,15 +1266,32 @@
       applyMascotTransform(false);
     });
 
+    mascotActor.addEventListener('mouseenter', function() {
+      setInteractiveFocus(true);
+      if (companion.mascotBehavior !== 'sleep' && (!mascotRig || !mascotRig.classList.contains('ag-m-done-celebrate'))) {
+        setMascotFacialState('curious');
+        if (window.agMascotAudio) window.agMascotAudio.playHapticSwitch();
+      }
+    });
+
+    mascotActor.addEventListener('mouseleave', function() {
+      if (!isDragging) setInteractiveFocus(false);
+      if (companion.mascotBehavior !== 'sleep') {
+        setMascotFacialState('smile');
+      }
+    });
+
     window.addEventListener('mouseup', function() {
       if (!isDragging) return;
       isDragging = false;
       if (!dragMoved) {
-        window.agMascotAudio.playHapticSwitch();
+        if (window.agMascotAudio) window.agMascotAudio.playApplePayTriumph();
+        setMascotMovement('ag-m-prompt-launch', 'laugh', 850, null);
+        showMascotTempBubble('✨ Antigravity!');
         const isOpen = mascotMenu.classList.toggle('open');
         if (isOpen) updateMenuPosition();
       } else {
-        window.agMascotAudio.playIslandExpand();
+        if (window.agMascotAudio) window.agMascotAudio.playIslandExpand();
       }
     });
 
@@ -1299,6 +1396,7 @@
 
       if (!latestData || latestData.isAntigravityRunning === false) {
         mascotRig.setAttribute('data-state', 'offline');
+        mascotRig.className = 'ag-mascot-rig ag-m-sleep-snore';
         setMascotFacialState('sleepy');
         bubble.innerText = 'Offline';
         return;
@@ -1309,19 +1407,46 @@
         const lead = agents[0];
         const isTool = lead.status === 'running_tool';
         mascotRig.setAttribute('data-state', isTool ? 'working' : 'thinking');
+        mascotRig.className = 'ag-mascot-rig ' + (isTool ? 'ag-m-tool-execute' : 'ag-m-think-levitate');
         setMascotFacialState(isTool ? 'laugh' : 'curious');
-        bubble.innerText = lead.model || 'Active';
+        bubble.innerText = (isTool ? 'Tool: ' : 'Thinking: ') + (lead.model || 'Active');
       } else if (companion.mascotBehavior === 'sleep') {
         mascotRig.setAttribute('data-state', 'sleeping');
+        mascotRig.className = 'ag-mascot-rig ag-m-sleep-snore';
         setMascotFacialState('sleepy');
-        bubble.innerText = 'Sleeping';
+        bubble.innerText = 'Sleeping 💤';
       } else {
         mascotRig.setAttribute('data-state', 'idle');
+        mascotRig.className = 'ag-mascot-rig ag-m-idle-breathe';
         setMascotFacialState('smile');
         const tb = latestData.timeBreakdown || (latestData.session && latestData.session.timeBreakdown);
         const allH = formatHours(tb ? tb.overall : (latestData.session ? latestData.session.lifetimeActiveSeconds : 0));
-        bubble.innerText = 'Idle • ' + allH;
+        bubble.innerText = 'Online • ' + allH;
       }
+    }
+
+    // Autonomous Ambient Desktop Pet Life: Periodic organic animations
+    let ambientLifeInterval = null;
+    function startAmbientPetLife() {
+      if (ambientLifeInterval) clearInterval(ambientLifeInterval);
+      ambientLifeInterval = setInterval(function() {
+        if (!companion.enabled || companion.mascotEnabled === false) return;
+        if (companion.mascotBehavior === 'sleep' || isDragging) return;
+        if (mascotMenu && mascotMenu.classList.contains('open')) return;
+        if (mascotRig && (mascotRig.getAttribute('data-state') === 'working' || mascotRig.getAttribute('data-state') === 'thinking')) return;
+
+        const ambientMoves = [
+          { cls: 'ag-m-perch-look', face: 'curious', dur: 1400, sfx: null, msg: '👀 Looking' },
+          { cls: 'ag-m-stretch-yawn', face: 'sleepy', dur: 1600, sfx: 'organic_purr', msg: 'Yawn~' },
+          { cls: 'ag-m-alert-hop', face: 'laugh', dur: 650, sfx: 'marimba_tap', msg: 'Hop!' },
+          { cls: 'ag-m-prompt-chirp', face: 'smile', dur: 600, sfx: 'haptic_switch', msg: '♪ Chirp' },
+          { cls: 'ag-m-bubble-float', face: 'smile', dur: 2200, sfx: 'bubble_undock_pop', msg: 'Floating ✨' }
+        ];
+
+        const pick = ambientMoves[Math.floor(Math.random() * ambientMoves.length)];
+        setMascotMovement(pick.cls, pick.face, pick.dur, pick.sfx);
+        if (Math.random() > 0.6) showMascotTempBubble(pick.msg, 1800);
+      }, 10000);
     }
 
     function renderTelemetry(data) {
@@ -1335,7 +1460,7 @@
       const agents = data.activeAgents || [];
       // Trigger Celebration & Callout on task completion
       if (lastAgentCount > 0 && agents.length === 0) {
-        setMascotMovement('ag-m-done-celebrate', 'laugh', 850, 'apple_pay_triumph');
+        setMascotMovement('ag-m-done-celebrate', 'laugh', 1200, 'apple_pay_triumph');
         showTaskCompleteCallout();
       }
       lastAgentCount = agents.length;
@@ -1492,6 +1617,7 @@
 
     applyCompanionVisibility();
     connectOverlayStream();
+    startAmbientPetLife();
   </script>
 </body>
 </html>

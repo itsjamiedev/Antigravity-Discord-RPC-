@@ -396,13 +396,13 @@ export const MASCOT_MOVEMENTS: Record<MascotMovementId, MascotMovementMetadata> 
  */
 export function getMascotFaceSvg(expression: MascotFacialState = 'smile'): string {
   const mouthPaths: Record<MascotFacialState, string> = {
-    smile: `<path class="ag-face-mouth" d="M 44,61 Q 50,67 56,61" fill="none" stroke="#0B1020" stroke-width="2.2" stroke-linecap="round" />`,
-    laugh: `<path class="ag-face-mouth" d="M 43,60 Q 50,70 57,60 Z" fill="#0B1020" stroke="#0B1020" stroke-width="1.5" /><path d="M 46,65 Q 50,68 54,65" fill="#FF5E7E" />`,
-    curious: `<path class="ag-face-mouth" d="M 45,63 Q 51,66 57,60" fill="none" stroke="#0B1020" stroke-width="2.2" stroke-linecap="round" />`,
-    surprised: `<ellipse class="ag-face-mouth" cx="50" cy="63" rx="3.5" ry="4.5" fill="#0B1020" stroke="none" />`,
-    sleepy: `<path class="ag-face-mouth" d="M 45,62 L 55,62" fill="none" stroke="#0B1020" stroke-width="2" stroke-linecap="round" />`,
-    wink: `<path class="ag-face-mouth" d="M 44,62 Q 50,67 56,60" fill="none" stroke="#0B1020" stroke-width="2.2" stroke-linecap="round" />
-           <path class="ag-face-eye-wink" d="M 40,49 Q 43,45 46,49" stroke="#0B1020" stroke-width="2.5" fill="none" stroke-linecap="round" />`,
+    smile: `<path class="ag-face-mouth" d="M 44,57 Q 50,63 56,57" fill="none" stroke="#0B1020" stroke-width="2.4" stroke-linecap="round" />`,
+    laugh: `<path class="ag-face-mouth" d="M 43,56 Q 50,65 57,56 Z" fill="#0B1020" stroke="#0B1020" stroke-width="1.5" /><path d="M 46,60 Q 50,63 54,60" fill="#FF5E7E" />`,
+    curious: `<path class="ag-face-mouth" d="M 45,58 Q 51,61 57,56" fill="none" stroke="#0B1020" stroke-width="2.4" stroke-linecap="round" />`,
+    surprised: `<ellipse class="ag-face-mouth" cx="50" cy="58" rx="3.5" ry="4.5" fill="#0B1020" stroke="none" />`,
+    sleepy: `<path class="ag-face-mouth" d="M 45,58 L 55,58" fill="none" stroke="#0B1020" stroke-width="2.2" stroke-linecap="round" />`,
+    wink: `<path class="ag-face-mouth" d="M 44,57 Q 50,63 56,56" fill="none" stroke="#0B1020" stroke-width="2.4" stroke-linecap="round" />
+           <path class="ag-face-eye-wink" d="M 40,46 Q 43,42 46,46" stroke="#0B1020" stroke-width="2.8" fill="none" stroke-linecap="round" />`,
   };
 
   return `<svg class="ag-mascot-face" viewBox="0 0 100 100" data-expression="${expression}">

@@ -58,24 +58,31 @@ export function getDashboardHtml(): string {
 
     ${mascotStyles}
 
-    /* Hide legacy kicker/eyebrow labels per /impeccable craft-floor */
+    /* Precision craft card headers per /impeccable */
     .cap {
-      display: none !important;
+      display: block !important;
+      font-family: var(--font-sans);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--t3);
+      margin-bottom: 3px;
     }
 
     /* LIQUID GLASS HERO & 5-WINDOW MATRIX */
     .retro-hero-stage {
       grid-column: span 12;
       background: var(--card-bg);
-      backdrop-filter: blur(24px) saturate(180%);
-      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      backdrop-filter: blur(28px) saturate(200%);
+      -webkit-backdrop-filter: blur(28px) saturate(200%);
       border: 1px solid var(--hair);
-      box-shadow: 0 14px 36px -8px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.14);
-      border-radius: 18px;
-      padding: 16px 20px;
+      box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      border-radius: 20px;
+      padding: 18px 24px;
       display: grid;
-      grid-template-columns: 230px 1fr;
-      gap: 18px;
+      grid-template-columns: 240px 1fr;
+      gap: 22px;
       align-items: center;
       position: relative;
       overflow: hidden;
@@ -90,43 +97,52 @@ export function getDashboardHtml(): string {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      background: var(--card-inner);
-      border: 1px solid var(--hair);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 12px 14px;
+      gap: 10px;
+      background: rgba(16, 22, 34, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 8px 24px -4px rgba(0, 0, 0, 0.5);
+      border-radius: 16px;
+      padding: 16px 18px;
       cursor: pointer;
       position: relative;
       text-align: center;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+    }
+    .mascot-pedestal:hover {
+      transform: translateY(-2px);
+      border-color: rgba(52, 245, 164, 0.4);
     }
     .mascot-pedestal-tag {
       font-family: var(--font-pixel);
       font-size: 9.5px;
       color: var(--emerald);
-      padding: 2px 8px;
+      padding: 2px 10px;
       border-radius: 999px;
       background: rgba(52, 245, 164, 0.1);
       border: 1px solid rgba(52, 245, 164, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
     .mascot-speech {
-      font-family: var(--font-pixel);
-      font-size: 10.5px;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 12px;
       color: var(--t1);
     }
     .mascot-sub {
       font-size: 11px;
       color: var(--t3);
+      letter-spacing: 0.02em;
     }
     .retro-time-matrix {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
     .retro-5col-strip {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 8px;
+      gap: 10px;
     }
     @media (max-width: 820px) {
       .retro-5col-strip {
@@ -134,34 +150,40 @@ export function getDashboardHtml(): string {
       }
     }
     .retro-time-cell {
-      background: rgba(255, 255, 255, 0.035);
-      border: 1px solid var(--hair);
-      border-radius: 12px;
-      padding: 9px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 12px 14px;
       cursor: pointer;
-      transition: all 0.18s var(--ease);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .retro-time-cell:hover,
     .retro-time-cell.active {
-      border-color: rgba(52, 245, 164, 0.45);
-      background: rgba(52, 245, 164, 0.08);
-      transform: translateY(-1px);
+      border-color: rgba(255, 184, 77, 0.45);
+      background: rgba(255, 184, 77, 0.09);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -4px rgba(255, 184, 77, 0.15);
     }
     .retro-time-cell .w-lbl {
-      font-family: var(--font-pixel);
-      font-size: 9px;
+      font-family: var(--font-sans);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
       color: var(--t3);
     }
     .retro-time-cell .w-hrs {
-      font-family: var(--font-pixel);
-      font-size: 15px;
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
       color: var(--t1);
-      margin-top: 3px;
+      margin-top: 4px;
     }
     .retro-time-cell .w-tok {
       font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--emerald);
+      font-size: 0.8rem;
+      color: var(--cyan);
       margin-top: 2px;
     }
     .retro-companion-controls {
@@ -354,40 +376,43 @@ export function getDashboardHtml(): string {
 
     /* NAVIGATION TABS */
     .tabs-wrapper {
-      padding: 12px 28px 0;
-      border-bottom: 1px solid var(--hair);
+      padding: 14px 28px 0;
+      border-bottom: 1px solid var(--hair-subtle);
       display: flex;
       justify-content: flex-start;
-      background: #000;
+      background: transparent;
     }
 
     .nav-tabs {
       display: flex;
-      gap: 6px;
+      gap: 8px;
     }
 
     .tab-btn {
       background: transparent;
-      border: none;
+      border: 1px solid transparent;
       color: var(--t2);
       font-family: var(--font-sans);
-      font-size: 0.84rem;
-      font-weight: 600;
-      padding: 9px 16px;
-      border-radius: 12px 12px 0 0;
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 8px 18px;
+      border-radius: 999px;
       cursor: pointer;
       position: relative;
-      transition: color 0.2s;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .tab-btn:hover {
       color: var(--t1);
+      background: rgba(255, 255, 255, 0.05);
     }
 
     .tab-btn.active {
-      color: var(--acc);
-      background: rgba(232, 255, 31, 0.06);
-      border-bottom: 2px solid var(--acc);
+      color: #fff;
+      background: rgba(255, 184, 77, 0.15);
+      border-color: rgba(255, 184, 77, 0.35);
+      box-shadow: 0 4px 16px -2px rgba(255, 184, 77, 0.25);
+      font-weight: 600;
     }
 
     /* MAIN CONTAINER */
@@ -437,10 +462,11 @@ export function getDashboardHtml(): string {
     }
 
     .ttl {
-      font-family: var(--font-pixel);
+      font-family: var(--font-sans);
       font-size: 0.95rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      color: var(--t1);
       display: flex;
       align-items: center;
       gap: 8px;
@@ -908,13 +934,23 @@ export function getDashboardHtml(): string {
   <!-- HEADER -->
   <header>
     <div class="brand-group">
-      <div class="brand-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 2L2 19.5h20L12 2zm0 3.8L18.5 17H5.5L12 5.8z"/></svg>
+      <div class="brand-icon" style="background:rgba(255,184,77,0.1); border:1px solid rgba(255,184,77,0.3); border-radius:10px; width:34px; height:34px; display:flex; align-items:center; justify-content:center;">
+        <svg viewBox="0 0 32 32" width="22" height="22" fill="none">
+          <defs>
+            <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FF5E7E" />
+              <stop offset="50%" stop-color="#FFB84D" />
+              <stop offset="100%" stop-color="#38E4FF" />
+            </linearGradient>
+          </defs>
+          <path d="M16 4L4 26h24L16 4z" stroke="url(#brandGrad)" stroke-width="2.5" stroke-linejoin="round" fill="rgba(255,184,77,0.1)" />
+          <circle cx="16" cy="18" r="3" fill="url(#brandGrad)" />
+        </svg>
       </div>
       <div>
-        <div class="brand-title" style="font-family:var(--font-pixel); font-size:0.95rem;">
-          Antigravity Presence
-          <span class="pixel-tag">127.0.0.1</span>
+        <div class="brand-title" style="font-family:var(--font-sans); font-weight:700; font-size:1.02rem; letter-spacing:-0.02em; display:flex; align-items:center; gap:8px;">
+          Antigravity Studio
+          <span class="pixel-tag" style="font-family:var(--font-mono); font-size:9.5px; background:rgba(56,228,255,0.1); border-color:rgba(56,228,255,0.25); color:var(--cyan); border-radius:6px; padding:1px 6px;">127.0.0.1:41177</span>
         </div>
       </div>
     </div>
@@ -2813,11 +2849,11 @@ export function getDashboardHtml(): string {
       const tokMo = document.getElementById('tok-monthly');
       const tokYr = document.getElementById('tok-yearly');
       const tokOv = document.getElementById('tok-overall');
-      if (tok24) tok24.innerText = formatNumberShort((tokB.last24h && tokB.last24h.totalTokens) || 0) + ' tok';
-      if (tokWk) tokWk.innerText = formatNumberShort((tokB.weekly && tokB.weekly.totalTokens) || 0) + ' tok';
-      if (tokMo) tokMo.innerText = formatNumberShort((tokB.monthly && tokB.monthly.totalTokens) || 0) + ' tok';
-      if (tokYr) tokYr.innerText = formatNumberShort((tokB.yearly && tokB.yearly.totalTokens) || 0) + ' tok';
-      if (tokOv) tokOv.innerText = formatNumberShort((tokB.overall && tokB.overall.totalTokens) || 0) + ' tok';
+      if (tok24) tok24.innerText = formatNumberShort((tokB.last24h && tokB.last24h.totalTokens) || 0) + ' tokens';
+      if (tokWk) tokWk.innerText = formatNumberShort((tokB.weekly && tokB.weekly.totalTokens) || 0) + ' tokens';
+      if (tokMo) tokMo.innerText = formatNumberShort((tokB.monthly && tokB.monthly.totalTokens) || 0) + ' tokens';
+      if (tokYr) tokYr.innerText = formatNumberShort((tokB.yearly && tokB.yearly.totalTokens) || 0) + ' tokens';
+      if (tokOv) tokOv.innerText = formatNumberShort((tokB.overall && tokB.overall.totalTokens) || 0) + ' tokens';
 
       const lifetimeEl = document.getElementById('kpiLifetimeHours');
       if (lifetimeEl && data.session) {
