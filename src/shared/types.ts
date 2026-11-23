@@ -136,11 +136,38 @@ export interface ConversationDetail {
   }>;
 }
 
+export interface TimeBreakdown {
+  last24h: number;
+  weekly: number;
+  monthly: number;
+  yearly: number;
+  overall: number;
+}
+
+export interface TokenBreakdown {
+  last24h: TokenUsageRecord;
+  weekly: TokenUsageRecord;
+  monthly: TokenUsageRecord;
+  yearly: TokenUsageRecord;
+  overall: TokenUsageRecord;
+}
+
+export interface CompanionSettings {
+  enabled: boolean;
+  mode: 'mascot' | 'notch';
+  behavior: 'sit_corner' | 'walk_follow' | 'sleep';
+  corner: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  sfxMuted: boolean;
+  scanlines: boolean;
+  isAntigravityRunning?: boolean;
+}
+
 export interface PersistentTokenStoreData {
   version: number;
   lastSavedAt: string;
   cumulativeTokensByModel: Record<string, TokenUsageRecord>;
   cumulativeDailyUsage: Record<string, DailyUsage>;
+  cumulativeHourlyTokens?: Record<string, TokenUsageRecord>;
   conversationWatermarks: Record<
     string,
     {
@@ -174,6 +201,8 @@ export interface Session {
   sessionTokens?: TokenUsageRecord;
   lifetimeTokens?: TokenUsageRecord;
   lifetimeActiveSeconds?: number;
+  timeBreakdown?: TimeBreakdown;
+  tokenBreakdown?: TokenBreakdown;
 }
 
 export interface DailyUsage {
@@ -195,6 +224,8 @@ export interface TrackerSnapshot {
   dailyUsage: DailyUsage[];
   sessionTokens?: TokenUsageRecord;
   lifetimeTokens?: TokenUsageRecord;
+  timeBreakdown?: TimeBreakdown;
+  tokenBreakdown?: TokenBreakdown;
 }
 
 /**

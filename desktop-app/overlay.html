@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Antigravity Companion Overlay</title>
+  <style>
+    :root {
+      --bg: #0B0C11;
+      --card: #131620;
+      --card-inner: #0D0F17;
+      --border: #252A3D;
+      --acc: #FFB84D;
+      --emerald: #34F5A4;
+      --cyan: #38E4FF;
+      --lavender: #B4A2FF;
+      --coral: #FF5E7E;
+      --t1: #F6F1E9;
+      --t2: rgba(246, 241, 233, 0.76);
+      --t3: rgba(246, 241, 233, 0.45);
+      --font-mono: 'Geist Mono', 'JetBrains Mono', Consolas, monospace;
+      --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: transparent;
+      font-family: var(--font-sans);
+      color: var(--t1);
+      pointer-events: none;
+    }
+
+    .interactive-hitbox {
+      pointer-events: auto;
+    }
+
+    /* ================================================================== */
+    /*  1. WINDOWS DYNAMIC NOTCH (TOP-CENTER DOCKED PILL)                 */
+    /* ================================================================== */
+    .ag-notch-wrapper {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .ag-notch-wrapper.hidden {
+      opacity: 0;
+      transform: translate(-50%, -120%);
+      pointer-events: none !important;
+    }
+
+    .ag-notch-pill {
+      background: rgba(13, 15, 23, 0.96);
+      border: 2px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 18px 18px;
+      padding: 6px 14px 8px;
+      min-width: 310px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.72), 3px 3px 0 rgba(0, 0, 0, 0.55);
+      cursor: pointer;
+      transition: all 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .ag-notch-pill:hover,
+    .ag-notch-pill.expanded {
+      border-color: var(--acc);
+      min-width: 420px;
+      padding-bottom: 12px;
+    }
+
+    .ag-notch-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .ag-notch-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ag-notch-led {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 8px var(--emerald);
+      flex-shrink: 0;
+    }
+
+    .ag-notch-led.idle {
+      background: var(--acc);
+      box-shadow: 0 0 6px var(--acc);
+    }
+
+    .ag-notch-led.offline {
+      background: var(--coral);
+      box-shadow: 0 0 6px var(--coral);
+    }
+
+    .ag-notch-status {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--t1);
+      letter-spacing: 0.02em;
+    }
+
+    .ag-notch-model {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--acc);
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: rgba(255, 184, 77, 0.12);
+      border: 1px solid rgba(255, 184, 77, 0.3);
+      max-width: 170px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ag-notch-timer {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--emerald);
+    }
+
+    .ag-notch-drawer {
+      display: none;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ag-notch-pill:hover .ag-notch-drawer,
+    .ag-notch-pill.expanded .ag-notch-drawer {
+      display: flex;
+    }
+
+    .ag-notch-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .ag-notch-metric {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 6px;
+      text-align: center;
+    }
+
+    .ag-notch-metric .lbl {
+      font-family: var(--font-mono);
+      font-size: 8.5px;
+      color: var(--t3);
+      text-transform: uppercase;
+    }
+
+    .ag-notch-metric .val {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 800;
+      color: var(--acc);
+      margin-top: 2px;
+    }
+
+    .ag-notch-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: space-between;
+    }
+
+    .ag-retro-btn {
+      flex: 1;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 7px;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--t1);
+      cursor: pointer;
+      text-align: center;
+      box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+      transition: all 0.14s ease;
+    }
+
+    .ag-retro-btn:hover {
+      border-color: var(--acc);
+      color: var(--acc);
+      transform: translateY(-1px);
+    }
+
+    .ag-retro-btn.danger:hover {
+      border-color: var(--coral);
+      color: var(--coral);
+    }
+
+    /* ================================================================== */
+    /*  2. INTERACTIVE DESKTOP MASCOT PET & COMMAND MENU                  */
+    /* ================================================================== */
+    .ag-mascot-actor {
+      position: fixed;
+      z-index: 9998;
+      width: 116px;
+      height: 116px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      transition: opacity 0.25s ease;
+    }
+
+    .ag-mascot-actor:active {
+      cursor: grabbing;
+    }
+
+    .ag-mascot-actor.hidden {
+      opacity: 0;
+      pointer-events: none !important;
+    }
+
+    .ag-mascot-bubble {
+      position: absolute;
+      bottom: 114px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(13, 15, 23, 0.96);
+      border: 2px solid var(--acc);
+      border-radius: 8px;
+      padding: 4px 9px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--t1);
+      white-space: nowrap;
+      box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.65);
+      pointer-events: none;
+    }
+
+    .ag-mascot-menu {
+      position: absolute;
+      bottom: 138px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 210px;
+      background: rgba(13, 15, 23, 0.98);
+      border: 2px solid var(--acc);
+      border-radius: 10px;
+      padding: 8px;
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.75);
+      z-index: 10000;
+    }
+
+    .ag-mascot-menu.open {
+      display: flex;
+    }
+
+    .ag-mascot-menu.drop-down {
+      bottom: auto;
+      top: 120px;
+    }
+
+    .ag-menu-title {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 800;
+      color: var(--acc);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed var(--border);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* ================================================================== */
+    /*  3. SHARED MASCOT SVG RIG ANIMATIONS                               */
+    /* ================================================================== */
+    .ag-mascot-rig {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.55));
+    }
+
+    .ag-mascot-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .ag-mascot-whole {
+      transform-origin: 120px 135px;
+      animation: agMascotFloat 3.2s ease-in-out infinite;
+    }
+
+    .ag-mascot-arm-l {
+      transform-origin: 58px 115px;
+      animation: agArmIdleL 3.2s ease-in-out infinite;
+    }
+
+    .ag-mascot-arm-r {
+      transform-origin: 182px 115px;
+      animation: agArmIdleR 3.2s ease-in-out infinite;
+    }
+
+    .ag-mascot-leg-l {
+      transform-origin: 84px 170px;
+    }
+
+    .ag-mascot-leg-r {
+      transform-origin: 156px 170px;
+    }
+
+    .ag-mascot-eyes {
+      transform-origin: 120px 92px;
+      animation: agEyesBlink 4.8s infinite;
+    }
+
+    .ag-mascot-eyes-sleep,
+    .ag-mascot-zzz,
+    .ag-mascot-visor,
+    .ag-mascot-spark {
+      opacity: 0;
+      transition: opacity 0.22s ease;
+    }
+
+    .ag-mascot-rig[data-state="thinking"] .ag-mascot-spark {
+      opacity: 1;
+      animation: agSparkPulse 1.1s ease-in-out infinite;
+    }
+
+    .ag-mascot-rig[data-state="working"] .ag-mascot-visor {
+      opacity: 1;
+    }
+
+    .ag-mascot-rig[data-state="working"] .ag-mascot-arm-l {
+      animation: agArmTypeL 0.28s ease-in-out infinite alternate;
+    }
+
+    .ag-mascot-rig[data-state="working"] .ag-mascot-arm-r {
+      animation: agArmTypeR 0.28s ease-in-out infinite alternate-reverse;
+    }
+
+    .ag-mascot-rig[data-state="walking"] .ag-mascot-leg-l {
+      animation: agLegWalkL 0.36s ease-in-out infinite alternate;
+    }
+
+    .ag-mascot-rig[data-state="walking"] .ag-mascot-leg-r {
+      animation: agLegWalkR 0.36s ease-in-out infinite alternate-reverse;
+    }
+
+    .ag-mascot-rig[data-state="sleeping"] .ag-mascot-eyes-open {
+      opacity: 0;
+    }
+
+    .ag-mascot-rig[data-state="sleeping"] .ag-mascot-eyes-sleep,
+    .ag-mascot-rig[data-state="sleeping"] .ag-mascot-zzz {
+      opacity: 1;
+    }
+
+    .ag-mascot-rig[data-state="surprised"] .ag-mascot-whole {
+      animation: agSurpriseJump 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .ag-mascot-rig[data-state="offline"] {
+      filter: grayscale(0.75) brightness(0.75);
+    }
+
+    @keyframes agMascotFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-5px); }
+    }
+    @keyframes agArmIdleL {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(7deg); }
+    }
+    @keyframes agArmIdleR {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(-7deg); }
+    }
+    @keyframes agArmTypeL {
+      0% { transform: rotate(15deg) translateY(-3px); }
+      100% { transform: rotate(-12deg) translateY(4px); }
+    }
+    @keyframes agArmTypeR {
+      0% { transform: rotate(-15deg) translateY(-3px); }
+      100% { transform: rotate(12deg) translateY(4px); }
+    }
+    @keyframes agLegWalkL {
+      0% { transform: rotate(-20deg) translateY(-3px); }
+      100% { transform: rotate(20deg) translateY(2px); }
+    }
+    @keyframes agLegWalkR {
+      0% { transform: rotate(20deg) translateY(2px); }
+      100% { transform: rotate(-20deg) translateY(-3px); }
+    }
+    @keyframes agEyesBlink {
+      0%, 93%, 100% { transform: scaleY(1); }
+      96% { transform: scaleY(0.08); }
+    }
+    @keyframes agSparkPulse {
+      0%, 100% { transform: scale(0.95); opacity: 0.7; }
+      50% { transform: scale(1.12); opacity: 1; }
+    }
+    @keyframes agSurpriseJump {
+      0% { transform: translateY(0) scale(1); }
+      40% { transform: translateY(-16px) scale(1.08); }
+      100% { transform: translateY(0) scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================================================================== -->
+  <!--  1. WINDOWS DYNAMIC NOTCH (TOP-CENTER DOCK)                        -->
+  <!-- ================================================================== -->
+  <div class="ag-notch-wrapper hidden interactive-hitbox" id="notchWrapper">
+    <div class="ag-notch-pill" id="notchPill" onclick="toggleNotchExpand(event)">
+      <div class="ag-notch-bar">
+        <div class="ag-notch-left">
+          <span class="ag-notch-led" id="notchLed"></span>
+          <span class="ag-notch-status" id="notchStatusText">ANTIGRAVITY ONLINE</span>
+        </div>
+        <span class="ag-notch-model" id="notchModelBadge">IDLE • 0 AGENTS</span>
+        <span class="ag-notch-timer" id="notchTimerText">00:00:00</span>
+      </div>
+
+      <!-- Hover / Click Expanded Telemetry Drawer -->
+      <div class="ag-notch-drawer" onclick="event.stopPropagation()">
+        <div class="ag-notch-metrics">
+          <div class="ag-notch-metric">
+            <div class="lbl">24H HOURS</div>
+            <div class="val" id="notchHrs24">0m</div>
+          </div>
+          <div class="ag-notch-metric">
+            <div class="lbl">OVERALL</div>
+            <div class="val" id="notchHrsAll">0m</div>
+          </div>
+          <div class="ag-notch-metric">
+            <div class="lbl">24H TOKENS</div>
+            <div class="val" id="notchTok24">0</div>
+          </div>
+          <div class="ag-notch-metric">
+            <div class="lbl">ALL TOKENS</div>
+            <div class="val" id="notchTokAll">0</div>
+          </div>
+        </div>
+        <div class="ag-notch-actions">
+          <button class="ag-retro-btn" onclick="switchToMascot()">🐾 To Mascot Pet</button>
+          <button class="ag-retro-btn" onclick="openMainDashboard()">📊 Dashboard</button>
+          <button class="ag-retro-btn" id="btnNotchSfx" onclick="toggleOverlaySfx()">🔊 SFX</button>
+          <button class="ag-retro-btn danger" onclick="disableOverlay()">✕ Disable Notch</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!--  2. INTERACTIVE DESKTOP MASCOT PET                                 -->
+  <!-- ================================================================== -->
+  <div class="ag-mascot-actor interactive-hitbox" id="mascotActor">
+    <!-- Live Speech Bubble -->
+    <div class="ag-mascot-bubble" id="mascotBubble">READY IN ANTIGRAVITY!</div>
+
+    <!-- Click Command Menu Popover -->
+    <div class="ag-mascot-menu" id="mascotMenu" onclick="event.stopPropagation()">
+      <div class="ag-menu-title">
+        <span>ANTIGRAVITY PET v2.0</span>
+        <span id="menuHrsBadge">0h</span>
+      </div>
+      <button class="ag-retro-btn" onclick="commandMascot({ mode: 'notch' })">⚡ Morph into Windows Notch</button>
+      <button class="ag-retro-btn" onclick="commandMascot({ mascotBehavior: 'sit_corner' })">📐 Sit in Desktop Corner</button>
+      <button class="ag-retro-btn" onclick="commandMascot({ mascotBehavior: 'walk_follow' })">🚶 Walk &amp; Follow Cursor</button>
+      <button class="ag-retro-btn" onclick="commandMascot({ mascotBehavior: 'sleep' })">💤 Sleep / Wake Up</button>
+      <button class="ag-retro-btn" onclick="cycleDesktopCorner()">🔄 Switch Corner Anchor</button>
+      <button class="ag-retro-btn" onclick="openMainDashboard()">📊 Open Retro Dashboard</button>
+      <button class="ag-retro-btn" id="btnMenuSfx" onclick="toggleOverlaySfx()">🔊 Mute / Unmute 8-Bit SFX</button>
+      <button class="ag-retro-btn danger" onclick="disableOverlay()">✕ Disable Overlay</button>
+    </div>
+
+    <!-- Animated Rainbow "A" Mascot SVG Rig -->
+    <div class="ag-mascot-rig" id="mascot-rig-overlay" data-state="idle" style="width:104px; height:104px;">
+      <svg class="ag-mascot-svg" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="ag-rainbow-ov" x1="25" y1="185" x2="215" y2="55" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#0038FF" />
+            <stop offset="22%" stop-color="#00C2FF" />
+            <stop offset="44%" stop-color="#18F26B" />
+            <stop offset="64%" stop-color="#FFE600" />
+            <stop offset="82%" stop-color="#FF6B00" />
+            <stop offset="100%" stop-color="#FF0F47" />
+          </linearGradient>
+        </defs>
+        <ellipse cx="120" cy="222" rx="54" ry="8" fill="rgba(0,0,0,0.45)" />
+        <g class="ag-mascot-whole">
+          <!-- Legs -->
+          <g class="ag-mascot-leg-l">
+            <path d="M84 166 L73 206" stroke="#36425A" stroke-width="11" stroke-linecap="round" />
+            <ellipse cx="67" cy="210" rx="19" ry="10" transform="rotate(-6 67 210)" fill="#465574" stroke="#232B3B" stroke-width="2.5" />
+          </g>
+          <g class="ag-mascot-leg-r">
+            <path d="M156 166 L167 206" stroke="#36425A" stroke-width="11" stroke-linecap="round" />
+            <ellipse cx="173" cy="210" rx="19" ry="10" transform="rotate(6 173 210)" fill="#465574" stroke="#232B3B" stroke-width="2.5" />
+          </g>
+          <!-- Arms -->
+          <g class="ag-mascot-arm-l">
+            <path d="M62 112 C34 115, 24 134, 21 146" stroke="#2C3548" stroke-width="10" stroke-linecap="round" fill="none" />
+            <circle cx="20" cy="151" r="11" fill="#354056" />
+          </g>
+          <g class="ag-mascot-arm-r">
+            <path d="M178 112 C206 115, 216 134, 219 146" stroke="#2C3548" stroke-width="10" stroke-linecap="round" fill="none" />
+            <circle cx="220" cy="151" r="11" fill="#354056" />
+          </g>
+          <!-- Rainbow Delta Body -->
+          <path
+            d="M120 26 C141 26, 157 52, 198 148 C210 176, 190 198, 166 182 C145 168, 134 150, 120 150 C106 150, 95 168, 74 182 C50 198, 30 176, 42 148 C83 52, 99 26, 120 26 Z"
+            fill="url(#ag-rainbow-ov)"
+            stroke="rgba(255,255,255,0.24)"
+            stroke-width="2"
+          />
+          <!-- Eyes -->
+          <g class="ag-mascot-eyes">
+            <g class="ag-mascot-eyes-open">
+              <rect x="88" y="81" width="21" height="21" rx="5.5" fill="#0B0D13" />
+              <rect x="131" y="81" width="21" height="21" rx="5.5" fill="#0B0D13" />
+              <rect x="92" y="85" width="5" height="5" rx="1.5" fill="#FFFFFF" opacity="0.85" />
+              <rect x="135" y="85" width="5" height="5" rx="1.5" fill="#FFFFFF" opacity="0.85" />
+            </g>
+            <g class="ag-mascot-eyes-sleep">
+              <path d="M88 93 Q98.5 101 109 93" stroke="#0B0D13" stroke-width="4.5" stroke-linecap="round" fill="none" />
+              <path d="M131 93 Q141.5 101 152 93" stroke="#0B0D13" stroke-width="4.5" stroke-linecap="round" fill="none" />
+            </g>
+            <g class="ag-mascot-visor">
+              <rect x="82" y="79" width="76" height="24" rx="6" fill="rgba(11, 13, 19, 0.86)" stroke="#34F5A4" stroke-width="2.2" />
+              <line x1="88" y1="91" x2="152" y2="91" stroke="#34F5A4" stroke-width="2.2" stroke-dasharray="6 4" />
+            </g>
+          </g>
+          <!-- Thinking Spark & Sleep Zzz -->
+          <g class="ag-mascot-spark">
+            <text x="120" y="17" text-anchor="middle" fill="#FFB84D" font-family="monospace" font-weight="900" font-size="18">⚡</text>
+          </g>
+          <g class="ag-mascot-zzz">
+            <text x="172" y="54" fill="#38E4FF" font-family="monospace" font-weight="900" font-size="18">Zzz</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <script>
+    /* ------------------------------------------------------------------ */
+    /*  1. Procedural 8-Bit Chiptune Web Audio Synthesizer                */
+    /* ------------------------------------------------------------------ */
+    (function() {
+      let ctx = null;
+      let muted = false;
+      function getCtx() {
+        if (muted) return null;
+        if (!ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) ctx = new AC();
+        }
+        if (ctx && ctx.state === 'suspended') {
+          ctx.resume().catch(function() {});
+        }
+        return ctx;
+      }
+      function tone(freq, type, startSec, durSec, gainVal) {
+        const c = getCtx();
+        if (!c) return;
+        const osc = c.createOscillator();
+        const g = c.createGain();
+        osc.type = type || 'square';
+        osc.frequency.setValueAtTime(freq, c.currentTime + startSec);
+        g.gain.setValueAtTime(gainVal || 0.04, c.currentTime + startSec);
+        g.gain.exponentialRampToValueAtTime(0.0008, c.currentTime + startSec + durSec);
+        osc.connect(g);
+        g.connect(c.destination);
+        osc.start(c.currentTime + startSec);
+        osc.stop(c.currentTime + startSec + durSec);
+      }
+      window.agMascotAudio = {
+        setMuted: function(m) { muted = !!m; },
+        isMuted: function() { return muted; },
+        playClick: function() { tone(720, 'square', 0, 0.045, 0.035); tone(980, 'square', 0.045, 0.055, 0.035); },
+        playWake: function() { tone(523.25, 'square', 0, 0.06, 0.04); tone(659.25, 'square', 0.06, 0.06, 0.04); tone(783.99, 'square', 0.12, 0.08, 0.045); tone(1046.5, 'square', 0.20, 0.12, 0.045); },
+        playComplete: function() { tone(587.33, 'triangle', 0, 0.07, 0.05); tone(880, 'triangle', 0.07, 0.09, 0.05); tone(1174.66, 'square', 0.16, 0.14, 0.04); },
+        playSleep: function() { tone(659.25, 'sine', 0, 0.1, 0.035); tone(523.25, 'sine', 0.1, 0.12, 0.03); tone(392.00, 'sine', 0.22, 0.18, 0.025); },
+        playMorph: function() { tone(440, 'sawtooth', 0, 0.05, 0.03); tone(660, 'sawtooth', 0.05, 0.05, 0.03); tone(880, 'square', 0.10, 0.09, 0.035); }
+      };
+    })();
+
+    /* ------------------------------------------------------------------ */
+    /*  2. Click-Through Hitbox Management (`setIgnoreMouseEvents`)       */
+    /* ------------------------------------------------------------------ */
+    const bridge = window.antigravityDesktop;
+    const notchWrapper = document.getElementById('notchWrapper');
+    const mascotActor = document.getElementById('mascotActor');
+    const mascotMenu = document.getElementById('mascotMenu');
+
+    function setInteractiveFocus(isInside) {
+      if (bridge && typeof bridge.setIgnoreMouseEvents === 'function') {
+        bridge.setIgnoreMouseEvents(!isInside);
+      }
+    }
+
+    [notchWrapper, mascotActor].forEach(function(el) {
+      el.addEventListener('mouseenter', function() { setInteractiveFocus(true); });
+      el.addEventListener('mouseleave', function() {
+        if (!isDragging) setInteractiveFocus(false);
+      });
+    });
+
+    /* ------------------------------------------------------------------ */
+    /*  3. Mascot Physics, Corner Anchoring, Drag & Cursor Walk-Follow    */
+    /* ------------------------------------------------------------------ */
+    let companion = {
+      enabled: true,
+      mode: 'mascot',
+      mascotBehavior: 'sit_corner',
+      corner: 'bottom-right',
+      soundMuted: false
+    };
+    let latestData = null;
+    let lastAgentCount = 0;
+
+    let mascotX = window.innerWidth - 144;
+    let mascotY = window.innerHeight - 136;
+    let targetX = mascotX;
+    let targetY = mascotY;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let dragMoved = false;
+
+    function getCornerCoords(corner) {
+      const marginX = 28;
+      const marginY = 22;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      if (corner === 'bottom-left') return { x: marginX, y: h - 134 };
+      if (corner === 'top-right') return { x: w - 144, y: marginY + 32 };
+      if (corner === 'top-left') return { x: marginX, y: marginY + 32 };
+      return { x: w - 144, y: h - 134 };
+    }
+
+    function applyMascotTransform(flipX) {
+      mascotActor.style.left = Math.round(mascotX) + 'px';
+      mascotActor.style.top = Math.round(mascotY) + 'px';
+      const svgEl = document.getElementById('mascot-rig-overlay');
+      if (svgEl) {
+        svgEl.style.transform = flipX ? 'scaleX(-1)' : 'scaleX(1)';
+      }
+      // Flip menu downward if mascot is near top edge
+      if (mascotY < 180) {
+        mascotMenu.classList.add('drop-down');
+      } else {
+        mascotMenu.classList.remove('drop-down');
+      }
+    }
+
+    // Drag and Drop + Click Menu handling
+    mascotActor.addEventListener('mousedown', function(e) {
+      if (mascotMenu.contains(e.target)) return;
+      isDragging = true;
+      dragMoved = false;
+      dragStartX = e.clientX - mascotX;
+      dragStartY = e.clientY - mascotY;
+      setInteractiveFocus(true);
+    });
+
+    window.addEventListener('mousemove', function(e) {
+      if (!isDragging) return;
+      const nx = e.clientX - dragStartX;
+      const ny = e.clientY - dragStartY;
+      if (Math.abs(nx - mascotX) > 4 || Math.abs(ny - mascotY) > 4) {
+        dragMoved = true;
+      }
+      mascotX = Math.max(8, Math.min(window.innerWidth - 124, nx));
+      mascotY = Math.max(8, Math.min(window.innerHeight - 124, ny));
+      targetX = mascotX;
+      targetY = mascotY;
+      applyMascotTransform(false);
+    });
+
+    window.addEventListener('mouseup', function() {
+      if (!isDragging) return;
+      isDragging = false;
+      if (!dragMoved) {
+        window.agMascotAudio.playClick();
+        mascotMenu.classList.toggle('open');
+      } else {
+        window.agMascotAudio.playWake();
+      }
+    });
+
+    // Global Cursor Listener for `walk_follow` mode
+    if (bridge && typeof bridge.onCursorMove === 'function') {
+      bridge.onCursorMove(function(pt) {
+        if (!companion.enabled || companion.mode !== 'mascot') return;
+        if (companion.mascotBehavior !== 'walk_follow' || isDragging) return;
+        // Walk along the bottom desktop edge following the user's cursor X
+        targetX = Math.max(24, Math.min(window.innerWidth - 140, pt.x - 58));
+        targetY = window.innerHeight - 134;
+      });
+    }
+
+    // 60fps Mascot Locomotion Loop
+    function tickPhysics() {
+      if (companion.enabled && companion.mode === 'mascot' && !isDragging) {
+        if (companion.mascotBehavior === 'sit_corner' || companion.mascotBehavior === 'sleep') {
+          const c = getCornerCoords(companion.corner || 'bottom-right');
+          targetX = c.x;
+          targetY = c.y;
+        }
+        const dx = targetX - mascotX;
+        const dy = targetY - mascotY;
+        const dist = Math.hypot(dx, dy);
+        const rig = document.getElementById('mascot-rig-overlay');
+
+        if (dist > 3) {
+          const speed = companion.mascotBehavior === 'walk_follow' ? 0.09 : 0.16;
+          mascotX += dx * speed;
+          mascotY += dy * speed;
+          applyMascotTransform(dx < -1);
+          if (rig && companion.mascotBehavior === 'walk_follow') {
+            rig.setAttribute('data-state', 'walking');
+          }
+        } else {
+          syncMascotVisualState();
+        }
+      }
+      requestAnimationFrame(tickPhysics);
+    }
+    requestAnimationFrame(tickPhysics);
+
+    /* ------------------------------------------------------------------ */
+    /*  4. State & Telemetry Synchronization (`127.0.0.1:41177`)          */
+    /* ------------------------------------------------------------------ */
+    function formatCompact(n) {
+      if (!n || n <= 0) return '0';
+      if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+      if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+      return String(Math.round(n));
+    }
+
+    function formatHours(sec) {
+      if (!sec || sec <= 0) return '0m';
+      if (sec < 3600) return Math.max(1, Math.floor(sec / 60)) + 'm';
+      return (sec / 3600).toFixed(1).replace(/\.0$/, '') + 'h';
+    }
+
+    function formatClock(sec) {
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      const p = function(v) { return v < 10 ? '0' + v : String(v); };
+      return p(h) + ':' + p(m) + ':' + p(s);
+    }
+
+    function applyCompanionVisibility() {
+      window.agMascotAudio.setMuted(!!companion.soundMuted);
+      if (!companion.enabled) {
+        notchWrapper.classList.add('hidden');
+        mascotActor.classList.add('hidden');
+        mascotMenu.classList.remove('open');
+        setInteractiveFocus(false);
+        return;
+      }
+      if (companion.mode === 'notch') {
+        notchWrapper.classList.remove('hidden');
+        mascotActor.classList.add('hidden');
+        mascotMenu.classList.remove('open');
+      } else {
+        notchWrapper.classList.add('hidden');
+        mascotActor.classList.remove('hidden');
+      }
+    }
+
+    function syncMascotVisualState() {
+      const rig = document.getElementById('mascot-rig-overlay');
+      const bubble = document.getElementById('mascotBubble');
+      if (!rig || !bubble) return;
+
+      if (!latestData || latestData.isAntigravityRunning === false) {
+        rig.setAttribute('data-state', 'offline');
+        bubble.innerText = 'ANTIGRAVITY CLOSED';
+        return;
+      }
+
+      const agents = latestData.activeAgents || [];
+      if (agents.length > 0) {
+        const lead = agents[0];
+        rig.setAttribute('data-state', lead.status === 'running_tool' ? 'working' : 'thinking');
+        bubble.innerText = (lead.model || 'AGENT') + (lead.activeTool ? ' • ' + lead.activeTool : ' THINKING...');
+      } else if (companion.mascotBehavior === 'sleep') {
+        rig.setAttribute('data-state', 'sleeping');
+        bubble.innerText = 'ZZZ... SLEEPING';
+      } else {
+        rig.setAttribute('data-state', 'idle');
+        const tb = latestData.timeBreakdown || (latestData.session && latestData.session.timeBreakdown);
+        const allH = formatHours(tb ? tb.overall : (latestData.session ? latestData.session.lifetimeActiveSeconds : 0));
+        bubble.innerText = 'IDLE • ' + allH + ' SPENT';
+      }
+    }
+
+    function renderTelemetry(data) {
+      if (!data) return;
+      latestData = data;
+      if (data.companion) {
+        companion = data.companion;
+        applyCompanionVisibility();
+      }
+
+      const agents = data.activeAgents || [];
+      if (lastAgentCount > 0 && agents.length === 0) {
+        window.agMascotAudio.playComplete();
+      }
+      lastAgentCount = agents.length;
+
+      const isRunning = data.isAntigravityRunning !== false;
+      const led = document.getElementById('notchLed');
+      const statusTxt = document.getElementById('notchStatusText');
+      const modelBadge = document.getElementById('notchModelBadge');
+
+      if (!isRunning) {
+        if (led) led.className = 'ag-notch-led offline';
+        if (statusTxt) statusTxt.innerText = 'ANTIGRAVITY OFFLINE';
+        if (modelBadge) modelBadge.innerText = 'IDE CLOSED • RPC CLEARED';
+      } else if (agents.length > 0) {
+        const lead = agents[0];
+        if (led) led.className = 'ag-notch-led';
+        if (statusTxt) statusTxt.innerText = agents.length + ' AGENT' + (agents.length > 1 ? 'S' : '') + ' ACTIVE';
+        if (modelBadge) modelBadge.innerText = (lead.model || 'Gemini') + (lead.activeTool ? ' • ' + lead.activeTool : '');
+      } else {
+        if (led) led.className = 'ag-notch-led idle';
+        if (statusTxt) statusTxt.innerText = 'ANTIGRAVITY IDLE';
+        if (modelBadge) modelBadge.innerText = '0 AGENTS RUNNING';
+      }
+
+      const tb = data.timeBreakdown || (data.session && data.session.timeBreakdown) || {};
+      const tokB = data.tokenBreakdown || (data.session && data.session.tokenBreakdown) || {};
+
+      const h24 = document.getElementById('notchHrs24');
+      const hAll = document.getElementById('notchHrsAll');
+      const t24 = document.getElementById('notchTok24');
+      const tAll = document.getElementById('notchTokAll');
+      const menuHrs = document.getElementById('menuHrsBadge');
+
+      const overallSecs = tb.overall || (data.session && data.session.lifetimeActiveSeconds) || 0;
+      if (h24) h24.innerText = formatHours(tb.last24h || 0);
+      if (hAll) hAll.innerText = formatHours(overallSecs);
+      if (menuHrs) menuHrs.innerText = formatHours(overallSecs);
+
+      const totTok = (data.session && data.session.tokens) ? data.session.tokens.totalTokens : 0;
+      if (t24) t24.innerText = formatCompact((tokB.last24h && tokB.last24h.totalTokens) || totTok);
+      if (tAll) tAll.innerText = formatCompact((tokB.overall && tokB.overall.totalTokens) || totTok);
+
+      if (data.session && data.session.startedAt) {
+        const elapsed = isRunning
+          ? Math.max(0, Math.floor((Date.now() - Date.parse(data.session.startedAt)) / 1000))
+          : 0;
+        const timerEl = document.getElementById('notchTimerText');
+        if (timerEl) timerEl.innerText = formatClock(elapsed);
+      }
+
+      syncMascotVisualState();
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  5. Interactive Commands (Mascot Popover & Notch Controls)         */
+    /* ------------------------------------------------------------------ */
+    async function commandMascot(partial) {
+      mascotMenu.classList.remove('open');
+      if (partial.mode) window.agMascotAudio.playMorph();
+      else if (partial.mascotBehavior === 'sleep') window.agMascotAudio.playSleep();
+      else window.agMascotAudio.playClick();
+
+      companion = Object.assign({}, companion, partial);
+      applyCompanionVisibility();
+      syncMascotVisualState();
+
+      try {
+        await fetch('http://127.0.0.1:41177/api/companion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(partial)
+        });
+      } catch {}
+    }
+
+    function switchToMascot() {
+      commandMascot({ enabled: true, mode: 'mascot' });
+    }
+
+    function cycleDesktopCorner() {
+      const order = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
+      const next = order[(order.indexOf(companion.corner || 'bottom-right') + 1) % order.length];
+      commandMascot({ corner: next, mascotBehavior: 'sit_corner' });
+    }
+
+    function toggleOverlaySfx() {
+      commandMascot({ soundMuted: !companion.soundMuted });
+    }
+
+    function disableOverlay() {
+      commandMascot({ enabled: false });
+    }
+
+    function openMainDashboard() {
+      mascotMenu.classList.remove('open');
+      window.agMascotAudio.playClick();
+      if (bridge && typeof bridge.openDashboard === 'function') {
+        bridge.openDashboard();
+      } else {
+        window.open('http://127.0.0.1:41177', '_blank');
+      }
+    }
+
+    function toggleNotchExpand(e) {
+      e.stopPropagation();
+      window.agMascotAudio.playClick();
+      document.getElementById('notchPill').classList.toggle('expanded');
+    }
+
+    if (bridge && typeof bridge.onCompanionCommand === 'function') {
+      bridge.onCompanionCommand(function(nextComp) {
+        companion = Object.assign({}, companion, nextComp);
+        applyCompanionVisibility();
+        syncMascotVisualState();
+      });
+    }
+
+    // Live SSE connection to local engine
+    function connectOverlayStream() {
+      fetch('http://127.0.0.1:41177/api/overview')
+        .then(function(r) { return r.json(); })
+        .then(function(d) { renderTelemetry(d); })
+        .catch(function() {});
+
+      try {
+        const es = new EventSource('http://127.0.0.1:41177/api/stream');
+        es.onmessage = function(ev) {
+          try { renderTelemetry(JSON.parse(ev.data)); } catch {}
+        };
+        es.onerror = function() {
+          try { es.close(); } catch {}
+          setTimeout(connectOverlayStream, 3000);
+        };
+      } catch {
+        setTimeout(connectOverlayStream, 3000);
+      }
+    }
+
+    applyCompanionVisibility();
+    connectOverlayStream();
+  </script>
+</body>
+</html>

@@ -105,6 +105,9 @@ describe('SidebarDashboardProvider (Native Activity Bar Webview View)', () => {
     expect(html).toContain('Claude Sonnet 5.5');
     expect(html).toContain('btnPause');
     expect(html).toContain('btnOpenFull');
+    expect(html).toContain('mascot-rig-side');
+    expect(html).toContain('Toggle Notch');
+    expect(html).toContain('24H:');
   });
 
   it('resolves webview view and wires message handling to VS Code commands', async () => {

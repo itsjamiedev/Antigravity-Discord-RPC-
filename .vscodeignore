@@ -1,4 +1,6 @@
 plugins/**
+desktop-app/**
+resources/mascot.png
 dist/daemon.cjs
 dist/hook-forwarder.cjs
 scratch/**

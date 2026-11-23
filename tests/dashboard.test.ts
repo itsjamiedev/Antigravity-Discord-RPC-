@@ -65,6 +65,34 @@ describe('Phase 5: Local Usage Dashboard (127.0.0.1)', () => {
     expect(html).toContain('tab-conversations');
     expect(html).toContain('tab-analytics');
     expect(html).toContain('tab-settings');
+    expect(html).toContain('mascot-rig-dash');
+    expect(html).toContain('24 HOURS');
+    expect(html).toContain('WEEKLY (7D)');
+    expect(html).toContain('MONTHLY (30D)');
+    expect(html).toContain('YEARLY (365D)');
+    expect(html).toContain('OVERALL');
+  });
+
+  it('persists and updates Desktop Companion & Windows Dynamic Notch settings via /api/companion', async () => {
+    const getRes = await fetch(`${baseUrl}/api/companion`);
+    expect(getRes.status).toBe(200);
+    const initial = (await getRes.json()) as { mode: string; mascotBehavior: string };
+    expect(['mascot', 'notch']).toContain(initial.mode);
+
+    const postRes = await fetch(`${baseUrl}/api/companion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'notch', mascotBehavior: 'walk_follow', corner: 'top-left' }),
+    });
+    expect(postRes.status).toBe(200);
+    const updated = (await postRes.json()) as {
+      ok: boolean;
+      companion: { mode: string; mascotBehavior: string; corner: string };
+    };
+    expect(updated.ok).toBe(true);
+    expect(updated.companion.mode).toBe('notch');
+    expect(updated.companion.mascotBehavior).toBe('walk_follow');
+    expect(updated.companion.corner).toBe('top-left');
   });
 
   it('serves REST endpoints with accurate domain data', async () => {

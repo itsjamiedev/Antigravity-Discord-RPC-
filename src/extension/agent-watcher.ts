@@ -561,13 +561,24 @@ export class AgentWatcher extends EventEmitter {
   private summariesDbDir?: string;
   private activeAgentsGrace = new Map<string, number>();
   private hasEmittedInitial = false;
+  private convWatcher: fs.FSWatcher | null = null;
+  private watchDebounceTimer: NodeJS.Timeout | null = null;
 
   constructor(options?: AgentWatcherOptions) {
     super();
     this.brainDir = options?.brainDir ?? path.join(os.homedir(), '.gemini', 'antigravity', 'brain');
-    this.pollIntervalMs = options?.pollIntervalMs ?? 1000; // Poll every 1.0s for real-time RPC updates
+    this.pollIntervalMs = options?.pollIntervalMs ?? 500; // Poll every 500ms for zero-lag RPC updates
     this.activeThresholdMs = options?.activeThresholdMs ?? 120000; // 120s active turn threshold
     this.summariesDbDir = options?.summariesDbDir;
+  }
+
+  private scheduleFastScan(): void {
+    if (this.watchDebounceTimer) return;
+    this.watchDebounceTimer = setTimeout(() => {
+      this.watchDebounceTimer = null;
+      this.scan();
+    }, 60);
+    this.watchDebounceTimer.unref?.();
   }
 
   private getStepModelMap(conversationId: string): Map<number, string> {
@@ -604,16 +615,22 @@ export class AgentWatcher extends EventEmitter {
     // Poll periodically
     this.intervalTimer = setInterval(() => this.scan(), this.pollIntervalMs);
 
-    // Watch directory if possible
+    // Watch brainDir and conversations directory for near-0ms transition detection
     try {
       this.watcher = fs.watch(this.brainDir, { persistent: false }, () => {
-        this.scan();
+        this.scheduleFastScan();
       });
-      this.watcher.on('error', () => {
-        // fail-open on watch errors
-      });
-    } catch {
-      // directory watching might fail on some platforms/permissions
+      this.watcher.on('error', () => {});
+    } catch {}
+
+    const convDir = path.join(path.dirname(this.brainDir), 'conversations');
+    if (fs.existsSync(convDir)) {
+      try {
+        this.convWatcher = fs.watch(convDir, { persistent: false }, () => {
+          this.scheduleFastScan();
+        });
+        this.convWatcher.on('error', () => {});
+      } catch {}
     }
   }
 
@@ -622,11 +639,21 @@ export class AgentWatcher extends EventEmitter {
       clearInterval(this.intervalTimer);
       this.intervalTimer = null;
     }
+    if (this.watchDebounceTimer) {
+      clearTimeout(this.watchDebounceTimer);
+      this.watchDebounceTimer = null;
+    }
     if (this.watcher) {
       try {
         this.watcher.close();
       } catch {}
       this.watcher = null;
+    }
+    if (this.convWatcher) {
+      try {
+        this.convWatcher.close();
+      } catch {}
+      this.convWatcher = null;
     }
   }
 

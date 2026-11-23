@@ -311,12 +311,24 @@ export class PresenceManager {
     nowMs: number
   ): void {
     const elapsedMs = nowMs - this.lastSentTimeMs;
+    const isNullTransition =
+      (activity === null && this.lastSentActivity !== null) ||
+      (activity !== null && this.lastSentActivity === null);
+    const isModeTransition =
+      isNullTransition ||
+      activity?.assets?.small_image !== this.lastSentActivity?.assets?.small_image;
     const isStateTransition =
+      isModeTransition ||
       activity?.details !== this.lastSentActivity?.details ||
       activity?.state !== this.lastSentActivity?.state;
-    const effectiveDebounce = isStateTransition ? Math.min(1000, debounceMs) : debounceMs;
 
-    // Leading edge: If more than effectiveDebounce has passed, dispatch immediately
+    const effectiveDebounce = isModeTransition
+      ? 0
+      : isStateTransition
+        ? Math.min(250, debounceMs)
+        : debounceMs;
+
+    // Leading edge: If more than effectiveDebounce has passed, dispatch immediately (0ms on mode transition!)
     if (elapsedMs >= effectiveDebounce) {
       this.clearDebounceTimer();
       this.sendDirect(activity, nowMs);

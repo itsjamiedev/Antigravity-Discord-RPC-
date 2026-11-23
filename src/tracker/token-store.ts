@@ -6,6 +6,7 @@ import type {
   DailyUsage,
   ModelStats,
   PersistentTokenStoreData,
+  TokenBreakdown,
   TokenUsageRecord,
 } from '../shared/types.js';
 
@@ -17,6 +18,7 @@ export class TokenStore {
   private filePath: string;
   private cumulativeTokensByModel: Map<string, TokenUsageRecord> = new Map();
   private cumulativeDailyUsage: Map<string, DailyUsage> = new Map();
+  private cumulativeHourlyTokens: Map<string, TokenUsageRecord> = new Map();
   private conversationWatermarks: Map<
     string,
     {
@@ -107,6 +109,21 @@ export class TokenStore {
           }
         }
 
+        if (data.cumulativeHourlyTokens && typeof data.cumulativeHourlyTokens === 'object') {
+          for (const [hourKey, tok] of Object.entries(data.cumulativeHourlyTokens)) {
+            if (tok && typeof tok.totalTokens === 'number') {
+              this.cumulativeHourlyTokens.set(hourKey, {
+                inputTokens: tok.inputTokens ?? 0,
+                cacheReadTokens: tok.cacheReadTokens ?? 0,
+                outputTokens: tok.outputTokens ?? 0,
+                totalTokens: tok.totalTokens ?? 0,
+                estimated: false,
+                source: 'transcript_exact',
+              });
+            }
+          }
+        }
+
         if (data.conversationWatermarks && typeof data.conversationWatermarks === 'object') {
           for (const [convId, watermark] of Object.entries(data.conversationWatermarks)) {
             // Strictly purge synthetic or test watermarks
@@ -187,6 +204,16 @@ export class TokenStore {
         dailyObj[d] = u;
       }
 
+      const cutoffHourKey = new Date(Date.now() - 72 * 3600 * 1000).toISOString().slice(0, 13);
+      const hourlyObj: Record<string, TokenUsageRecord> = {};
+      for (const [h, t] of this.cumulativeHourlyTokens.entries()) {
+        if (h >= cutoffHourKey) {
+          hourlyObj[h] = t;
+        } else {
+          this.cumulativeHourlyTokens.delete(h);
+        }
+      }
+
       const watermarksObj: Record<
         string,
         {
@@ -208,6 +235,7 @@ export class TokenStore {
         lastSavedAt: new Date().toISOString(),
         cumulativeTokensByModel: modelObj,
         cumulativeDailyUsage: dailyObj,
+        cumulativeHourlyTokens: hourlyObj,
         conversationWatermarks: watermarksObj,
       };
 
@@ -347,6 +375,24 @@ export class TokenStore {
       existingDaily.tokens.totalTokens += deltaTotal;
       this.cumulativeDailyUsage.set(dateKey, existingDaily);
 
+      const hourKey =
+        dateStr && dateStr.length >= 13
+          ? dateStr.slice(0, 13)
+          : new Date().toISOString().slice(0, 13);
+      const existingHourly = this.cumulativeHourlyTokens.get(hourKey) ?? {
+        inputTokens: 0,
+        cacheReadTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        estimated: false,
+        source: 'transcript_exact',
+      };
+      existingHourly.inputTokens += deltaInput;
+      existingHourly.cacheReadTokens += deltaCache;
+      existingHourly.outputTokens += deltaOutput;
+      existingHourly.totalTokens += deltaTotal;
+      this.cumulativeHourlyTokens.set(hourKey, existingHourly);
+
       this.scheduleSave();
     }
 
@@ -479,6 +525,92 @@ export class TokenStore {
       totalTokens: input + cache + output,
       estimated: false,
       source: input + cache + output > 0 ? 'transcript_exact' : 'unavailable',
+    };
+  }
+
+  public getTokenBreakdown(nowMs: number = Date.now()): TokenBreakdown {
+    const overall = this.getTotalCumulativeTokens();
+    const todayKey = new Date(nowMs).toISOString().slice(0, 10);
+    const cutoff7d = new Date(nowMs - 6 * 86400 * 1000).toISOString().slice(0, 10);
+    const cutoff30d = new Date(nowMs - 29 * 86400 * 1000).toISOString().slice(0, 10);
+    const cutoff365d = new Date(nowMs - 364 * 86400 * 1000).toISOString().slice(0, 10);
+
+    const makeRec = (inT: number, cacheT: number, outT: number): TokenUsageRecord => ({
+      inputTokens: inT,
+      cacheReadTokens: cacheT,
+      outputTokens: outT,
+      totalTokens: inT + cacheT + outT,
+      estimated: false,
+      source: inT + cacheT + outT > 0 ? 'transcript_exact' : 'unavailable',
+    });
+
+    let in24 = 0;
+    let cache24 = 0;
+    let out24 = 0;
+    for (let h = 0; h < 24; h++) {
+      const hKey = new Date(nowMs - h * 3600 * 1000).toISOString().slice(0, 13);
+      const bucket = this.cumulativeHourlyTokens.get(hKey);
+      if (bucket) {
+        in24 += bucket.inputTokens;
+        cache24 += bucket.cacheReadTokens;
+        out24 += bucket.outputTokens;
+      }
+    }
+
+    const todayDaily = this.cumulativeDailyUsage.get(todayKey);
+    if (todayDaily && in24 + cache24 + out24 < todayDaily.tokens.totalTokens) {
+      in24 = Math.max(in24, todayDaily.tokens.inputTokens);
+      cache24 = Math.max(cache24, todayDaily.tokens.cacheReadTokens);
+      out24 = Math.max(out24, todayDaily.tokens.outputTokens);
+    }
+
+    let in7 = 0, cache7 = 0, out7 = 0;
+    let in30 = 0, cache30 = 0, out30 = 0;
+    let in365 = 0, cache365 = 0, out365 = 0;
+
+    for (const [dateKey, usage] of this.cumulativeDailyUsage.entries()) {
+      if (dateKey >= cutoff365d && dateKey <= todayKey) {
+        in365 += usage.tokens.inputTokens;
+        cache365 += usage.tokens.cacheReadTokens;
+        out365 += usage.tokens.outputTokens;
+      }
+      if (dateKey >= cutoff30d && dateKey <= todayKey) {
+        in30 += usage.tokens.inputTokens;
+        cache30 += usage.tokens.cacheReadTokens;
+        out30 += usage.tokens.outputTokens;
+      }
+      if (dateKey >= cutoff7d && dateKey <= todayKey) {
+        in7 += usage.tokens.inputTokens;
+        cache7 += usage.tokens.cacheReadTokens;
+        out7 += usage.tokens.outputTokens;
+      }
+    }
+
+    in7 = Math.max(in7, in24);
+    cache7 = Math.max(cache7, cache24);
+    out7 = Math.max(out7, out24);
+
+    in30 = Math.max(in30, in7);
+    cache30 = Math.max(cache30, cache7);
+    out30 = Math.max(out30, out7);
+
+    in365 = Math.max(in365, in30);
+    cache365 = Math.max(cache365, cache30);
+    out365 = Math.max(out365, out30);
+
+    const last24h = makeRec(in24, cache24, out24);
+    const weekly = makeRec(in7, cache7, out7);
+    const monthly = makeRec(in30, cache30, out30);
+    const yearly = makeRec(in365, cache365, out365);
+    const effectiveOverall =
+      overall.totalTokens >= yearly.totalTokens ? overall : yearly;
+
+    return {
+      last24h,
+      weekly,
+      monthly,
+      yearly,
+      overall: effectiveOverall,
     };
   }
 

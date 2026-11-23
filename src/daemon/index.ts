@@ -76,6 +76,7 @@ async function bootstrap(): Promise<void> {
 
   // Initial process check
   let wasRunning = await isAntigravityRunning();
+  server.setAntigravityRunning(wasRunning);
   if (wasRunning) {
     presenceManager.updateFromSnapshot(tracker.getSnapshot());
   } else {
@@ -88,6 +89,7 @@ async function bootstrap(): Promise<void> {
   agentWatcher.on('change', async (state: AgentWatcherState) => {
     tracker.updateFromAgentWatcher(state);
     const isRunning = await isAntigravityRunning();
+    server.setAntigravityRunning(isRunning);
     if (isRunning) {
       presenceManager.updateFromSnapshot(tracker.getSnapshot());
     } else {
@@ -96,20 +98,22 @@ async function bootstrap(): Promise<void> {
   });
   agentWatcher.start();
 
-  // Watchdog loop: checks if Antigravity application was closed or opened every 2.5s
+  // Watchdog loop: checks if Antigravity application was closed or opened every 1.5s
   const processWatcherInterval = setInterval(async () => {
     const isRunning = await isAntigravityRunning();
+    server.setAntigravityRunning(isRunning);
     if (!isRunning && wasRunning) {
       console.log('[Antigravity Presence] Antigravity closed. Cleared Discord RPC.');
       discordClient.clearActivity();
       wasRunning = false;
     } else if (isRunning && !wasRunning) {
-      console.log('[Antigravity Presence] Antigravity launched. Restored Discord RPC.');
+      console.log('[Antigravity Presence] Antigravity launched. Resetting session clock & restoring Discord RPC.');
       wasRunning = true;
+      tracker.startFreshSession();
       tracker.updateFromAgentWatcher(agentWatcher.getState());
       presenceManager.updateFromSnapshot(tracker.getSnapshot());
     }
-  }, 2500);
+  }, 1500);
   processWatcherInterval.unref();
 
   const shutdown = async (signal: string): Promise<void> => {

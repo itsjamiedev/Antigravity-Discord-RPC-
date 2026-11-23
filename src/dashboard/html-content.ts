@@ -13,7 +13,13 @@
  * - 100% self-contained, zero external CDN dependencies, instant SSE synchronization
  */
 
+import { getMascotCss, getMascotSfxJs, getMascotSvgHtml } from '../shared/mascot-rig.js';
+
 export function getDashboardHtml(): string {
+  const mascotHeroSvg = getMascotSvgHtml('dashHero', 92, 'idle');
+  const mascotStyles = getMascotCss();
+  const mascotSfxScript = getMascotSfxJs();
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,29 +28,236 @@ export function getDashboardHtml(): string {
   <title>Antigravity Presence — Local Dashboard</title>
   <style>
     :root {
-      --bg: #000000;
-      --card-bg: #0b0b0c;
-      --card-inner: #111114;
-      --acc: #E8FF1F;
-      --t1: #ffffff;
-      --t2: rgba(255, 255, 255, 0.62);
-      --t3: rgba(255, 255, 255, 0.38);
-      --hair: rgba(255, 255, 255, 0.12);
-      --hair-subtle: rgba(255, 255, 255, 0.06);
+      --bg: #0B0C11;
+      --card-bg: #131620;
+      --card-inner: #08090D;
+      --acc: #FFB84D;
+      --t1: #F8FAFC;
+      --t2: rgba(248, 250, 252, 0.72);
+      --t3: rgba(148, 163, 184, 0.56);
+      --hair: #2A3142;
+      --hair-subtle: #1D2230;
       --ease: cubic-bezier(0.32, 0.72, 0, 1);
       
-      --flash: #E8FF1F;
-      --argon: #A9B2FF;
-      --sonnet: #FFB37A;
-      --lite: #38bdf8;
-      --emerald: #10b981;
-      --purple: #c084fc;
-      --rose: #f43f5e;
-      --amber: #f59e0b;
+      --flash: #FFB84D;
+      --argon: #38BDF8;
+      --sonnet: #FF5E7E;
+      --lite: #38BDF8;
+      --emerald: #34F5A4;
+      --purple: #C084FC;
+      --rose: #FF5E7E;
+      --amber: #FFB84D;
 
-      --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --font-mono: "Geist Mono", SFMono-Regular, monospace;
-      --font-pixel: "Minecraft Seven", monospace;
+      --font-sans: "Space Grotesk", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "JetBrains Mono", "Geist Mono", SFMono-Regular, monospace;
+      --font-pixel: "Minecraft Seven", "Press Start 2P", "JetBrains Mono", monospace;
+    }
+
+    ${mascotStyles}
+
+    /* RETRO CRT SCANLINE OVERLAY & HARDWARE BEZELS */
+    body.crt-scanlines::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.14) 0px,
+        rgba(0, 0, 0, 0.14) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      opacity: 0.45;
+    }
+
+    .retro-hero-stage {
+      grid-column: span 12;
+      background: linear-gradient(180deg, #161A26 0%, #10131C 100%);
+      border: 2px solid #2D364B;
+      box-shadow: 0 4px 0 #050609, inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 18px 22px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 22px;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+    @media (max-width: 1100px) {
+      .retro-hero-stage {
+        grid-template-columns: 1fr;
+      }
+    }
+    .mascot-pedestal {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: #08090D;
+      border: 2px solid #252C3D;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.65);
+      border-radius: 12px;
+      padding: 10px 16px;
+      min-width: 295px;
+    }
+    .mascot-speech-box {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .mascot-speech-tag {
+      font-family: var(--font-pixel);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--emerald);
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mascot-speech-text {
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--t1);
+      line-height: 1.35;
+    }
+    .mascot-speech-sub {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--acc);
+    }
+    .retro-time-matrix {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .retro-range-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .retro-range-btns {
+      display: inline-flex;
+      background: #08090D;
+      border: 2px solid #2A3142;
+      border-radius: 8px;
+      padding: 3px;
+      gap: 4px;
+    }
+    .retro-range-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--t2);
+      font-family: var(--font-pixel);
+      font-size: 11px;
+      padding: 5px 11px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .retro-range-btn:hover {
+      color: var(--t1);
+      background: rgba(255, 184, 77, 0.08);
+    }
+    .retro-range-btn.active {
+      background: var(--acc);
+      color: #08090D;
+      font-weight: 800;
+      box-shadow: 0 2px 0 #9E6300;
+    }
+    .retro-5col-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+    @media (max-width: 820px) {
+      .retro-5col-strip {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .retro-well-cell {
+      background: #08090D;
+      border: 2px solid #232938;
+      border-radius: 8px;
+      padding: 8px 11px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+    .retro-well-cell:hover,
+    .retro-well-cell.active {
+      border-color: var(--acc);
+      transform: translateY(-1px);
+    }
+    .retro-well-lbl {
+      font-family: var(--font-pixel);
+      font-size: 9.5px;
+      color: var(--t3);
+      letter-spacing: 0.06em;
+    }
+    .retro-well-hrs {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--acc);
+      margin-top: 2px;
+    }
+    .retro-well-tok {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--emerald);
+      margin-top: 1px;
+    }
+    .retro-companion-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      min-width: 210px;
+    }
+    .retro-hw-btn {
+      background: #1B2030;
+      border: 2px solid #323B54;
+      box-shadow: 0 2px 0 #07080C;
+      color: var(--t1);
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 7px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+    .retro-hw-btn:hover {
+      border-color: var(--acc);
+      color: var(--acc);
+    }
+    .retro-hw-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 0 #07080C;
+    }
+    .retro-led {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      background: var(--emerald);
+      box-shadow: 0 0 6px var(--emerald);
+      display: inline-block;
+    }
+    .retro-led.amber {
+      background: var(--acc);
+      box-shadow: 0 0 6px var(--acc);
+    }
+    .retro-led.off {
+      background: var(--rose);
+      box-shadow: 0 0 6px var(--rose);
     }
 
     * {
@@ -664,7 +877,7 @@ export function getDashboardHtml(): string {
     }
   </style>
 </head>
-<body>
+<body class="crt-scanlines">
 
   <!-- HEADER -->
   <header>
@@ -724,6 +937,83 @@ export function getDashboardHtml(): string {
     <section id="tab-overview" class="view-panel active">
       <div class="bento-grid">
 
+        <!-- 0. RETRO ARCADE MASCOT STAGE & 5-WINDOW TIME/TOKEN MATRIX (span 12) -->
+        <div class="retro-hero-stage" id="retroHeroStage">
+          <!-- Mascot Interactive Pedestal -->
+          <div class="mascot-pedestal" onclick="interactDashMascot()" title="Click to interact with Antigravity Mascot (Chiptune SFX)">
+            <span class="mascot-pedestal-tag" id="dashMascotStateTag">IDLE</span>
+            ${mascotHeroSvg}
+            <div class="mascot-speech" id="dashMascotSpeech">"READY FOR NEXT TURN!"</div>
+            <div class="mascot-sub" id="dashMascotSub">Click mascot to chirp • Retro Companion v2.0</div>
+          </div>
+
+          <!-- 5-Window Time & Token Analytics Matrix (24H | WEEK | MONTH | YEAR | OVERALL) -->
+          <div class="retro-time-matrix">
+            <div class="card-top" style="margin-bottom:0;">
+              <div>
+                <div class="cap">ANTIGRAVITY TIME &amp; TOKEN TELEMETRY MATRIX</div>
+                <div class="ttl" style="margin-top:2px;">
+                  <span id="matrixTitle">Multi-Range Time &amp; Token Ledger</span>
+                  <span class="chip" style="margin-left:8px; color:var(--emerald); border-color:rgba(52,245,164,0.35);" id="agRunningChip">● ANTIGRAVITY ONLINE</span>
+                </div>
+              </div>
+              <div class="seg" id="timeRangeSeg">
+                <button type="button" data-range="24h" aria-pressed="false" onclick="setTimeRange('24h')">24H</button>
+                <button type="button" data-range="weekly" aria-pressed="false" onclick="setTimeRange('weekly')">WEEK</button>
+                <button type="button" data-range="monthly" aria-pressed="false" onclick="setTimeRange('monthly')">MONTH</button>
+                <button type="button" data-range="yearly" aria-pressed="false" onclick="setTimeRange('yearly')">YEAR</button>
+                <button type="button" data-range="overall" aria-pressed="true" onclick="setTimeRange('overall')">OVERALL</button>
+              </div>
+            </div>
+
+            <div class="retro-5col-strip">
+              <div class="retro-time-cell" id="cell-24h" onclick="setTimeRange('24h')">
+                <div class="w-lbl">24 HOURS</div>
+                <div class="w-hrs" id="hrs-24h">0m</div>
+                <div class="w-tok" id="tok-24h">0 tok</div>
+              </div>
+              <div class="retro-time-cell" id="cell-weekly" onclick="setTimeRange('weekly')">
+                <div class="w-lbl">WEEKLY (7D)</div>
+                <div class="w-hrs" id="hrs-weekly">0m</div>
+                <div class="w-tok" id="tok-weekly">0 tok</div>
+              </div>
+              <div class="retro-time-cell" id="cell-monthly" onclick="setTimeRange('monthly')">
+                <div class="w-lbl">MONTHLY (30D)</div>
+                <div class="w-hrs" id="hrs-monthly">0m</div>
+                <div class="w-tok" id="tok-monthly">0 tok</div>
+              </div>
+              <div class="retro-time-cell" id="cell-yearly" onclick="setTimeRange('yearly')">
+                <div class="w-lbl">YEARLY (365D)</div>
+                <div class="w-hrs" id="hrs-yearly">0m</div>
+                <div class="w-tok" id="tok-yearly">0 tok</div>
+              </div>
+              <div class="retro-time-cell active" id="cell-overall" onclick="setTimeRange('overall')">
+                <div class="w-lbl">OVERALL</div>
+                <div class="w-hrs" id="hrs-overall">0m</div>
+                <div class="w-tok" id="tok-overall">0 tok</div>
+              </div>
+            </div>
+
+            <div class="retro-companion-controls">
+              <button type="button" class="retro-btn active" id="btnCompEnabled" onclick="toggleCompanionEnabled()">
+                <i>●</i> <span id="lblCompEnabled">Desktop Companion: ON</span>
+              </button>
+              <button type="button" class="retro-btn" id="btnCompMode" onclick="toggleCompanionMode()">
+                <span id="lblCompMode">Mode: MASCOT PET</span>
+              </button>
+              <button type="button" class="retro-btn" id="btnCompBehavior" onclick="cycleCompanionBehavior()">
+                <span id="lblCompBehavior">Action: SIT IN CORNER</span>
+              </button>
+              <button type="button" class="retro-btn" id="btnCompCorner" onclick="cycleCompanionCorner()">
+                <span id="lblCompCorner">Corner: BOTTOM-RIGHT</span>
+              </button>
+              <button type="button" class="retro-btn" id="btnCompSfx" onclick="toggleCompanionSfx()">
+                <span id="lblCompSfx">🔊 8-Bit SFX: ON</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- 1. CUMULATIVE TOKENS STREAM WAVE (#nw, span 8) -->
         <div class="card h1" id="nw">
           <div class="rim"></div>
@@ -740,6 +1030,7 @@ export function getDashboardHtml(): string {
               </div>
               <div class="seg" id="nwSeg">
                 <button type="button" aria-pressed="true" onclick="setNwSpan('all')">All</button>
+                <button type="button" aria-pressed="false" onclick="setNwSpan('1y')">1y</button>
                 <button type="button" aria-pressed="false" onclick="setNwSpan('30d')">30d</button>
                 <button type="button" aria-pressed="false" onclick="setNwSpan('7d')">7d</button>
                 <button type="button" aria-pressed="false" onclick="setNwSpan('24h')">24h</button>
@@ -1181,6 +1472,74 @@ export function getDashboardHtml(): string {
           </div>
         </div>
       </div>
+
+      <!-- DESKTOP COMPANION, MASCOT PET & WINDOWS DYNAMIC NOTCH CONTROLS -->
+      <div class="card full-width" style="height: auto; margin-top: 16px;">
+        <div class="rim"></div>
+        <div class="in-c">
+          <div class="card-top">
+            <div class="cap">DESKTOP COMPANION &amp; WINDOWS DYNAMIC NOTCH</div>
+            <span class="chip">STANDALONE APP &amp; OVERLAY</span>
+          </div>
+          <div class="ttl">Interactive Mascot Pet &amp; Top-Screen Notch</div>
+          <div style="display:flex; flex-direction:column; gap:16px; margin-top:20px; max-width:680px;">
+            <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+              <div>
+                <div style="font-weight:600;">Enable Desktop Overlay (Mascot / Notch)</div>
+                <div style="font-size:0.75rem; color:var(--t3);">Show the interactive Antigravity Mascot or Windows Dynamic Notch on your desktop.</div>
+              </div>
+              <input type="checkbox" id="settingCompEnabled" onchange="updateCompanion({ enabled: this.checked })" checked>
+            </label>
+            <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+              <div>
+                <div style="font-weight:600;">Active Overlay Mode</div>
+                <div style="font-size:0.75rem; color:var(--t3);">Switch between the desktop Mascot pet and the top-center Windows Dynamic Notch.</div>
+              </div>
+              <select id="settingCompMode" onchange="updateCompanion({ mode: this.value })" style="background:var(--card-inner); color:var(--t1); border:2px solid var(--hair); border-radius:6px; padding:6px 10px; font-family:var(--font-mono); font-size:12px;">
+                <option value="mascot">Desktop Mascot Pet</option>
+                <option value="notch">Windows Dynamic Notch</option>
+              </select>
+            </label>
+            <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+              <div>
+                <div style="font-weight:600;">Mascot Behavior Command</div>
+                <div style="font-size:0.75rem; color:var(--t3);">Command the mascot to sit in a corner, walk &amp; follow your mouse cursor, or sleep.</div>
+              </div>
+              <select id="settingCompBehavior" onchange="updateCompanion({ mascotBehavior: this.value })" style="background:var(--card-inner); color:var(--t1); border:2px solid var(--hair); border-radius:6px; padding:6px 10px; font-family:var(--font-mono); font-size:12px;">
+                <option value="sit_corner">Sit in Desktop Corner</option>
+                <option value="walk_follow">Walk &amp; Follow Cursor</option>
+                <option value="sleep">Sleep Mode (Zzz)</option>
+              </select>
+            </label>
+            <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+              <div>
+                <div style="font-weight:600;">Desktop Corner Anchor</div>
+                <div style="font-size:0.75rem; color:var(--t3);">Choose which corner of your screen the mascot sits in.</div>
+              </div>
+              <select id="settingCompCorner" onchange="updateCompanion({ corner: this.value })" style="background:var(--card-inner); color:var(--t1); border:2px solid var(--hair); border-radius:6px; padding:6px 10px; font-family:var(--font-mono); font-size:12px;">
+                <option value="bottom-right">Bottom Right</option>
+                <option value="bottom-left">Bottom Left</option>
+                <option value="top-right">Top Right</option>
+                <option value="top-left">Top Left</option>
+              </select>
+            </label>
+            <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+              <div>
+                <div style="font-weight:600;">Mute 8-Bit Chiptune Sound Effects</div>
+                <div style="font-size:0.75rem; color:var(--t3);">Silence procedural retro sound effects on mascot clicks, morphs, and agent turns.</div>
+              </div>
+              <input type="checkbox" id="settingCompMuteSfx" onchange="updateCompanion({ soundMuted: this.checked })">
+            </label>
+            <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+              <div>
+                <div style="font-weight:600;">CRT Phosphor Scanline Overlay</div>
+                <div style="font-size:0.75rem; color:var(--t3);">Toggle subtle retro CRT scanline texture across the dashboard.</div>
+              </div>
+              <input type="checkbox" id="settingCrtScanlines" onchange="document.body.classList.toggle('crt-scanlines', this.checked)" checked>
+            </label>
+          </div>
+        </div>
+      </div>
     </section>
 
   </main>
@@ -1246,6 +1605,8 @@ export function getDashboardHtml(): string {
 
   <!-- CLIENT-SIDE LOGIC -->
   <script>
+    ${mascotSfxScript}
+
     /* ------------------------------------------------------------------ */
     /*  Pro Bento DotNumber 7xN Matrix Font Definition                    */
     /* ------------------------------------------------------------------ */
@@ -1412,6 +1773,174 @@ export function getDashboardHtml(): string {
         b.setAttribute('aria-pressed', b.innerText.toLowerCase() === span ? 'true' : 'false');
       });
       if (currentData) renderNwStream(currentData);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Retro 5-Window Time Matrix & Mascot Companion Controls            */
+    /* ------------------------------------------------------------------ */
+    let selectedTimeRange = 'overall';
+    let lastActiveAgentCount = 0;
+
+    function setTimeRange(range) {
+      selectedTimeRange = range;
+      if (window.agMascotAudio) window.agMascotAudio.playClick();
+      document.querySelectorAll('#timeRangeSeg button').forEach(function(b) {
+        b.setAttribute('aria-pressed', b.getAttribute('data-range') === range ? 'true' : 'false');
+      });
+      ['24h', 'weekly', 'monthly', 'yearly', 'overall'].forEach(function(r) {
+        const cell = document.getElementById('cell-' + r);
+        if (cell) cell.classList.toggle('active', r === range);
+      });
+      const spanMap = { '24h': '24h', 'weekly': '7d', 'monthly': '30d', 'yearly': '1y', 'overall': 'all' };
+      if (spanMap[range]) {
+        setNwSpan(spanMap[range]);
+      }
+    }
+
+    function setDashMascotState(state, speechText, subText) {
+      const rig = document.getElementById('mascot-rig-dash');
+      const tag = document.getElementById('dashMascotStateTag');
+      const speech = document.getElementById('dashMascotSpeech');
+      const sub = document.getElementById('dashMascotSub');
+      if (rig) rig.setAttribute('data-state', state);
+      if (tag) tag.innerText = state.toUpperCase();
+      if (speech && speechText) speech.innerText = speechText;
+      if (sub && subText) sub.innerText = subText;
+    }
+
+    function interactDashMascot() {
+      if (window.agMascotAudio) window.agMascotAudio.playWake();
+      const rig = document.getElementById('mascot-rig-dash');
+      const prevState = rig ? (rig.getAttribute('data-state') || 'idle') : 'idle';
+      setDashMascotState('surprised', '"BEEP BOOP! SYSTEM READY!"', 'Chiptune synth active • Click controls to morph');
+      setTimeout(function() {
+        if (currentData) {
+          renderOverview(currentData);
+        } else {
+          setDashMascotState(prevState, '"READY FOR NEXT TURN!"', 'Click mascot to chirp • Retro Companion v2.0');
+        }
+      }, 1100);
+    }
+
+    async function updateCompanion(partial) {
+      try {
+        if (window.agMascotAudio) {
+          if (typeof partial.soundMuted === 'boolean') {
+            window.agMascotAudio.setMuted(partial.soundMuted);
+          }
+          if (partial.mode) {
+            window.agMascotAudio.playMorph();
+          } else if (partial.mascotBehavior === 'sleep') {
+            window.agMascotAudio.playSleep();
+          } else {
+            window.agMascotAudio.playClick();
+          }
+        }
+        const res = await fetch(API_BASE + '/api/companion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(partial)
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.companion) {
+            renderCompanionUi(json.companion, currentData ? currentData.isAntigravityRunning : true);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to update companion settings:', err);
+      }
+    }
+
+    function toggleCompanionEnabled() {
+      const comp = (currentData && currentData.companion) ? currentData.companion : { enabled: true };
+      updateCompanion({ enabled: !comp.enabled });
+    }
+
+    function toggleCompanionMode() {
+      const comp = (currentData && currentData.companion) ? currentData.companion : { mode: 'mascot' };
+      updateCompanion({ mode: comp.mode === 'notch' ? 'mascot' : 'notch', enabled: true });
+    }
+
+    function cycleCompanionBehavior() {
+      const comp = (currentData && currentData.companion) ? currentData.companion : { mascotBehavior: 'sit_corner' };
+      const order = ['sit_corner', 'walk_follow', 'sleep'];
+      const next = order[(order.indexOf(comp.mascotBehavior) + 1) % order.length];
+      updateCompanion({ mascotBehavior: next, mode: 'mascot', enabled: true });
+    }
+
+    function cycleCompanionCorner() {
+      const comp = (currentData && currentData.companion) ? currentData.companion : { corner: 'bottom-right' };
+      const order = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
+      const next = order[(order.indexOf(comp.corner) + 1) % order.length];
+      updateCompanion({ corner: next, mascotBehavior: 'sit_corner', enabled: true });
+    }
+
+    function toggleCompanionSfx() {
+      const comp = (currentData && currentData.companion) ? currentData.companion : { soundMuted: false };
+      updateCompanion({ soundMuted: !comp.soundMuted });
+    }
+
+    function renderCompanionUi(comp, isAgRunning) {
+      if (!comp) return;
+      if (currentData) currentData.companion = comp;
+      if (window.agMascotAudio) window.agMascotAudio.setMuted(!!comp.soundMuted);
+
+      const btnEnabled = document.getElementById('btnCompEnabled');
+      const lblEnabled = document.getElementById('lblCompEnabled');
+      if (btnEnabled && lblEnabled) {
+        btnEnabled.classList.toggle('active', !!comp.enabled);
+        lblEnabled.innerText = 'Desktop Companion: ' + (comp.enabled ? 'ON' : 'OFF');
+      }
+
+      const btnMode = document.getElementById('btnCompMode');
+      const lblMode = document.getElementById('lblCompMode');
+      if (btnMode && lblMode) {
+        btnMode.classList.toggle('active', comp.mode === 'notch');
+        lblMode.innerText = comp.mode === 'notch' ? 'Mode: DYNAMIC NOTCH' : 'Mode: MASCOT PET';
+      }
+
+      const lblBeh = document.getElementById('lblCompBehavior');
+      if (lblBeh) {
+        const bMap = {
+          'sit_corner': 'Action: SIT IN CORNER',
+          'walk_follow': 'Action: WALK & FOLLOW',
+          'sleep': 'Action: SLEEPING (ZZZ)'
+        };
+        lblBeh.innerText = bMap[comp.mascotBehavior] || 'Action: SIT IN CORNER';
+      }
+
+      const lblCorner = document.getElementById('lblCompCorner');
+      if (lblCorner) {
+        lblCorner.innerText = 'Corner: ' + (comp.corner || 'bottom-right').toUpperCase();
+      }
+
+      const btnSfx = document.getElementById('btnCompSfx');
+      const lblSfx = document.getElementById('lblCompSfx');
+      if (btnSfx && lblSfx) {
+        btnSfx.classList.toggle('active', !comp.soundMuted);
+        lblSfx.innerText = comp.soundMuted ? '🔇 8-Bit SFX: MUTED' : '🔊 8-Bit SFX: ON';
+      }
+
+      const agChip = document.getElementById('agRunningChip');
+      if (agChip) {
+        const online = isAgRunning !== false;
+        agChip.innerText = online ? '● ANTIGRAVITY ONLINE' : '○ ANTIGRAVITY CLOSED';
+        agChip.style.color = online ? 'var(--emerald)' : 'var(--coral)';
+        agChip.style.borderColor = online ? 'rgba(52,245,164,0.35)' : 'rgba(255,94,126,0.35)';
+      }
+
+      // Sync Settings tab inputs
+      const setEn = document.getElementById('settingCompEnabled');
+      if (setEn) setEn.checked = !!comp.enabled;
+      const setMode = document.getElementById('settingCompMode');
+      if (setMode) setMode.value = comp.mode || 'mascot';
+      const setBeh = document.getElementById('settingCompBehavior');
+      if (setBeh) setBeh.value = comp.mascotBehavior || 'sit_corner';
+      const setCor = document.getElementById('settingCompCorner');
+      if (setCor) setCor.value = comp.corner || 'bottom-right';
+      const setMute = document.getElementById('settingCompMuteSfx');
+      if (setMute) setMute.checked = !!comp.soundMuted;
     }
 
     /* ------------------------------------------------------------------ */
@@ -1582,6 +2111,9 @@ export function getDashboardHtml(): string {
       } else if (nwSpan === '30d') {
         timeframeTitle = 'Session Token Volume (Last 30 Days)';
         filteredDaily = dailyAll.slice(-30);
+      } else if (nwSpan === '1y') {
+        timeframeTitle = 'Session Token Volume (Last 365 Days)';
+        filteredDaily = dailyAll.slice(-365);
       } else {
         timeframeTitle = 'Session Token Volume (All Time)';
         filteredDaily = dailyAll;
@@ -1986,11 +2518,74 @@ export function getDashboardHtml(): string {
       document.getElementById('kpiConvsCount').innerText = data.session.totalConversations;
       document.getElementById('kpiConvsSub').innerText = data.conversations.length + ' registered sessions';
 
-      // KPI Lifetime Hours
+      // KPI Lifetime Hours & 5-Window Time/Token Matrix
+      const tb = data.timeBreakdown || (data.session && data.session.timeBreakdown) || {
+        last24h: data.session ? data.session.elapsedSeconds : 0,
+        weekly: data.session ? data.session.lifetimeActiveSeconds : 0,
+        monthly: data.session ? data.session.lifetimeActiveSeconds : 0,
+        yearly: data.session ? data.session.lifetimeActiveSeconds : 0,
+        overall: data.session ? data.session.lifetimeActiveSeconds : 0
+      };
+      const tokB = data.tokenBreakdown || (data.session && data.session.tokenBreakdown) || {
+        last24h: data.session ? data.session.tokens : { totalTokens: 0 },
+        weekly: data.session ? data.session.tokens : { totalTokens: 0 },
+        monthly: data.session ? data.session.tokens : { totalTokens: 0 },
+        yearly: data.session ? data.session.tokens : { totalTokens: 0 },
+        overall: data.session ? data.session.tokens : { totalTokens: 0 }
+      };
+
+      const hrs24 = document.getElementById('hrs-24h');
+      const hrsWk = document.getElementById('hrs-weekly');
+      const hrsMo = document.getElementById('hrs-monthly');
+      const hrsYr = document.getElementById('hrs-yearly');
+      const hrsOv = document.getElementById('hrs-overall');
+      if (hrs24) hrs24.innerText = formatLifetimeHours(tb.last24h);
+      if (hrsWk) hrsWk.innerText = formatLifetimeHours(tb.weekly);
+      if (hrsMo) hrsMo.innerText = formatLifetimeHours(tb.monthly);
+      if (hrsYr) hrsYr.innerText = formatLifetimeHours(tb.yearly);
+      if (hrsOv) hrsOv.innerText = formatLifetimeHours(tb.overall);
+
+      const tok24 = document.getElementById('tok-24h');
+      const tokWk = document.getElementById('tok-weekly');
+      const tokMo = document.getElementById('tok-monthly');
+      const tokYr = document.getElementById('tok-yearly');
+      const tokOv = document.getElementById('tok-overall');
+      if (tok24) tok24.innerText = formatNumberShort((tokB.last24h && tokB.last24h.totalTokens) || 0) + ' tok';
+      if (tokWk) tokWk.innerText = formatNumberShort((tokB.weekly && tokB.weekly.totalTokens) || 0) + ' tok';
+      if (tokMo) tokMo.innerText = formatNumberShort((tokB.monthly && tokB.monthly.totalTokens) || 0) + ' tok';
+      if (tokYr) tokYr.innerText = formatNumberShort((tokB.yearly && tokB.yearly.totalTokens) || 0) + ' tok';
+      if (tokOv) tokOv.innerText = formatNumberShort((tokB.overall && tokB.overall.totalTokens) || 0) + ' tok';
+
       const lifetimeEl = document.getElementById('kpiLifetimeHours');
       if (lifetimeEl && data.session) {
-        const lifeSecs = typeof data.session.lifetimeActiveSeconds === 'number' ? data.session.lifetimeActiveSeconds : 0;
-        lifetimeEl.innerText = 'Overall: ' + formatLifetimeHours(lifeSecs);
+        const lifeSecs = typeof tb.overall === 'number' ? tb.overall : (data.session.lifetimeActiveSeconds || 0);
+        lifetimeEl.innerText = '24h: ' + formatLifetimeHours(tb.last24h || 0) + ' • Overall: ' + formatLifetimeHours(lifeSecs);
+      }
+
+      // Update Mascot Pedestal state & Companion controls
+      if (data.companion) {
+        renderCompanionUi(data.companion, data.isAntigravityRunning);
+      }
+      if (lastActiveAgentCount > 0 && activeCount === 0 && window.agMascotAudio) {
+        window.agMascotAudio.playComplete();
+      }
+      lastActiveAgentCount = activeCount;
+
+      if (data.isAntigravityRunning === false) {
+        setDashMascotState('offline', '"ANTIGRAVITY IDE CLOSED"', 'Discord RPC cleared • Waiting for launch');
+      } else if (data.companion && data.companion.mascotBehavior === 'sleep' && activeCount === 0) {
+        setDashMascotState('sleeping', '"ZZZ... RESTING CIRCUITS"', 'Click mascot to wake up');
+      } else if (activeCount > 0) {
+        const lead = data.activeAgents[0];
+        const mState = lead.status === 'running_tool' ? 'working' : 'thinking';
+        const speech = lead.status === 'running_tool'
+          ? '"EXECUTING ' + (lead.activeTool || 'TOOL').toUpperCase() + '!"'
+          : '"THINKING WITH ' + (lead.model || 'GEMINI').toUpperCase() + '..."';
+        setDashMascotState(mState, speech, activeCount + ' active agent' + (activeCount === 1 ? '' : 's') + ' • Zero-lag RPC live');
+      } else if (data.companion && data.companion.mascotBehavior === 'walk_follow') {
+        setDashMascotState('walking', '"FOLLOWING YOUR CURSOR!"', 'Walking on desktop • Click to command');
+      } else {
+        setDashMascotState('idle', '"IDLE IN ANTIGRAVITY"', 'Overall: ' + formatLifetimeHours(tb.overall || 0) + ' • ' + formatNumberShort(totalTok) + ' tokens');
       }
 
       // 5. Mirrored Wave Flow, Sparklines & Hourly Activity

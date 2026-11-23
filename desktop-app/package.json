@@ -1,0 +1,16 @@
+{
+  "name": "antigravity-presence-desktop",
+  "productName": "Antigravity Presence Desktop",
+  "version": "2.0.0",
+  "description": "Standalone Windows Desktop Companion, Interactive Mascot Pet, Windows Dynamic Notch, and Zero-Lag Discord RPC for Google Antigravity",
+  "main": "main.cjs",
+  "author": "itsjamiedev",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "overlay": "electron . --overlay-only"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0"
+  }
+}

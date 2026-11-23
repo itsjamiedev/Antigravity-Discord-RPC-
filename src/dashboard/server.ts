@@ -10,7 +10,9 @@
  *   - Editor state ingestion (`POST /api/editor`)
  */
 
+import fs from 'node:fs';
 import http from 'node:http';
+import os from 'node:os';
 import path from 'node:path';
 import type { ConfigManager } from '../config/privacy-config.js';
 import {
@@ -25,6 +27,7 @@ import { assertStrictlyWhitelisted } from '../forwarder/whitelist.js';
 import {
   DEFAULT_DAEMON_HOST,
   DEFAULT_DAEMON_PORT,
+  type CompanionSettings,
   type ManualEditorState,
   type PrivacySettings,
   type TrackerSnapshot,
@@ -33,10 +36,21 @@ import {
 import type { CentralTracker } from '../tracker/tracker.js';
 import { getDashboardHtml } from './html-content.js';
 
+export const DEFAULT_COMPANION_SETTINGS: CompanionSettings = {
+  enabled: true,
+  mode: 'mascot',
+  behavior: 'sit_corner',
+  corner: 'bottom-right',
+  sfxMuted: false,
+  scanlines: true,
+  isAntigravityRunning: true,
+};
+
 export interface DashboardServerOptions {
   host?: string;
   port?: number;
   spoolPath?: string;
+  companionConfigPath?: string;
   tracker: CentralTracker;
   presenceManager?: PresenceManager;
   discordClient?: DiscordIpcClient;
@@ -50,6 +64,8 @@ export interface DashboardFullState extends TrackerSnapshot {
     state: string;
   };
   settings: PrivacySettings;
+  companion?: CompanionSettings;
+  isAntigravityRunning?: boolean;
   workspaces?: {
     count: number;
     names: string[];
@@ -61,10 +77,12 @@ export class DashboardServer {
   private readonly host: string;
   private readonly port: number;
   private readonly spoolPath: string;
+  private readonly companionConfigPath: string;
   private readonly tracker: CentralTracker;
   private readonly presenceManager?: PresenceManager;
   private readonly discordClient?: DiscordIpcClient;
   private readonly configManager: ConfigManager;
+  private companionSettings: CompanionSettings;
   private readonly sseClients = new Set<http.ServerResponse>();
   private unsubscribeTracker?: () => void;
   private activeWindows = new Map<
@@ -76,10 +94,113 @@ export class DashboardServer {
     this.host = options.host ?? DEFAULT_DAEMON_HOST;
     this.port = options.port ?? DEFAULT_DAEMON_PORT;
     this.spoolPath = options.spoolPath ?? getDefaultSpoolPath();
+    this.companionConfigPath =
+      options.companionConfigPath ??
+      path.join(os.homedir(), '.gemini', 'antigravity-presence', 'companion.json');
     this.tracker = options.tracker;
     this.presenceManager = options.presenceManager;
     this.discordClient = options.discordClient;
     this.configManager = options.configManager;
+    this.companionSettings = this.loadCompanionSettings();
+  }
+
+  private loadCompanionSettings(): CompanionSettings {
+    try {
+      if (this.companionConfigPath !== ':memory:' && fs.existsSync(this.companionConfigPath)) {
+        const raw = JSON.parse(fs.readFileSync(this.companionConfigPath, 'utf8'));
+        if (raw && typeof raw === 'object') {
+          return {
+            enabled: typeof raw.enabled === 'boolean' ? raw.enabled : DEFAULT_COMPANION_SETTINGS.enabled,
+            mode: raw.mode === 'notch' ? 'notch' : 'mascot',
+            behavior:
+              raw.behavior === 'walk_follow' || raw.behavior === 'sleep'
+                ? raw.behavior
+                : 'sit_corner',
+            corner:
+              raw.corner === 'bottom-left' || raw.corner === 'top-right' || raw.corner === 'top-left'
+                ? raw.corner
+                : 'bottom-right',
+            sfxMuted: typeof raw.sfxMuted === 'boolean' ? raw.sfxMuted : false,
+            scanlines: typeof raw.scanlines === 'boolean' ? raw.scanlines : true,
+            isAntigravityRunning: true,
+          };
+        }
+      }
+    } catch {}
+    return { ...DEFAULT_COMPANION_SETTINGS };
+  }
+
+  private saveCompanionSettings(): void {
+    if (this.companionConfigPath === ':memory:') return;
+    try {
+      const dir = path.dirname(this.companionConfigPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(this.companionConfigPath, JSON.stringify(this.companionSettings, null, 2), 'utf8');
+    } catch {}
+  }
+
+  public getCompanionSettings(): CompanionSettings & {
+    mascotBehavior: CompanionSettings['behavior'];
+    soundMuted: boolean;
+  } {
+    return {
+      ...this.companionSettings,
+      mascotBehavior: this.companionSettings.behavior,
+      soundMuted: this.companionSettings.sfxMuted,
+    };
+  }
+
+  public updateCompanionSettings(
+    partial: Partial<CompanionSettings> & {
+      mascotBehavior?: CompanionSettings['behavior'];
+      soundMuted?: boolean;
+    }
+  ): CompanionSettings & {
+    mascotBehavior: CompanionSettings['behavior'];
+    soundMuted: boolean;
+  } {
+    const incomingBehavior = partial.behavior ?? partial.mascotBehavior;
+    const incomingMuted =
+      typeof partial.sfxMuted === 'boolean'
+        ? partial.sfxMuted
+        : typeof partial.soundMuted === 'boolean'
+          ? partial.soundMuted
+          : undefined;
+
+    const next: CompanionSettings = {
+      ...this.companionSettings,
+      ...(typeof partial.enabled === 'boolean' ? { enabled: partial.enabled } : {}),
+      ...(partial.mode === 'mascot' || partial.mode === 'notch' ? { mode: partial.mode } : {}),
+      ...(incomingBehavior === 'sit_corner' ||
+      incomingBehavior === 'walk_follow' ||
+      incomingBehavior === 'sleep'
+        ? { behavior: incomingBehavior }
+        : {}),
+      ...(partial.corner === 'bottom-right' ||
+      partial.corner === 'bottom-left' ||
+      partial.corner === 'top-right' ||
+      partial.corner === 'top-left'
+        ? { corner: partial.corner }
+        : {}),
+      ...(typeof incomingMuted === 'boolean' ? { sfxMuted: incomingMuted } : {}),
+      ...(typeof partial.scanlines === 'boolean' ? { scanlines: partial.scanlines } : {}),
+      ...(typeof partial.isAntigravityRunning === 'boolean'
+        ? { isAntigravityRunning: partial.isAntigravityRunning }
+        : {}),
+    };
+    this.companionSettings = next;
+    this.saveCompanionSettings();
+    this.broadcastUpdate();
+    return this.getCompanionSettings();
+  }
+
+  public setAntigravityRunning(isRunning: boolean): void {
+    if (this.companionSettings.isAntigravityRunning !== isRunning) {
+      this.companionSettings.isAntigravityRunning = isRunning;
+      this.broadcastUpdate();
+    }
   }
 
   public registerWindowWorkspaces(windowId: string, workspaceFolders: string[]): void {
@@ -124,6 +245,7 @@ export class DashboardServer {
     const discordState = this.discordClient?.getState() ?? 'disconnected';
     const settings = this.configManager.getSettings();
     const workspaces = this.getWorkspaceInfo();
+    const companion = this.getCompanionSettings();
 
     return {
       ...snapshot,
@@ -133,6 +255,8 @@ export class DashboardServer {
         state: discordState,
       },
       settings,
+      companion,
+      isAntigravityRunning: companion.isAntigravityRunning ?? true,
       workspaces,
     };
   }
@@ -309,7 +433,43 @@ export class DashboardServer {
         if (method === 'GET' && url === '/api/analytics') {
           const snap = this.tracker.getSnapshot();
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ dailyUsage: snap.dailyUsage }));
+          res.end(
+            JSON.stringify({
+              dailyUsage: snap.dailyUsage,
+              timeBreakdown: snap.timeBreakdown ?? snap.session?.timeBreakdown,
+              tokenBreakdown: snap.tokenBreakdown ?? snap.session?.tokenBreakdown,
+            })
+          );
+          return;
+        }
+
+        // REST API: Companion Settings (GET)
+        if (method === 'GET' && url === '/api/companion') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(this.getCompanionSettings()));
+          return;
+        }
+
+        // REST API: Companion Settings (POST update)
+        if (method === 'POST' && url === '/api/companion') {
+          this.readBody(req, res, 8192, (body) => {
+            try {
+              const parsed: unknown = JSON.parse(body);
+              if (typeof parsed !== 'object' || parsed === null) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Expected JSON object' }));
+                return;
+              }
+              const updated = this.updateCompanionSettings(
+                parsed as Partial<CompanionSettings>
+              );
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: true, companion: updated, ...updated }));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: String(err) }));
+            }
+          });
           return;
         }
 

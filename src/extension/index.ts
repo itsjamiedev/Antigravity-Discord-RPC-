@@ -299,6 +299,52 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
       updateStatusBar();
     }),
+    vscode.commands.registerCommand('antigravityPresence.toggleNotch', () => {
+      const payload = JSON.stringify({ enabled: true });
+      const req = http.request(
+        {
+          hostname: '127.0.0.1',
+          port: 41177,
+          path: '/api/companion',
+          method: 'GET',
+          timeout: 1500,
+        },
+        (res) => {
+          let raw = '';
+          res.on('data', (c) => (raw += c));
+          res.on('end', () => {
+            try {
+              const cur = JSON.parse(raw);
+              const nextMode = cur.mode === 'notch' ? 'mascot' : 'notch';
+              const body = JSON.stringify({ enabled: true, mode: nextMode });
+              const postReq = http.request(
+                {
+                  hostname: '127.0.0.1',
+                  port: 41177,
+                  path: '/api/companion',
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(body),
+                  },
+                },
+                (pRes) => pRes.resume()
+              );
+              postReq.on('error', () => {});
+              postReq.write(body);
+              postReq.end();
+              vscode.window.showInformationMessage(
+                `Antigravity Presence: Desktop Overlay switched to ${nextMode === 'notch' ? 'Windows Dynamic Notch' : 'Desktop Mascot Pet'}.`
+              );
+            } catch {}
+          });
+        }
+      );
+      req.on('error', () => {
+        void payload;
+      });
+      req.end();
+    }),
     vscode.commands.registerCommand('antigravityPresence.reloadWindow', () => {
       void vscode.commands.executeCommand('workbench.action.reloadWindow');
     })

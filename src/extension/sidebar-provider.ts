@@ -10,9 +10,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type * as vscode from 'vscode';
-import type { TrackerSnapshot, ModelStats, TokenUsageRecord, Agent } from '../shared/types.js';
+import type { TrackerSnapshot, ModelStats, TokenUsageRecord, Agent, TimeBreakdown } from '../shared/types.js';
 import { getGroundTruthConversationStatuses } from './agent-watcher.js';
 import { formatLifetimeHours, formatModelDisplayName } from '../discord/presence-manager.js';
+import { getMascotCss, getMascotSfxJs, getMascotSvgHtml } from '../shared/mascot-rig.js';
 
 export function formatNumber(n: number): string {
   if (typeof n !== 'number' || !Number.isFinite(n)) return '0';
@@ -46,6 +47,7 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
     const baseDir = path.join(os.homedir(), '.gemini', 'antigravity');
     const sessionFile = path.join(baseDir, 'presence-session.json');
     const tokensFile = path.join(baseDir, 'presence-tokens.json');
+    const timeFile = path.join(baseDir, 'presence-time.json');
 
     let startedAt = new Date().toISOString();
     let isPaused = false;
@@ -168,6 +170,50 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
       source: 'transcript_exact',
     };
 
+    let timeBreakdown: TimeBreakdown = {
+      last24h: 0,
+      weekly: lifetimeActiveSeconds,
+      monthly: lifetimeActiveSeconds,
+      yearly: lifetimeActiveSeconds,
+      overall: lifetimeActiveSeconds,
+    };
+
+    if (fs.existsSync(timeFile)) {
+      try {
+        const tData = JSON.parse(fs.readFileSync(timeFile, 'utf8'));
+        if (tData && typeof tData.overallActiveSeconds === 'number') {
+          lifetimeActiveSeconds = Math.max(lifetimeActiveSeconds, tData.overallActiveSeconds);
+          const now = Date.now();
+          let last24h = 0;
+          if (tData.hourlyActiveSeconds && typeof tData.hourlyActiveSeconds === 'object') {
+            for (let i = 0; i < 24; i++) {
+              const d = new Date(now - i * 3600_000);
+              const k = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}T${String(d.getUTCHours()).padStart(2, '0')}`;
+              last24h += Number(tData.hourlyActiveSeconds[k] || 0);
+            }
+          }
+          const sumDays = (days: number) => {
+            let s = 0;
+            if (tData.dailyActiveSeconds && typeof tData.dailyActiveSeconds === 'object') {
+              for (let i = 0; i < days; i++) {
+                const d = new Date(now - i * 86400_000);
+                const k = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+                s += Number(tData.dailyActiveSeconds[k] || 0);
+              }
+            }
+            return s;
+          };
+          timeBreakdown = {
+            last24h,
+            weekly: Math.max(last24h, sumDays(7)),
+            monthly: Math.max(last24h, sumDays(30)),
+            yearly: Math.max(last24h, sumDays(365)),
+            overall: lifetimeActiveSeconds,
+          };
+        }
+      } catch {}
+    }
+
     return {
       session: {
         sessionId,
@@ -180,9 +226,11 @@ export function loadDiskFallbackSnapshot(): TrackerSnapshot | null {
         sessionTokens,
         lifetimeTokens: tokenRec,
         lifetimeActiveSeconds,
+        timeBreakdown,
       },
       sessionTokens,
       lifetimeTokens: tokenRec,
+      timeBreakdown,
       agents: runningAgents,
       activeAgents: runningAgents,
       conversations: [],
@@ -256,11 +304,28 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   const startedAt = effective.session.startedAt ?? new Date().toISOString();
   const elapsedSec = Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000));
   const timeFormatted = formatDuration(elapsedSec);
+  const tb =
+    snapshot?.timeBreakdown ??
+    snapshot?.session?.timeBreakdown ??
+    diskFallback?.timeBreakdown ??
+    diskFallback?.session?.timeBreakdown;
   const lifetimeActiveSecs =
+    tb?.overall ??
     snapshot?.session?.lifetimeActiveSeconds ??
     diskFallback?.session?.lifetimeActiveSeconds ??
     0;
+  const last24hSecs = tb?.last24h ?? Math.min(elapsedSec, lifetimeActiveSecs || elapsedSec);
   const lifetimeHoursFormatted = formatLifetimeHours(lifetimeActiveSecs);
+  const last24hHoursFormatted = formatLifetimeHours(last24hSecs);
+
+  const sideMascotState = isAgentActive
+    ? activeAgent?.status === 'running_tool'
+      ? 'working'
+      : 'thinking'
+    : 'idle';
+  const sideMascotSvg = getMascotSvgHtml('side', 60, sideMascotState);
+  const sideMascotCss = getMascotCss();
+  const sideMascotSfx = getMascotSfxJs();
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -271,23 +336,107 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   <title>Antigravity Presence</title>
   <style>
     :root {
-      --bg: #070709;
-      --card: #0c0c10;
-      --card-inner: #111116;
-      --border: rgba(255, 255, 255, 0.08);
-      --border-hover: rgba(232, 255, 31, 0.3);
-      --acc: #E8FF1F;
-      --acc-glow: rgba(232, 255, 31, 0.15);
-      --emerald: #10b981;
-      --lavender: #a9b2ff;
-      --cyan: #38bdf8;
-      --coral: #ffb37a;
-      --t1: #ffffff;
-      --t2: rgba(255, 255, 255, 0.68);
-      --t3: rgba(255, 255, 255, 0.38);
+      --bg: #0B0C11;
+      --card: #131620;
+      --card-inner: #0D0F17;
+      --border: #252A3D;
+      --border-hover: rgba(255, 184, 77, 0.5);
+      --acc: #FFB84D;
+      --acc-glow: rgba(255, 184, 77, 0.16);
+      --emerald: #34F5A4;
+      --lavender: #B4A2FF;
+      --cyan: #38E4FF;
+      --coral: #FF5E7E;
+      --t1: #F6F1E9;
+      --t2: rgba(246, 241, 233, 0.72);
+      --t3: rgba(246, 241, 233, 0.42);
       --ease: cubic-bezier(0.32, 0.72, 0, 1);
       --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    ${sideMascotCss}
+
+    /* RETRO SIDEBAR MASCOT STAGE & NOTCH DOCK */
+    .side-mascot-stage {
+      background: linear-gradient(145deg, #161A27 0%, #0E1018 100%);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 9px;
+      margin-bottom: 7px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      cursor: pointer;
+      transition: border-color 0.2s var(--ease);
+    }
+    .side-mascot-stage:hover {
+      border-color: var(--acc);
+    }
+    .side-mascot-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .side-mascot-speech {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--acc);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .side-time-pills {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .side-time-pill {
+      font-family: var(--font-mono);
+      font-size: 8.5px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: rgba(255, 184, 77, 0.1);
+      border: 1px solid rgba(255, 184, 77, 0.28);
+      color: var(--t1);
+    }
+    .side-companion-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      margin-bottom: 7px;
+    }
+    .side-retro-btn {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      padding: 5px 6px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--t2);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.45);
+      transition: all 0.15s var(--ease);
+    }
+    .side-retro-btn:hover {
+      border-color: var(--acc);
+      color: var(--t1);
+      transform: translateY(-1px);
+    }
+    .side-retro-btn.active {
+      border-color: var(--emerald);
+      color: var(--emerald);
+      background: rgba(52, 245, 164, 0.08);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -696,6 +845,34 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     </div>
   </div>
 
+  <!-- RETRO ARCADE MASCOT STAGE -->
+  <div class="side-mascot-stage" onclick="chirpSideMascot()" title="Click mascot to chirp (8-bit SFX)">
+    ${sideMascotSvg}
+    <div class="side-mascot-info">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="eyebrow" style="color:var(--emerald);" id="sideMascotBadge">${sideMascotState.toUpperCase()}</span>
+        <span class="chip mono" style="font-size:8px;" id="sideCompModeChip">MASCOT + NOTCH</span>
+      </div>
+      <div class="side-mascot-speech" id="sideMascotSpeech">
+        ${isAgentActive ? `"${activeAgent?.model ?? 'Agent'} Active!"` : '"Ready in Antigravity!"'}
+      </div>
+      <div class="side-time-pills">
+        <span class="side-time-pill" id="side24hHours">24H: ${last24hHoursFormatted}</span>
+        <span class="side-time-pill" id="sideOverallBadge">ALL: ${lifetimeHoursFormatted}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESKTOP NOTCH & MASCOT PET QUICK CONTROLS -->
+  <div class="side-companion-bar">
+    <button class="side-retro-btn" id="btnSideNotch" onclick="toggleSideNotch()" title="Toggle between Windows Dynamic Notch and Desktop Mascot">
+      <span id="lblSideNotch">⚡ Toggle Notch</span>
+    </button>
+    <button class="side-retro-btn" id="btnSideBehavior" onclick="cycleSideBehavior()" title="Command Desktop Mascot: Sit Corner / Walk & Follow / Sleep">
+      <span id="lblSideBehavior">🐾 Mascot: Corner</span>
+    </button>
+  </div>
+
   <!-- DUAL DASHBOARD ACCESS HUB (IN-IDE + BROWSER) -->
   <div class="hub-grid">
     <div class="hub-tile primary" id="btnOpenFull" onclick="openFullDashboard()" title="Open interactive Bento dashboard as an editor tab inside Antigravity IDE">
@@ -893,11 +1070,80 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   </div>
 
   <script>
+    ${sideMascotSfx}
     const vscode = (typeof acquireVsCodeApi === 'function') ? acquireVsCodeApi() : null;
     let isPaused = false;
     let startedAtIso = "${startedAt}";
     let timerInterval = null;
     let hasReceivedUpdate = false;
+    let currentCompanion = { enabled: true, mode: 'mascot', mascotBehavior: 'sit_corner' };
+
+    function setSideMascotState(state, speech) {
+      const rig = document.getElementById('mascot-rig-side');
+      const badge = document.getElementById('sideMascotBadge');
+      const sp = document.getElementById('sideMascotSpeech');
+      if (rig) rig.setAttribute('data-state', state);
+      if (badge) badge.innerText = state.toUpperCase();
+      if (sp && speech) sp.innerText = speech;
+    }
+
+    function chirpSideMascot() {
+      if (window.agMascotAudio) window.agMascotAudio.playWake();
+      const rig = document.getElementById('mascot-rig-side');
+      const prev = rig ? (rig.getAttribute('data-state') || 'idle') : 'idle';
+      setSideMascotState('surprised', '"BEEP! RETRO RIG READY!"');
+      setTimeout(function() {
+        setSideMascotState(prev, prev === 'working' || prev === 'thinking' ? '"Agent Working..."' : '"Ready in Antigravity!"');
+      }, 950);
+    }
+
+    async function postSideCompanion(partial) {
+      try {
+        if (window.agMascotAudio) {
+          if (partial.mode) window.agMascotAudio.playMorph();
+          else window.agMascotAudio.playClick();
+        }
+        const res = await fetch('http://127.0.0.1:41177/api/companion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(partial)
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.companion) syncSideCompanionUi(json.companion);
+        }
+      } catch {}
+    }
+
+    function syncSideCompanionUi(comp) {
+      if (!comp) return;
+      currentCompanion = comp;
+      const chip = document.getElementById('sideCompModeChip');
+      if (chip) chip.innerText = !comp.enabled ? 'OVERLAY OFF' : (comp.mode === 'notch' ? 'NOTCH ACTIVE' : 'MASCOT ACTIVE');
+      const btnN = document.getElementById('btnSideNotch');
+      const lblN = document.getElementById('lblSideNotch');
+      if (btnN && lblN) {
+        btnN.classList.toggle('active', comp.enabled && comp.mode === 'notch');
+        lblN.innerText = (comp.enabled && comp.mode === 'notch') ? '⚡ Notch: ON' : '⚡ Toggle Notch';
+      }
+      const lblB = document.getElementById('lblSideBehavior');
+      if (lblB) {
+        const map = { 'sit_corner': '🐾 Mascot: Corner', 'walk_follow': '🐾 Mascot: Follow', 'sleep': '💤 Mascot: Sleep' };
+        lblB.innerText = map[comp.mascotBehavior] || '🐾 Mascot: Corner';
+      }
+    }
+
+    function toggleSideNotch() {
+      const nextMode = (currentCompanion.enabled && currentCompanion.mode === 'notch') ? 'mascot' : 'notch';
+      postSideCompanion({ enabled: true, mode: nextMode });
+      if (vscode) vscode.postMessage({ command: 'toggleNotch' });
+    }
+
+    function cycleSideBehavior() {
+      const order = ['sit_corner', 'walk_follow', 'sleep'];
+      const next = order[(order.indexOf(currentCompanion.mascotBehavior) + 1) % order.length];
+      postSideCompanion({ enabled: true, mode: 'mascot', mascotBehavior: next });
+    }
 
     function formatNumberJs(n) {
       if (typeof n !== 'number' || !Number.isFinite(n)) return '0';
@@ -999,13 +1245,39 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
         startedAtIso = snap.session.startedAt;
         startTimer(startedAtIso, isPaused);
       }
+      const tb = snap.timeBreakdown || (snap.session && snap.session.timeBreakdown);
+      const lifeSecs = (tb && typeof tb.overall === 'number')
+        ? tb.overall
+        : (snap.session && typeof snap.session.lifetimeActiveSeconds === 'number' ? snap.session.lifetimeActiveSeconds : 0);
+      const last24Secs = (tb && typeof tb.last24h === 'number') ? tb.last24h : lifeSecs;
+
       const lifeHoursEl = document.getElementById('sideLifetimeHours');
-      if (lifeHoursEl && snap.session && typeof snap.session.lifetimeActiveSeconds === 'number') {
-        lifeHoursEl.innerText = 'Overall: ' + formatLifetimeHoursJs(snap.session.lifetimeActiveSeconds);
+      if (lifeHoursEl) {
+        lifeHoursEl.innerText = 'Overall: ' + formatLifetimeHoursJs(lifeSecs);
+      }
+      const b24El = document.getElementById('side24hHours');
+      if (b24El) {
+        b24El.innerText = '24H: ' + formatLifetimeHoursJs(last24Secs);
+      }
+      const bAllEl = document.getElementById('sideOverallBadge');
+      if (bAllEl) {
+        bAllEl.innerText = 'ALL: ' + formatLifetimeHoursJs(lifeSecs);
+      }
+      if (snap.companion) {
+        syncSideCompanionUi(snap.companion);
       }
 
-      // Update Active Agents Radar
+      // Update Active Agents Radar & Mascot Rig
       const agents = snap.activeAgents || [];
+      if (agents.length > 0) {
+        const lead = agents[0];
+        const st = lead.status === 'running_tool' ? 'working' : 'thinking';
+        setSideMascotState(st, '"' + (lead.model || 'Agent') + (lead.activeTool ? ' • ' + lead.activeTool : ' Thinking...') + '"');
+      } else if (snap.companion && snap.companion.mascotBehavior === 'sleep') {
+        setSideMascotState('sleeping', '"Zzz... Resting circuits"');
+      } else {
+        setSideMascotState('idle', '"Ready in Antigravity!"');
+      }
       const countEl = document.getElementById('sideAgentCountChip');
       if (countEl) countEl.innerText = agents.length + ' ACTIVE';
 
@@ -1239,6 +1511,9 @@ export class SidebarDashboardProvider implements vscode.WebviewViewProvider {
           break;
         case 'reconnectDiscord':
           void this.getVscode().commands.executeCommand('antigravityPresence.reconnectDiscord');
+          break;
+        case 'toggleNotch':
+          void this.getVscode().commands.executeCommand('antigravityPresence.toggleNotch');
           break;
       }
     });

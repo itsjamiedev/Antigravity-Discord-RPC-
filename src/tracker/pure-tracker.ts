@@ -22,6 +22,7 @@ import type {
 import type { AgentWatcherState } from '../extension/agent-watcher.js';
 import { TokenStore } from './token-store.js';
 import { SessionManager, type PersistentSessionState } from './session-manager.js';
+import { TimeLedger } from './time-ledger.js';
 
 export class PureTracker {
   private session: Session;
@@ -35,12 +36,28 @@ export class PureTracker {
   private heartbeatTimer: NodeJS.Timeout | null = null;
   private tokenStore: TokenStore;
   private sessionManager: SessionManager;
+  private timeLedger: TimeLedger;
   private syncedModelStats: ModelStats[] = [];
   private sessionTokens: TokenUsageRecord;
   private initialLifetimeTokens: number;
 
-  constructor(_isLeader: boolean = false, customTokenStorePath?: string, customSessionFilePath?: string) {
+  constructor(
+    _isLeader: boolean = false,
+    customTokenStorePath?: string,
+    customSessionFilePath?: string,
+    customTimeLedgerPath?: string
+  ) {
     this.sessionManager = new SessionManager(customSessionFilePath);
+    const derivedTimePath =
+      customTimeLedgerPath ??
+      (customSessionFilePath
+        ? path.join(path.dirname(customSessionFilePath), 'presence-time.json')
+        : customTokenStorePath
+          ? path.join(path.dirname(customTokenStorePath), 'presence-time.json')
+          : undefined);
+    this.timeLedger = new TimeLedger(derivedTimePath, customSessionFilePath);
+    this.timeLedger.syncMinimumOverallSeconds(this.sessionManager.getLifetimeActiveSeconds());
+
     const now = new Date().toISOString();
     this.startTime = now;
     this.tokenStore = new TokenStore(customTokenStorePath);
@@ -63,6 +80,8 @@ export class PureTracker {
       this.sessionTokens.totalTokens = diff;
       this.sessionTokens.outputTokens = diff;
     }
+    const initialTimeBreakdown = this.timeLedger.getBreakdown(Date.now(), this.isPaused);
+    const initialTokenBreakdown = this.tokenStore.getTokenBreakdown();
     this.session = {
       sessionId: 'ext-session-' + Date.now(),
       startedAt: this.startTime,
@@ -73,7 +92,12 @@ export class PureTracker {
       tokens: initialTokens,
       sessionTokens: { ...this.sessionTokens },
       lifetimeTokens: { ...initialTokens },
-      lifetimeActiveSeconds: this.sessionManager.getLifetimeActiveSeconds(),
+      lifetimeActiveSeconds: Math.max(
+        this.sessionManager.getLifetimeActiveSeconds(),
+        initialTimeBreakdown.overall
+      ),
+      timeBreakdown: initialTimeBreakdown,
+      tokenBreakdown: initialTokenBreakdown,
     };
   }
 
@@ -81,7 +105,12 @@ export class PureTracker {
     return this.sessionManager;
   }
 
+  public getTimeLedger(): TimeLedger {
+    return this.timeLedger;
+  }
+
   public pauseSession(): PersistentSessionState {
+    this.timeLedger.recordTick(Date.now(), false);
     this.isPaused = true;
     const pausedState = this.sessionManager.pauseSession(
       this.session.tokens,
@@ -92,6 +121,7 @@ export class PureTracker {
   }
 
   public resumeSession(): { startedAt: string; elapsedSeconds: number } {
+    this.timeLedger.recordTick(Date.now(), true);
     this.isPaused = false;
     const resumed = this.sessionManager.resumeSession();
     this.startTime = resumed.startedAt;
@@ -152,6 +182,7 @@ export class PureTracker {
     if (this.heartbeatTimer) return;
     this.heartbeatTimer = setInterval(() => {
       this.sessionManager.recordHeartbeat();
+      this.timeLedger.recordTick(Date.now(), this.isPaused);
     }, 10_000);
     this.heartbeatTimer.unref?.();
   }
@@ -163,6 +194,7 @@ export class PureTracker {
       this.session.startedAt = state.startedAt;
     }
     this.sessionManager.recordHeartbeat();
+    this.timeLedger.recordTick(Date.now(), this.isPaused);
     this.startHeartbeat();
   }
 
@@ -170,6 +202,10 @@ export class PureTracker {
     if (!snap) return;
 
     if (snap.session) {
+      const syncedTimeBreakdown =
+        snap.session.timeBreakdown ?? snap.timeBreakdown ?? this.session.timeBreakdown;
+      const syncedTokenBreakdown =
+        snap.session.tokenBreakdown ?? snap.tokenBreakdown ?? this.session.tokenBreakdown;
       this.session = {
         ...this.session,
         ...snap.session,
@@ -186,6 +222,8 @@ export class PureTracker {
           typeof snap.session.lifetimeActiveSeconds === 'number'
             ? snap.session.lifetimeActiveSeconds
             : this.session.lifetimeActiveSeconds,
+        timeBreakdown: syncedTimeBreakdown,
+        tokenBreakdown: syncedTokenBreakdown,
       };
       if (snap.session.sessionTokens || snap.sessionTokens) {
         this.sessionTokens = {
@@ -426,6 +464,29 @@ export class PureTracker {
         : this.syncedModelStats;
     const dailyUsage = this.tokenStore.getDailyUsage();
 
+    const localTimeBreakdown = this.timeLedger.getBreakdown(Date.now(), this.isPaused);
+    const effectiveOverallSecs = Math.max(
+      this.session.lifetimeActiveSeconds ?? 0,
+      this.sessionManager.getLifetimeActiveSeconds(),
+      localTimeBreakdown.overall
+    );
+    const effectiveTimeBreakdown = {
+      ...localTimeBreakdown,
+      overall: effectiveOverallSecs,
+    };
+
+    const localTokenBreakdown = this.tokenStore.getTokenBreakdown();
+    const effectiveTokenBreakdown =
+      localTokenBreakdown.overall.totalTokens > 0
+        ? localTokenBreakdown
+        : (this.session.tokenBreakdown ?? {
+            last24h: effectiveTokens,
+            weekly: effectiveTokens,
+            monthly: effectiveTokens,
+            yearly: effectiveTokens,
+            overall: effectiveTokens,
+          });
+
     return {
       session: {
         ...this.session,
@@ -433,13 +494,14 @@ export class PureTracker {
         tokens: effectiveTokens,
         sessionTokens: { ...this.sessionTokens },
         lifetimeTokens: { ...effectiveTokens },
-        lifetimeActiveSeconds: Math.max(
-          this.session.lifetimeActiveSeconds ?? 0,
-          this.sessionManager.getLifetimeActiveSeconds()
-        ),
+        lifetimeActiveSeconds: effectiveOverallSecs,
+        timeBreakdown: effectiveTimeBreakdown,
+        tokenBreakdown: effectiveTokenBreakdown,
       },
       sessionTokens: { ...this.sessionTokens },
       lifetimeTokens: { ...effectiveTokens },
+      timeBreakdown: effectiveTimeBreakdown,
+      tokenBreakdown: effectiveTokenBreakdown,
       agents: agentsList,
       activeAgents: activeAgentsList,
       conversations: Array.from(this.conversations.values()),
@@ -466,6 +528,7 @@ export class PureTracker {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = null;
     }
+    this.timeLedger.recordTick(Date.now(), this.isPaused);
     this.tokenStore.close();
     this.listeners.clear();
   }

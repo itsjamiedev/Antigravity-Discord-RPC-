@@ -61,6 +61,10 @@
         "title": "Antigravity Presence: Toggle Discord Presence"
       },
       {
+        "command": "antigravityPresence.toggleNotch",
+        "title": "Antigravity Presence: Toggle Windows Dynamic Notch / Desktop Mascot"
+      },
+      {
         "command": "antigravityPresence.reloadWindow",
         "title": "Antigravity Presence: Reload Extension Host Window"
       }

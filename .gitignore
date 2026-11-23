@@ -1,4 +1,7 @@
 node_modules/
+desktop-app/node_modules/
+desktop-app/dist/
+desktop-app/release/
 dist/
 build/
 coverage/
