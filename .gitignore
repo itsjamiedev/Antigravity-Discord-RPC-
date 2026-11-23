@@ -6,6 +6,8 @@ dist/
 build/
 coverage/
 
+*.vsix
+
 # Local research logs containing raw agent payloads
 research/raw-events.jsonl
 *.log
