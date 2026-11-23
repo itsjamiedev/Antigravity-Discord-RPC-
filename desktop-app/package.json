@@ -1,7 +1,7 @@
 {
   "name": "antigravity-presence-desktop",
   "productName": "Antigravity Presence",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Standalone Windows Desktop Companion, Self-Provisioning Antigravity IDE Extension Installer, Interactive Mascot Pet, Windows Dynamic Notch, and Zero-Lag Discord RPC",
   "main": "main.cjs",
   "author": "itsjamiedev",

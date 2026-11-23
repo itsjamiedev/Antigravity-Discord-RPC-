@@ -339,7 +339,6 @@ function createOverlayWindow() {
     transparent: true,
     backgroundColor: '#00000000',
     frame: false,
-    titleBarStyle: 'hidden',
     thickFrame: false,
     resizable: false,
     movable: false,
@@ -556,6 +555,13 @@ ipcMain.on('overlay:set-ignore-mouse', (_event, ignore) => {
 
 ipcMain.on('desktop:open-dashboard', () => {
   showDashboardWindow();
+});
+
+ipcMain.on('desktop:focus-ide', () => {
+  try {
+    const { exec } = require('child_process');
+    exec('powershell -Command "$p = Get-Process Antigravity -ErrorAction SilentlyContinue | Select-Object -First 1; if ($p) { (New-Object -ComObject WScript.Shell).AppActivate($p.Id) }"');
+  } catch {}
 });
 
 ipcMain.on('desktop:open-installer', () => {

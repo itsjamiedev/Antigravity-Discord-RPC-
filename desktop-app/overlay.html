@@ -9,12 +9,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;700&family=Geist:wght@500;600;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      /* Apple Liquid Glass / Frosted Obsidian Approximation (per design-taste-frontend Section 2.B) */
-      --glass-island: linear-gradient(180deg, rgba(11, 14, 22, 0.88) 0%, rgba(6, 8, 13, 0.94) 100%);
-      --glass-panel: rgba(14, 18, 28, 0.72);
-      --glass-pill: rgba(255, 255, 255, 0.06);
-      --glass-border: rgba(255, 255, 255, 0.15);
-      --glass-border-strong: rgba(255, 255, 255, 0.26);
+      /* Apple Liquid Glass Aesthetics (iOS Dynamic Island & Frosted Obsidian) */
+      --glass-island: linear-gradient(180deg, rgba(16, 20, 32, 0.90) 0%, rgba(8, 10, 18, 0.96) 100%);
+      --glass-panel: rgba(14, 18, 28, 0.88);
+      --glass-pill: rgba(255, 255, 255, 0.08);
+      --glass-border: rgba(255, 255, 255, 0.16);
+      --glass-border-strong: rgba(255, 255, 255, 0.28);
       --acc: #FFB84D;
       --emerald: #34F5A4;
       --cyan: #38E4FF;
@@ -25,7 +25,12 @@
       --font-mc: 'Minecraft', 'Minecraft Seven', 'Minecraftia', 'Silkscreen', 'Geist Mono', monospace;
       --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       --font-mono: 'Geist Mono', Consolas, monospace;
-      --spring: cubic-bezier(0.22, 1, 0.36, 1);
+
+      /* Apple Fluid Spring Physics Curves */
+      --spring-island: cubic-bezier(0.16, 1, 0.3, 1);
+      --spring-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --spring-smooth: cubic-bezier(0.32, 0.72, 0, 1);
+      --spring-mascot: cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     * {
@@ -35,10 +40,15 @@
       user-select: none;
     }
 
+    /* Zero-border frameless root (Eliminates Windows 11 DWM white line) */
     html, body {
       width: 100vw;
       height: 100vh;
       overflow: hidden;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      outline: 0 !important;
       background: transparent !important;
       font-family: var(--font-sans);
       color: var(--t1);
@@ -55,14 +65,16 @@
     /* ================================================================== */
     .ag-notch-wrapper {
       position: fixed;
-      top: 8px;
+      top: 10px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 9999;
       display: flex;
       flex-direction: column;
       align-items: center;
-      transition: opacity 0.26s var(--spring), transform 0.28s var(--spring);
+      border: 0 !important;
+      outline: 0 !important;
+      transition: opacity 0.28s var(--spring-smooth), transform 0.32s var(--spring-island);
     }
 
     .ag-notch-wrapper.hidden {
@@ -73,35 +85,51 @@
 
     .ag-notch-pill {
       background: var(--glass-island);
-      backdrop-filter: blur(26px) saturate(190%);
-      -webkit-backdrop-filter: blur(26px) saturate(190%);
+      backdrop-filter: blur(28px) saturate(200%);
+      -webkit-backdrop-filter: blur(28px) saturate(200%);
       border: 1px solid var(--glass-border);
       border-radius: 999px;
-      padding: 5px 12px;
+      padding: 5px 13px;
       min-width: 196px;
       box-shadow:
-        0 12px 32px -6px rgba(0, 0, 0, 0.78),
-        inset 0 1px 0 rgba(255, 255, 255, 0.24),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+        0 14px 34px -4px rgba(0, 0, 0, 0.82),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        inset 0 2px 8px rgba(255, 255, 255, 0.08);
       cursor: pointer;
+      position: relative;
+      overflow: hidden;
       transition:
-        min-width 0.32s var(--spring),
-        border-radius 0.32s var(--spring),
-        padding 0.32s var(--spring),
+        min-width 0.36s var(--spring-island),
+        border-radius 0.36s var(--spring-island),
+        padding 0.36s var(--spring-island),
         border-color 0.22s ease,
         box-shadow 0.26s ease;
+    }
+
+    /* Dynamic Halo Glowing Rim */
+    .ag-notch-pill::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.5) 50%, transparent 100%);
+      opacity: 0.8;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
     }
 
     .ag-notch-pill:hover,
     .ag-notch-pill.expanded {
       border-color: var(--glass-border-strong);
-      border-radius: 22px;
-      min-width: 364px;
-      padding: 10px 14px 12px;
+      border-radius: 26px;
+      min-width: 374px;
+      padding: 10px 15px 13px;
       box-shadow:
-        0 18px 42px -6px rgba(0, 0, 0, 0.85),
-        inset 0 1px 0 rgba(255, 255, 255, 0.32),
-        0 0 22px rgba(52, 245, 164, 0.12);
+        0 20px 48px -6px rgba(0, 0, 0, 0.88),
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        0 0 24px rgba(52, 245, 164, 0.15);
     }
 
     .ag-notch-bar {
@@ -114,7 +142,7 @@
     .ag-notch-left {
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
       min-width: 0;
     }
 
@@ -127,29 +155,30 @@
     }
 
     .ag-notch-led {
-      width: 7px;
-      height: 7px;
+      width: 7.5px;
+      height: 7.5px;
       border-radius: 50%;
       background: var(--emerald);
       box-shadow: 0 0 8px var(--emerald);
       flex-shrink: 0;
+      transition: background 0.2s ease, box-shadow 0.2s ease;
     }
 
     .ag-notch-led.idle {
       background: var(--acc);
-      box-shadow: 0 0 6px var(--acc);
+      box-shadow: 0 0 7px var(--acc);
     }
 
     .ag-notch-led.offline {
       background: var(--coral);
-      box-shadow: 0 0 6px var(--coral);
+      box-shadow: 0 0 7px var(--coral);
     }
 
     .ag-notch-status {
       font-family: var(--font-mc);
       font-size: 10px;
       color: var(--t1);
-      letter-spacing: 0.01em;
+      letter-spacing: 0.02em;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -170,8 +199,8 @@
       color: var(--acc);
       padding: 1.5px 7px;
       border-radius: 999px;
-      background: rgba(255, 184, 77, 0.12);
-      border: 1px solid rgba(255, 184, 77, 0.26);
+      background: rgba(255, 184, 77, 0.14);
+      border: 1px solid rgba(255, 184, 77, 0.3);
       max-width: 130px;
       white-space: nowrap;
       overflow: hidden;
@@ -181,105 +210,114 @@
     .ag-notch-timer {
       font-family: var(--font-mc);
       font-size: 9.5px;
-      color: var(--emerald);
+      color: var(--cyan);
     }
 
-    /* Expanded Liquid Glass Drawer */
+    /* Expanded Drawer Section */
     .ag-notch-drawer {
       display: none;
-      margin-top: 9px;
-      padding-top: 9px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: default;
     }
 
-    .ag-notch-pill:hover .ag-notch-drawer,
     .ag-notch-pill.expanded .ag-notch-drawer {
       display: flex;
+      animation: agDrawerFade 0.26s var(--spring-smooth);
+    }
+
+    @keyframes agDrawerFade {
+      0% { opacity: 0; transform: translateY(-4px); }
+      100% { opacity: 1; transform: translateY(0); }
     }
 
     .ag-notch-metrics {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 5px;
+      gap: 6px;
     }
 
     .ag-notch-metric {
-      background: var(--glass-pill);
-      border: 1px solid rgba(255, 255, 255, 0.09);
-      border-radius: 10px;
-      padding: 5px 6px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 9px;
+      padding: 6px 4px;
       text-align: center;
     }
 
     .ag-notch-metric .lbl {
-      font-size: 9px;
-      font-weight: 600;
+      font-family: var(--font-mc);
+      font-size: 8px;
       color: var(--t3);
+      margin-bottom: 2px;
     }
 
     .ag-notch-metric .val {
-      font-family: var(--font-mc);
-      font-size: 10.5px;
-      color: var(--t1);
-      margin-top: 2px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--emerald);
     }
 
     .ag-notch-actions {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 5px;
+      display: flex;
+      gap: 6px;
+      justify-content: space-between;
     }
 
     .ag-glass-btn {
+      flex: 1;
+      height: 28px;
+      border-radius: 8px;
       background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 9px;
-      padding: 5px 6px;
-      font-family: var(--font-sans);
-      font-size: 10px;
-      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.14);
       color: var(--t1);
-      cursor: pointer;
+      font-family: var(--font-mc);
+      font-size: 9.5px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      transition: all 0.16s ease;
+      gap: 5px;
+      cursor: pointer;
+      transition: all 0.16s var(--spring-smooth);
     }
 
     .ag-glass-btn:hover {
-      background: rgba(255, 255, 255, 0.13);
-      border-color: rgba(255, 255, 255, 0.28);
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.3);
       transform: translateY(-1px);
     }
 
     .ag-glass-btn.active {
       color: var(--emerald);
       border-color: rgba(52, 245, 164, 0.35);
-      background: rgba(52, 245, 164, 0.1);
+      background: rgba(52, 245, 164, 0.12);
     }
 
     .ag-glass-btn.danger:hover {
       color: var(--coral);
       border-color: rgba(255, 94, 126, 0.45);
-      background: rgba(255, 94, 126, 0.12);
+      background: rgba(255, 94, 126, 0.14);
     }
 
     /* ================================================================== */
-    /*  2. AUTHENTIC PNG DESKTOP MASCOT PET & LIQUID GLASS POPOVER        */
+    /*  2. AUTHENTIC PNG DESKTOP MASCOT PET & SCREEN-CLAMPED POPOVER      */
     /* ================================================================== */
     .ag-mascot-actor {
       position: fixed;
       z-index: 9998;
-      width: 100px;
-      height: 100px;
+      width: 104px;
+      height: 104px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       cursor: grab;
+      border: 0 !important;
+      outline: 0 !important;
       transition: opacity 0.24s ease;
     }
 
@@ -292,42 +330,119 @@
       pointer-events: none !important;
     }
 
+    /* Speech Bubble / Status Tag */
     .ag-mascot-bubble {
       position: absolute;
-      bottom: 98px;
+      bottom: 102px;
       left: 50%;
       transform: translateX(-50%);
       background: var(--glass-panel);
-      backdrop-filter: blur(18px) saturate(175%);
-      -webkit-backdrop-filter: blur(18px) saturate(175%);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
       border: 1px solid var(--glass-border);
       border-radius: 999px;
-      padding: 3.5px 10px;
+      padding: 3.5px 11px;
       font-family: var(--font-mc);
       font-size: 9px;
       color: var(--t1);
       white-space: nowrap;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
       pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s var(--spring-smooth);
     }
 
+    /* Task Completion Return Callout Bubble */
+    .ag-mascot-callout {
+      position: absolute;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%) scale(0.9);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.28s var(--spring-snap);
+      z-index: 10001;
+      width: 220px;
+    }
+
+    .ag-mascot-callout.show {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+      pointer-events: auto;
+    }
+
+    .ag-callout-glass {
+      background: linear-gradient(180deg, rgba(16, 22, 34, 0.94) 0%, rgba(8, 12, 20, 0.98) 100%);
+      backdrop-filter: blur(30px) saturate(210%);
+      border: 1px solid rgba(52, 245, 164, 0.45);
+      border-radius: 16px;
+      padding: 10px 12px;
+      box-shadow: 0 20px 48px -6px rgba(0, 0, 0, 0.9), 0 0 24px rgba(52, 245, 164, 0.22);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-align: center;
+    }
+
+    .ag-callout-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: var(--font-mc);
+      font-size: 10.5px;
+      color: var(--emerald);
+    }
+
+    .ag-callout-body {
+      font-family: var(--font-sans);
+      font-size: 11px;
+      color: var(--t2);
+      line-height: 1.3;
+    }
+
+    .ag-callout-btn {
+      width: 100%;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--emerald);
+      color: #06080E;
+      border: none;
+      font-family: var(--font-mc);
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 4px;
+      transition: transform 0.14s var(--spring-snap), filter 0.14s ease;
+    }
+
+    .ag-callout-btn:hover {
+      transform: scale(1.03);
+      filter: brightness(1.1);
+    }
+
+    /* Screen-Boundary Clamped Liquid Glass Popover Menu */
     .ag-mascot-menu {
       position: absolute;
-      bottom: 124px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 192px;
-      background: rgba(12, 16, 25, 0.86);
-      backdrop-filter: blur(24px) saturate(185%);
-      -webkit-backdrop-filter: blur(24px) saturate(185%);
+      bottom: 118px;
+      left: 0;
+      width: 208px;
+      box-sizing: border-box;
+      background: linear-gradient(180deg, rgba(14, 18, 28, 0.94) 0%, rgba(8, 10, 16, 0.98) 100%);
+      backdrop-filter: blur(30px) saturate(210%);
+      -webkit-backdrop-filter: blur(30px) saturate(210%);
       border: 1px solid var(--glass-border-strong);
-      border-radius: 14px;
-      padding: 7px;
+      border-radius: 16px;
+      padding: 8px 9px;
       display: none;
       flex-direction: column;
       gap: 4px;
-      box-shadow: 0 16px 38px rgba(0, 0, 0, 0.78), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      box-shadow: 0 20px 48px -4px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(255, 255, 255, 0.28);
       z-index: 10000;
+      animation: agMenuPop 0.22s var(--spring-snap);
     }
 
     .ag-mascot-menu.open {
@@ -336,15 +451,20 @@
 
     .ag-mascot-menu.drop-down {
       bottom: auto;
-      top: 106px;
+      top: 108px;
+    }
+
+    @keyframes agMenuPop {
+      0% { opacity: 0; transform: scale(0.92); }
+      100% { opacity: 1; transform: scale(1); }
     }
 
     .ag-menu-head {
       font-family: var(--font-mc);
-      font-size: 9.5px;
+      font-size: 10px;
       color: var(--t2);
-      padding: 2px 4px 5px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+      padding: 3px 6px 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -355,34 +475,35 @@
       background: transparent;
       border: 1px solid transparent;
       border-radius: 8px;
-      padding: 5.5px 8px;
-      font-family: var(--font-sans);
-      font-size: 11px;
-      font-weight: 600;
+      padding: 6px 8px;
+      font-family: var(--font-mc);
+      font-size: 10px;
       color: var(--t1);
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
       text-align: left;
       transition: all 0.14s ease;
     }
 
     .ag-menu-item:hover {
-      background: rgba(255, 255, 255, 0.09);
-      border-color: rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.18);
     }
 
     .ag-menu-item.danger:hover {
       color: var(--coral);
-      background: rgba(255, 94, 126, 0.12);
-      border-color: rgba(255, 94, 126, 0.3);
+      background: rgba(255, 94, 126, 0.14);
+      border-color: rgba(255, 94, 126, 0.35);
     }
 
-    /* Authentic Master PNG Mascot Rig & Motion */
+    /* ================================================================== */
+    /*  3. AUTHENTIC PNG MASCOT RIG, SMILE OVERLAY & 32 KINEMATIC MOTIONS */
+    /* ================================================================== */
     .ag-mascot-rig {
-      width: 88px;
-      height: 88px;
+      width: 90px;
+      height: 90px;
       position: relative;
       display: inline-flex;
       align-items: center;
@@ -393,52 +514,260 @@
       width: 100%;
       height: 100%;
       object-fit: contain;
-      filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.6));
+      filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.65));
       transform-origin: 50% 82%;
-      animation: agMascotBreathe 3s ease-in-out infinite;
+      will-change: transform;
+      animation: agM15IdleBreathe 3.4s ease-in-out infinite;
     }
 
-    .ag-mascot-rig[data-state="thinking"] .ag-mascot-img {
-      animation: agMascotThinkTilt 1.6s ease-in-out infinite;
+    /* Responsive SVG Facial Expression Overlay (Smile, Laugh, Curious, Surprised, Sleepy, Wink) */
+    .ag-mascot-face {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      transition: opacity 0.18s ease;
     }
 
-    .ag-mascot-rig[data-state="working"] .ag-mascot-img {
-      animation: agMascotWorkBounce 0.48s ease-in-out infinite;
+    .ag-face-mouth {
+      stroke: #0B1020;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: all 0.2s var(--spring-smooth);
     }
 
+    .ag-face-eye-wink {
+      stroke: #0B1020;
+      stroke-linecap: round;
+      fill: none;
+    }
+
+    /* Ground Shadow */
+    .ag-mascot-shadow {
+      position: absolute;
+      bottom: 2px;
+      width: 58px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.45);
+      filter: blur(4px);
+      z-index: 0;
+      pointer-events: none;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    /* 32 MOVEMENT CLASSES */
+    /* Category A: Prompt & Typing Interactions */
+    .ag-mascot-rig.ag-m-prompt-approach .ag-mascot-img { animation: agM01Approach 0.4s var(--spring-mascot) forwards; }
+    .ag-mascot-rig.ag-m-prompt-chirp .ag-mascot-img { animation: agM02Chirp 0.14s ease-out; }
+    .ag-mascot-rig.ag-m-prompt-launch .ag-mascot-img { animation: agM03Launch 0.85s var(--spring-island); }
+    .ag-mascot-rig.ag-m-prompt-pause .ag-mascot-img { animation: agM04Pause 1.2s ease-in-out infinite; }
+    .ag-mascot-rig.ag-m-poke-surprise .ag-mascot-img { animation: agM05Surprise 0.65s var(--spring-snap); }
+    .ag-mascot-rig.ag-m-pet-purr .ag-mascot-img { animation: agM06Purr 1.4s ease-in-out infinite; }
+
+    /* Category B: Agent Lifecycle & Execution */
+    .ag-mascot-rig.ag-m-thinking-levitate .ag-mascot-img { animation: agM07ThinkLevitate 2.4s ease-in-out infinite; }
+    .ag-mascot-rig.ag-m-tool-executing .ag-mascot-img { animation: agM08ToolExecute 0.68s var(--spring-snap); }
+    .ag-mascot-rig.ag-m-file-laser .ag-mascot-img { animation: agM09FileLaser 0.8s linear infinite; }
+    .ag-mascot-rig.ag-m-error-shudder .ag-mascot-img { animation: agM10ErrorShudder 0.48s ease-in-out; }
+    .ag-mascot-rig.ag-m-done-celebrate .ag-mascot-img { animation: agM11DoneCelebrate 0.85s var(--spring-island); }
+    .ag-mascot-rig.ag-m-done-callout .ag-mascot-img { animation: agM12DoneCallout 2.2s ease-in-out infinite; }
+    .ag-mascot-rig.ag-m-subagent-spawn .ag-mascot-img { animation: agM13SubagentSpawn 0.72s var(--spring-smooth); }
+    .ag-mascot-rig.ag-m-stream-sync .ag-mascot-img { animation: agM14StreamSync 0.12s ease-out; }
+
+    /* Category C: Desktop Life & Ambient Idle */
+    .ag-mascot-rig.ag-m-idle-breathe .ag-mascot-img { animation: agM15IdleBreathe 3.4s ease-in-out infinite; }
+    .ag-mascot-rig.ag-m-perch-look .ag-mascot-img { animation: agM16PerchLook 3.2s ease-in-out infinite; }
+    .ag-mascot-rig.ag-m-stretch-yawn .ag-mascot-img { animation: agM17StretchYawn 1.8s var(--spring-smooth); }
+    .ag-mascot-rig.ag-m-bubble-float .ag-mascot-img { animation: agM18BubbleFloat 3.6s ease-in-out; }
+    .ag-mascot-rig.ag-m-edge-peek .ag-mascot-img { animation: agM19EdgePeek 2.0s ease-in-out infinite; }
+    .ag-mascot-rig.ag-m-sleep-snore .ag-mascot-img { animation: agM20SleepSnore 4.8s ease-in-out infinite; }
+    .ag-mascot-rig.ag-m-wake-shake .ag-mascot-img { animation: agM21WakeShake 0.72s ease-out; }
+    .ag-mascot-rig.ag-m-inspect-cursor .ag-mascot-img { animation: agM22InspectCursor 0.8s ease-in-out infinite; }
+
+    /* Category D: Dynamic Notch Interactions */
+    .ag-mascot-rig.ag-m-notch-dive .ag-mascot-img { animation: agM23NotchDive 0.55s var(--spring-island); }
+    .ag-mascot-rig.ag-m-notch-peek .ag-mascot-img { animation: agM24NotchPeek 1.8s ease-in-out; }
+    .ag-mascot-rig.ag-m-notch-swing .ag-mascot-img { animation: agM25NotchSwing 1.4s ease-in-out infinite; }
+    .ag-mascot-rig.ag-m-notch-eject .ag-mascot-img { animation: agM26NotchEject 0.6s var(--spring-island); }
+
+    /* Category E: Telemetry & Special Alerts */
+    .ag-mascot-rig.ag-m-alert-hop .ag-mascot-img { animation: agM27AlertHop 0.62s var(--spring-snap); }
+    .ag-mascot-rig.ag-m-milestone-parade .ag-mascot-img { animation: agM28MilestoneParade 2.4s ease-in-out infinite; }
+    .ag-mascot-rig.ag-m-coffee-toast .ag-mascot-img { animation: agM29CoffeeToast 4.0s ease-in-out; }
+    .ag-mascot-rig.ag-m-goodbye-wave .ag-mascot-img { animation: agM30GoodbyeWave 1.2s ease-in-out; }
+    .ag-mascot-rig.ag-m-speedrun-dash .ag-mascot-img { animation: agM31SpeedrunDash 0.8s cubic-bezier(0.12, 0.8, 0.32, 1); }
+    .ag-mascot-rig.ag-m-shield-defend .ag-mascot-img { animation: agM32ShieldDefend 1.1s var(--spring-snap); }
+
+    /* TRUE WALKING WADDLE KINEMATICS */
     .ag-mascot-rig[data-state="walking"] .ag-mascot-img {
-      animation: agMascotWalkWaddle 0.36s ease-in-out infinite;
+      animation: agWalkKinematics 0.42s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    }
+    @keyframes agWalkKinematics {
+      0% { transform: translateY(0px) rotate(-4.5deg) scale(1.04, 0.96); }
+      25% { transform: translateY(-5px) rotate(0deg) scale(0.98, 1.02); }
+      50% { transform: translateY(0px) rotate(4.5deg) scale(1.04, 0.96); }
+      75% { transform: translateY(-5px) rotate(0deg) scale(0.98, 1.02); }
+      100% { transform: translateY(0px) rotate(-4.5deg) scale(1.04, 0.96); }
     }
 
-    .ag-mascot-rig[data-state="sleeping"] .ag-mascot-img {
-      opacity: 0.78;
-      animation: agMascotSleepBreathe 4.2s ease-in-out infinite;
+    /* KEYFRAME DEFINITIONS */
+    @keyframes agM01Approach {
+      0% { transform: translateY(0) scale(1); }
+      50% { transform: translate(-12px, -18px) rotate(8deg); }
+      100% { transform: translate(-10px, -14px) rotate(6deg); }
     }
-
-    .ag-mascot-rig[data-state="offline"] .ag-mascot-img {
-      filter: grayscale(0.75) brightness(0.75);
-      opacity: 0.7;
+    @keyframes agM02Chirp {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08, 0.92) rotate(-3deg); }
+      100% { transform: scale(1); }
     }
-
-    @keyframes agMascotBreathe {
-      0%, 100% { transform: translateY(0px) scale(1); }
-      50% { transform: translateY(-4px) scale(1.018, 0.99); }
+    @keyframes agM03Launch {
+      0% { transform: scale(1.18, 0.78) translateY(8px); }
+      35% { transform: scale(0.88, 1.22) translateY(-42px); }
+      65% { transform: scale(1) translateY(-36px) rotate(360deg); }
+      85% { transform: scale(1.08, 0.92) translateY(2px); }
+      100% { transform: scale(1) translateY(0); }
     }
-    @keyframes agMascotThinkTilt {
-      0%, 100% { transform: translateY(-2px) rotate(-3.5deg); }
-      50% { transform: translateY(-5px) rotate(3.5deg); }
+    @keyframes agM04Pause {
+      0%, 100% { transform: rotate(12deg) translateY(-4px); }
+      50% { transform: rotate(8deg) translateY(-2px); }
     }
-    @keyframes agMascotWorkBounce {
-      0%, 100% { transform: translateY(0px) scale(1.03, 0.97); }
-      50% { transform: translateY(-6px) scale(0.98, 1.04); }
+    @keyframes agM05Surprise {
+      0% { transform: scale(1); }
+      25% { transform: scale(0.85, 1.18) translateY(-14px); }
+      65% { transform: scale(1.12, 0.9) rotate(-15deg); }
+      100% { transform: scale(1) rotate(0); }
     }
-    @keyframes agMascotWalkWaddle {
-      0%, 100% { transform: translateY(0px) rotate(-6deg); }
-      50% { transform: translateY(-5px) rotate(6deg); }
+    @keyframes agM06Purr {
+      0%, 100% { transform: scale(1.05, 0.95) translateY(2px); }
+      50% { transform: scale(0.96, 1.04) translateY(-3px); }
     }
-    @keyframes agMascotSleepBreathe {
-      0%, 100% { transform: translateY(3px) scale(1, 0.97); }
-      50% { transform: translateY(1px) scale(1.02, 0.95); }
+    @keyframes agM07ThinkLevitate {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-16px) scale(0.98, 1.02); }
+    }
+    @keyframes agM08ToolExecute {
+      0% { transform: scale(1) rotate(0); }
+      25% { transform: scale(0.9, 1.1) rotate(-25deg); }
+      65% { transform: scale(1.05) rotate(335deg); }
+      100% { transform: scale(1) rotate(360deg); }
+    }
+    @keyframes agM09FileLaser {
+      0%, 100% { transform: translateY(-3px) rotate(-8deg); }
+      50% { transform: translateY(-5px) rotate(-10deg); }
+    }
+    @keyframes agM10ErrorShudder {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    @keyframes agM11DoneCelebrate {
+      0% { transform: scale(1.22, 0.74) translateY(10px); }
+      30% { transform: scale(0.9, 1.15) translateY(-55px) rotate(-180deg); }
+      65% { transform: scale(1.05) translateY(-40px) rotate(-360deg); }
+      85% { transform: scale(1.12, 0.9) translateY(4px); }
+      100% { transform: scale(1) translateY(0); }
+    }
+    @keyframes agM12DoneCallout {
+      0%, 100% { transform: translateY(-2px); }
+      50% { transform: translateY(2px); }
+    }
+    @keyframes agM13SubagentSpawn {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15, 0.88) rotate(8deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+    @keyframes agM14StreamSync {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+    @keyframes agM15IdleBreathe {
+      0%, 100% { transform: translateY(0px) scale(1, 1); }
+      50% { transform: translateY(-7px) scale(0.98, 1.02); }
+    }
+    @keyframes agM16PerchLook {
+      0%, 100% { transform: rotate(0deg) translateY(0); }
+      25% { transform: rotate(-10deg) translateY(-2px); }
+      50% { transform: rotate(0deg) translateY(-5px); }
+      75% { transform: rotate(10deg) translateY(-2px); }
+    }
+    @keyframes agM17StretchYawn {
+      0% { transform: scale(1); }
+      35% { transform: scale(0.88, 1.28) translateY(-14px); }
+      70% { transform: scale(1.08, 0.94) translateY(2px); }
+      100% { transform: scale(1) translateY(0); }
+    }
+    @keyframes agM18BubbleFloat {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-24px) rotate(4deg); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes agM19EdgePeek {
+      0%, 100% { transform: translateY(18px); }
+      50% { transform: translateY(4px); }
+    }
+    @keyframes agM20SleepSnore {
+      0%, 100% { transform: scale(1.06, 0.88) translateY(6px); }
+      50% { transform: scale(1.02, 0.92) translateY(4px); }
+    }
+    @keyframes agM21WakeShake {
+      0% { transform: scale(0.9, 1.1) translateY(-10px); }
+      30%, 70% { transform: rotate(-16deg); }
+      50%, 90% { transform: rotate(16deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+    @keyframes agM22InspectCursor {
+      0%, 100% { transform: translateY(-2px); }
+      50% { transform: translateY(2px); }
+    }
+    @keyframes agM23NotchDive {
+      0% { transform: scale(1); }
+      100% { transform: translateY(-120px) scale(0.45); }
+    }
+    @keyframes agM24NotchPeek {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(14px); }
+    }
+    @keyframes agM25NotchSwing {
+      0%, 100% { transform: rotate(-14deg); }
+      50% { transform: rotate(14deg); }
+    }
+    @keyframes agM26NotchEject {
+      0% { transform: scale(0.45); }
+      100% { transform: scale(1) translateY(0); }
+    }
+    @keyframes agM27AlertHop {
+      0%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-22px) scale(0.92, 1.08); }
+      60% { transform: translateY(-30px) rotate(8deg); }
+    }
+    @keyframes agM28MilestoneParade {
+      0%, 100% { transform: translateX(0) translateY(0); }
+      25% { transform: translateX(-15px) translateY(-5px); }
+      75% { transform: translateX(15px) translateY(-5px); }
+    }
+    @keyframes agM29CoffeeToast {
+      0%, 100% { transform: translateY(0) rotate(0); }
+      50% { transform: translateY(-6px) rotate(6deg); }
+    }
+    @keyframes agM30GoodbyeWave {
+      0%, 100% { transform: rotate(-8deg); }
+      50% { transform: rotate(8deg); }
+    }
+    @keyframes agM31SpeedrunDash {
+      0% { transform: translateX(0) skewX(-14deg); }
+      50% { transform: translateX(30px) skewX(-20deg); }
+      100% { transform: translateX(0) skewX(0); }
+    }
+    @keyframes agM32ShieldDefend {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.12, 0.94) translateY(2px); }
+      100% { transform: scale(1); }
     }
   </style>
 </head>
@@ -481,10 +810,11 @@
             <div class="val" id="notchTokAll">0</div>
           </div>
         </div>
+
         <div class="ag-notch-actions">
           <button class="ag-glass-btn active" id="btnNotchMascotToggle" onclick="toggleMascotFromNotch()">
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2L3 13h10L8 2z"/></svg>
-            <span id="lblNotchMascotToggle">Mascot</span>
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2.5L2.5 13h11L8 2.5z"/></svg>
+            <span>Mascot</span>
           </button>
           <button class="ag-glass-btn" onclick="openMainDashboard()">
             <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="2" width="12" height="12" rx="2.5"/><path d="M5 11V7M8 11V5M11 11V8"/></svg>
@@ -494,7 +824,7 @@
             <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="7" width="2.4" height="6" rx="0.8"/><rect x="6.8" y="3" width="2.4" height="10" rx="0.8"/><rect x="11.6" y="5" width="2.4" height="8" rx="0.8"/></svg>
             <span>Audio</span>
           </button>
-          <button class="ag-glass-btn danger" onclick="disableNotchOnly()" title="Disable Liquid Glass Notch">
+          <button class="ag-glass-btn danger" onclick="disableNotchOnly()" title="Hide Liquid Notch">
             <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
             <span>Hide</span>
           </button>
@@ -504,12 +834,31 @@
   </div>
 
   <!-- ================================================================== -->
-  <!--  2. AUTHENTIC PNG DESKTOP MASCOT PET                               -->
+  <!--  2. AUTHENTIC PNG DESKTOP MASCOT PET & SCREEN-CLAMPED POPOVER      -->
   <!-- ================================================================== -->
   <div class="ag-mascot-actor interactive-hitbox" id="mascotActor">
     <div class="ag-mascot-bubble" id="mascotBubble">Idle</div>
 
-    <!-- Liquid Glass Command Popover -->
+    <!-- Task Completion Return to IDE Callout -->
+    <div class="ag-mascot-callout" id="mascotCallout">
+      <div class="ag-callout-glass">
+        <div class="ag-callout-header">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#34F5A4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 8.5l3.5 3.5L13 5" />
+          </svg>
+          <span>TASK COMPLETE!</span>
+        </div>
+        <div class="ag-callout-body">Return to Antigravity to review</div>
+        <button class="ag-callout-btn" onclick="focusIdeFromCallout(event)">
+          <span>Back to IDE</span>
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 8h10M9 4l4 4-4 4"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Screen-Boundary Clamped Popover Menu (Zero Clipping) -->
     <div class="ag-mascot-menu" id="mascotMenu" onclick="event.stopPropagation()">
       <div class="ag-menu-head">
         <span>Antigravity</span>
@@ -545,17 +894,26 @@
       </button>
     </div>
 
-    <!-- Authentic Transparent Master PNG Mascot (Zero Fake SVG / Zero Emojis) -->
-    <div class="ag-mascot-rig" id="mascot-rig-overlay" data-state="idle">
-      <img class="ag-mascot-img" src="../resources/mascot.png" alt="Antigravity Mascot" draggable="false" />
+    <!-- Authentic Transparent Master PNG Mascot + Responsive SVG Facial Overlay -->
+    <div class="ag-mascot-rig ag-m-idle-breathe" id="mascot-rig-overlay" data-state="idle">
+      <div class="ag-mascot-shadow"></div>
+      <img class="ag-mascot-img" id="mascotImg" src="../resources/mascot.png" alt="Antigravity Mascot" draggable="false" />
+      <svg class="ag-mascot-face" id="mascotFace" viewBox="0 0 100 100" data-expression="smile">
+        <g class="ag-face-group" id="faceMouthGroup">
+          <path class="ag-face-mouth" d="M 44,61 Q 50,67 56,61" fill="none" stroke="#0B1020" stroke-width="2.4" stroke-linecap="round" />
+        </g>
+      </svg>
     </div>
   </div>
 
   <script>
-    /* 1. Procedural 8-Bit Chiptune Web Audio Synthesizer */
+    /* ================================================================== */
+    /*  1. APPLE-INSPIRED TACTILE UI SOUND SUITE (WEB AUDIO API)           */
+    /* ================================================================== */
     (function() {
       let ctx = null;
       let muted = false;
+
       function getCtx() {
         if (muted) return null;
         if (!ctx) {
@@ -567,36 +925,113 @@
         }
         return ctx;
       }
-      function tone(freq, type, startSec, durSec, gainVal) {
+
+      function tone(freq, type, startSec, durSec, gainVal, rampZero) {
         const c = getCtx();
         if (!c) return;
         const osc = c.createOscillator();
         const g = c.createGain();
-        osc.type = type || 'square';
+        osc.type = type || 'sine';
         osc.frequency.setValueAtTime(freq, c.currentTime + startSec);
         g.gain.setValueAtTime(gainVal || 0.035, c.currentTime + startSec);
-        g.gain.exponentialRampToValueAtTime(0.0008, c.currentTime + startSec + durSec);
+        if (rampZero !== false) {
+          g.gain.exponentialRampToValueAtTime(0.0005, c.currentTime + startSec + durSec);
+        }
         osc.connect(g);
         g.connect(c.destination);
         osc.start(c.currentTime + startSec);
         osc.stop(c.currentTime + startSec + durSec);
       }
+
       window.agMascotAudio = {
-        setMuted: function(m) { muted = !!m; },
+        setMuted: function(m) { muted = Boolean(m); },
         isMuted: function() { return muted; },
-        playClick: function() { tone(720, 'square', 0, 0.04, 0.03); tone(980, 'square', 0.04, 0.05, 0.03); },
-        playWake: function() { tone(523.25, 'square', 0, 0.055, 0.035); tone(659.25, 'square', 0.055, 0.055, 0.035); tone(783.99, 'square', 0.11, 0.075, 0.04); },
-        playComplete: function() { tone(587.33, 'triangle', 0, 0.065, 0.04); tone(880, 'triangle', 0.065, 0.085, 0.04); },
-        playSleep: function() { tone(659.25, 'sine', 0, 0.09, 0.03); tone(523.25, 'sine', 0.09, 0.11, 0.025); },
-        playMorph: function() { tone(440, 'triangle', 0, 0.045, 0.028); tone(660, 'square', 0.045, 0.075, 0.032); }
+
+        // S01: Apple Island Expand Pop (glass tick 780Hz & 1170Hz)
+        playIslandExpand: function() {
+          tone(780, 'sine', 0, 0.022, 0.038);
+          tone(1170, 'triangle', 0.004, 0.018, 0.02);
+        },
+
+        // S02: Apple Island Collapse Tuck (cushioned 340Hz)
+        playIslandCollapse: function() {
+          tone(340, 'sine', 0, 0.028, 0.032);
+        },
+
+        // S03: Tactile Marimba Typing Tap (480Hz – 620Hz, throttled)
+        playMarimbaTap: (function() {
+          let last = 0;
+          return function() {
+            const now = Date.now();
+            if (now - last < 120) return;
+            last = now;
+            const f = 480 + Math.random() * 140;
+            tone(f, 'triangle', 0, 0.016, 0.018);
+          };
+        })(),
+
+        // S04: AirDrop Send Swoosh Chord (F4 → C5 → F5)
+        playAirDropChime: function() {
+          tone(349.23, 'sine', 0, 0.14, 0.035);
+          tone(523.25, 'triangle', 0.06, 0.16, 0.032);
+          tone(698.46, 'sine', 0.12, 0.22, 0.038);
+        },
+
+        // S05: Apple Pay / Triumph Crystalline Bell (E6: 1318Hz & B6: 1975Hz)
+        playApplePayTriumph: function() {
+          tone(1318.5, 'sine', 0, 0.55, 0.048);
+          tone(1975.5, 'sine', 0.05, 0.65, 0.042);
+        },
+
+        // S06: Haptic Switch Click (240Hz impulse)
+        playHapticSwitch: function() {
+          tone(240, 'triangle', 0, 0.014, 0.03);
+          tone(480, 'sine', 0.008, 0.016, 0.02);
+        },
+
+        // S07: Organic Purr Rumble (52Hz modulated at 8Hz)
+        playOrganicPurr: function() {
+          tone(52, 'triangle', 0, 0.45, 0.02);
+          tone(104, 'sine', 0.08, 0.35, 0.012);
+        },
+
+        // S08: Warm Alert Ping (A5: 880Hz to C#6: 1108Hz)
+        playWarmAlert: function() {
+          tone(880, 'sine', 0, 0.12, 0.04);
+          tone(1108.7, 'sine', 0.07, 0.18, 0.04);
+        },
+
+        // S09: Magnetic Dock Snap (880Hz → 440Hz sweep)
+        playMagneticDock: function() {
+          tone(880, 'sine', 0, 0.035, 0.035);
+          tone(440, 'triangle', 0.015, 0.045, 0.03);
+        },
+
+        // S10: Water Droplet Undock Pop (380Hz → 720Hz)
+        playBubbleUndock: function() {
+          tone(380, 'sine', 0, 0.02, 0.03);
+          tone(720, 'triangle', 0.015, 0.035, 0.035);
+        },
+
+        // Backward-compatible aliases
+        playClick: function() { window.agMascotAudio.playHapticSwitch(); },
+        playWake: function() { window.agMascotAudio.playIslandExpand(); },
+        playComplete: function() { window.agMascotAudio.playApplePayTriumph(); },
+        playSleep: function() { window.agMascotAudio.playIslandCollapse(); },
+        playMorph: function() { window.agMascotAudio.playMagneticDock(); }
       };
     })();
 
-    /* 2. Click-Through Hitbox Management (`setIgnoreMouseEvents`) */
-    const bridge = window.antigravityDesktop;
+    /* ================================================================== */
+    /*  2. DOM CONTROLLERS & VIEWPORT-CLAMPED MENU POSITIONING            */
+    /* ================================================================== */
+    const bridge = window.antigravityDesktop || null;
     const notchWrapper = document.getElementById('notchWrapper');
     const mascotActor = document.getElementById('mascotActor');
     const mascotMenu = document.getElementById('mascotMenu');
+    const mascotRig = document.getElementById('mascot-rig-overlay');
+    const faceMouthGroup = document.getElementById('faceMouthGroup');
+    const mascotCallout = document.getElementById('mascotCallout');
 
     function setInteractiveFocus(isInside) {
       if (bridge && typeof bridge.setIgnoreMouseEvents === 'function') {
@@ -611,7 +1046,82 @@
       });
     });
 
-    /* 3. Mascot Physics, Corner Anchoring, Drag & Cursor Walk-Follow */
+    /**
+     * Mathematical Viewport Boundary Clamping Algorithm
+     * Guaranteed zero-clipping at all screen boundaries.
+     */
+    function updateMenuPosition() {
+      if (!mascotActor || !mascotMenu) return;
+      const actorRect = mascotActor.getBoundingClientRect();
+      const menuWidth = 208;
+      const margin = 14;
+
+      // Calculate ideal centered screen X coordinate
+      const idealScreenX = actorRect.left + (actorRect.width / 2) - (menuWidth / 2);
+
+      // Clamp strictly inside viewport [margin, window.innerWidth - menuWidth - margin]
+      const clampedScreenX = Math.max(margin, Math.min(window.innerWidth - menuWidth - margin, idealScreenX));
+
+      // Set relative offset
+      const relativeLeft = clampedScreenX - actorRect.left;
+      mascotMenu.style.left = Math.round(relativeLeft) + 'px';
+      mascotMenu.style.transform = 'none';
+
+      const menuHeight = mascotMenu.offsetHeight || 290;
+      if (actorRect.top < menuHeight + 24) {
+        mascotMenu.classList.add('drop-down');
+      } else {
+        mascotMenu.classList.remove('drop-down');
+      }
+    }
+
+    window.addEventListener('resize', updateMenuPosition);
+
+    /* ================================================================== */
+    /*  3. DYNAMIC FACIAL EXPRESSIONS & NATURAL SMILE CONTROLLER          */
+    /* ================================================================== */
+    const FACE_PATHS = {
+      smile: '<path class="ag-face-mouth" d="M 44,61 Q 50,67 56,61" fill="none" stroke="#0B1020" stroke-width="2.4" stroke-linecap="round" />',
+      laugh: '<path class="ag-face-mouth" d="M 43,60 Q 50,70 57,60 Z" fill="#0B1020" stroke="#0B1020" stroke-width="1.5" /><path d="M 46,65 Q 50,68 54,65" fill="#FF5E7E" />',
+      curious: '<path class="ag-face-mouth" d="M 45,63 Q 51,66 57,60" fill="none" stroke="#0B1020" stroke-width="2.4" stroke-linecap="round" />',
+      surprised: '<ellipse class="ag-face-mouth" cx="50" cy="63" rx="3.5" ry="4.5" fill="#0B1020" stroke="none" />',
+      sleepy: '<path class="ag-face-mouth" d="M 45,62 L 55,62" fill="none" stroke="#0B1020" stroke-width="2.2" stroke-linecap="round" />',
+      wink: '<path class="ag-face-mouth" d="M 44,62 Q 50,67 56,60" fill="none" stroke="#0B1020" stroke-width="2.4" stroke-linecap="round" /><path class="ag-face-eye-wink" d="M 40,49 Q 43,45 46,49" stroke="#0B1020" stroke-width="2.6" fill="none" stroke-linecap="round" />'
+    };
+
+    function setMascotFacialState(state) {
+      if (!faceMouthGroup) return;
+      const html = FACE_PATHS[state] || FACE_PATHS.smile;
+      faceMouthGroup.innerHTML = html;
+      const faceEl = document.getElementById('mascotFace');
+      if (faceEl) faceEl.setAttribute('data-expression', state);
+    }
+
+    /* ================================================================== */
+    /*  4. 32-MOVEMENT ENGINE & TRUE WALKING KINEMATICS                   */
+    /* ================================================================== */
+    let currentMovementTimeout = null;
+
+    function setMascotMovement(movClass, facialState, durationMs, pairedSound) {
+      if (!mascotRig) return;
+      if (currentMovementTimeout) clearTimeout(currentMovementTimeout);
+
+      // Remove existing movement classes
+      mascotRig.className = 'ag-mascot-rig ' + movClass;
+      setMascotFacialState(facialState || 'smile');
+
+      if (pairedSound && window.agMascotAudio[pairedSound]) {
+        window.agMascotAudio[pairedSound]();
+      }
+
+      if (durationMs && durationMs > 0) {
+        currentMovementTimeout = setTimeout(function() {
+          syncMascotVisualState();
+        }, durationMs);
+      }
+    }
+
+    /* 5. Mascot Physics, Corner Anchoring, Drag & Cursor Walk-Follow */
     let companion = {
       enabled: true,
       notchEnabled: true,
@@ -647,19 +1157,14 @@
     function applyMascotTransform(flipX) {
       mascotActor.style.left = Math.round(mascotX) + 'px';
       mascotActor.style.top = Math.round(mascotY) + 'px';
-      const svgEl = document.getElementById('mascot-rig-overlay');
-      if (svgEl) {
-        svgEl.style.transform = flipX ? 'scaleX(-1)' : 'scaleX(1)';
+      if (mascotRig) {
+        mascotRig.style.transform = flipX ? 'scaleX(-1)' : 'scaleX(1)';
       }
-      if (mascotY < 170) {
-        mascotMenu.classList.add('drop-down');
-      } else {
-        mascotMenu.classList.remove('drop-down');
-      }
+      updateMenuPosition();
     }
 
     mascotActor.addEventListener('mousedown', function(e) {
-      if (mascotMenu.contains(e.target)) return;
+      if (mascotMenu.contains(e.target) || (mascotCallout && mascotCallout.contains(e.target))) return;
       isDragging = true;
       dragMoved = false;
       dragStartX = e.clientX - mascotX;
@@ -685,10 +1190,11 @@
       if (!isDragging) return;
       isDragging = false;
       if (!dragMoved) {
-        window.agMascotAudio.playClick();
-        mascotMenu.classList.toggle('open');
+        window.agMascotAudio.playHapticSwitch();
+        const isOpen = mascotMenu.classList.toggle('open');
+        if (isOpen) updateMenuPosition();
       } else {
-        window.agMascotAudio.playWake();
+        window.agMascotAudio.playIslandExpand();
       }
     });
 
@@ -712,15 +1218,14 @@
         const dx = targetX - mascotX;
         const dy = targetY - mascotY;
         const dist = Math.hypot(dx, dy);
-        const rig = document.getElementById('mascot-rig-overlay');
 
         if (dist > 3) {
           const speed = companion.mascotBehavior === 'walk_follow' ? 0.09 : 0.16;
           mascotX += dx * speed;
           mascotY += dy * speed;
           applyMascotTransform(dx < -1);
-          if (rig && companion.mascotBehavior === 'walk_follow') {
-            rig.setAttribute('data-state', 'walking');
+          if (mascotRig && companion.mascotBehavior === 'walk_follow') {
+            mascotRig.setAttribute('data-state', 'walking');
           }
         } else {
           syncMascotVisualState();
@@ -730,7 +1235,9 @@
     }
     requestAnimationFrame(tickPhysics);
 
-    /* 4. Independent Notch & Mascot Visibility & Telemetry Sync */
+    /* ================================================================== */
+    /*  6. TELEMETRY, AGENT STATE SYNC & TASK CALLOUTS                    */
+    /* ================================================================== */
     function formatCompact(n) {
       if (!n || n <= 0) return '0';
       if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
@@ -748,23 +1255,31 @@
     function formatClock(sec) {
       const h = Math.floor(sec / 3600);
       const m = Math.floor((sec % 3600) / 60);
-      const s = sec % 60;
-      const p = function(v) { return v < 10 ? '0' + v : String(v); };
-      return p(h) + ':' + p(m) + ':' + p(s);
+      const s = Math.floor(sec % 60);
+      const pad = function(n) { return n < 10 ? '0' + n : String(n); };
+      return pad(h) + ':' + pad(m) + ':' + pad(s);
+    }
+
+    function showTaskCompleteCallout() {
+      if (!mascotCallout) return;
+      mascotCallout.classList.add('show');
+      setTimeout(function() {
+        if (mascotCallout) mascotCallout.classList.remove('show');
+      }, 14000);
+    }
+
+    function focusIdeFromCallout(e) {
+      if (e) e.stopPropagation();
+      window.agMascotAudio.playHapticSwitch();
+      if (mascotCallout) mascotCallout.classList.remove('show');
+      if (bridge && typeof bridge.focusIde === 'function') {
+        bridge.focusIde();
+      }
     }
 
     function applyCompanionVisibility() {
-      window.agMascotAudio.setMuted(!!companion.soundMuted);
-      if (!companion.enabled) {
-        notchWrapper.classList.add('hidden');
-        mascotActor.classList.add('hidden');
-        mascotMenu.classList.remove('open');
-        setInteractiveFocus(false);
-        return;
-      }
-
-      const showNotch = companion.notchEnabled !== false;
-      const showMascot = companion.mascotEnabled !== false;
+      const showNotch = companion.enabled && companion.notchEnabled !== false;
+      const showMascot = companion.enabled && companion.mascotEnabled !== false;
 
       notchWrapper.classList.toggle('hidden', !showNotch);
       mascotActor.classList.toggle('hidden', !showMascot);
@@ -779,12 +1294,12 @@
     }
 
     function syncMascotVisualState() {
-      const rig = document.getElementById('mascot-rig-overlay');
       const bubble = document.getElementById('mascotBubble');
-      if (!rig || !bubble) return;
+      if (!mascotRig || !bubble) return;
 
       if (!latestData || latestData.isAntigravityRunning === false) {
-        rig.setAttribute('data-state', 'offline');
+        mascotRig.setAttribute('data-state', 'offline');
+        setMascotFacialState('sleepy');
         bubble.innerText = 'Offline';
         return;
       }
@@ -792,13 +1307,17 @@
       const agents = latestData.activeAgents || [];
       if (agents.length > 0) {
         const lead = agents[0];
-        rig.setAttribute('data-state', lead.status === 'running_tool' ? 'working' : 'thinking');
+        const isTool = lead.status === 'running_tool';
+        mascotRig.setAttribute('data-state', isTool ? 'working' : 'thinking');
+        setMascotFacialState(isTool ? 'laugh' : 'curious');
         bubble.innerText = lead.model || 'Active';
       } else if (companion.mascotBehavior === 'sleep') {
-        rig.setAttribute('data-state', 'sleeping');
+        mascotRig.setAttribute('data-state', 'sleeping');
+        setMascotFacialState('sleepy');
         bubble.innerText = 'Sleeping';
       } else {
-        rig.setAttribute('data-state', 'idle');
+        mascotRig.setAttribute('data-state', 'idle');
+        setMascotFacialState('smile');
         const tb = latestData.timeBreakdown || (latestData.session && latestData.session.timeBreakdown);
         const allH = formatHours(tb ? tb.overall : (latestData.session ? latestData.session.lifetimeActiveSeconds : 0));
         bubble.innerText = 'Idle • ' + allH;
@@ -814,8 +1333,10 @@
       }
 
       const agents = data.activeAgents || [];
+      // Trigger Celebration & Callout on task completion
       if (lastAgentCount > 0 && agents.length === 0) {
-        window.agMascotAudio.playComplete();
+        setMascotMovement('ag-m-done-celebrate', 'laugh', 850, 'apple_pay_triumph');
+        showTaskCompleteCallout();
       }
       lastAgentCount = agents.length;
 
@@ -871,11 +1392,11 @@
     async function commandMascot(partial) {
       mascotMenu.classList.remove('open');
       if (typeof partial.notchEnabled === 'boolean' || typeof partial.mascotEnabled === 'boolean') {
-        window.agMascotAudio.playMorph();
+        window.agMascotAudio.playMagneticDock();
       } else if (partial.mascotBehavior === 'sleep') {
-        window.agMascotAudio.playSleep();
+        window.agMascotAudio.playIslandCollapse();
       } else {
-        window.agMascotAudio.playClick();
+        window.agMascotAudio.playHapticSwitch();
       }
 
       companion = Object.assign({}, companion, partial);
@@ -921,7 +1442,7 @@
 
     function openMainDashboard() {
       mascotMenu.classList.remove('open');
-      window.agMascotAudio.playClick();
+      window.agMascotAudio.playHapticSwitch();
       if (bridge && typeof bridge.openDashboard === 'function') {
         bridge.openDashboard();
       } else {
@@ -931,8 +1452,14 @@
 
     function toggleNotchExpand(e) {
       e.stopPropagation();
-      window.agMascotAudio.playClick();
-      document.getElementById('notchPill').classList.toggle('expanded');
+      const pill = document.getElementById('notchPill');
+      const isExpanding = !pill.classList.contains('expanded');
+      pill.classList.toggle('expanded');
+      if (isExpanding) {
+        window.agMascotAudio.playIslandExpand();
+      } else {
+        window.agMascotAudio.playIslandCollapse();
+      }
     }
 
     if (bridge && typeof bridge.onCompanionCommand === 'function') {

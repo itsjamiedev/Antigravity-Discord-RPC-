@@ -45,6 +45,13 @@ contextBridge.exposeInMainWorld('antigravityDesktop', {
   },
 
   /**
+   * Focus the Antigravity 2.0 IDE window.
+   */
+  focusIde: () => {
+    ipcRenderer.send('desktop:focus-ide');
+  },
+
+  /**
    * Subscribe to global Windows desktop cursor coordinates.
    */
   onCursorMove: (callback) => {

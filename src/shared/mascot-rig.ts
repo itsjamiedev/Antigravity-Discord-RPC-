@@ -11,6 +11,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import { getMascotFaceSvg, type MascotFacialState } from './mascot-movements.js';
+
 export type MascotExpressionState =
   | 'idle'
   | 'thinking'
@@ -65,12 +67,15 @@ export function getMascotDataUri(): string {
 export function getMascotSvgHtml(
   instanceId: string = 'main',
   size: number = 96,
-  initialState: MascotExpressionState = 'idle'
+  initialState: MascotExpressionState = 'idle',
+  initialFacialState: MascotFacialState = 'smile'
 ): string {
   const srcUri = getMascotDataUri();
+  const faceSvg = getMascotFaceSvg(initialFacialState);
   return `<div class="ag-mascot-wrap" id="mascot-rig-${instanceId}" data-instance="${instanceId}" data-state="${initialState}" style="width:${size}px; height:${size}px;">
   <div class="ag-mascot-aura"></div>
   <img class="ag-mascot-img" src="${srcUri}" width="${size}" height="${size}" alt="Antigravity Mascot" draggable="false" />
+  ${faceSvg}
 </div>`;
 }
 
@@ -99,6 +104,16 @@ export function getMascotCss(): string {
       filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.55));
       transform-origin: 50% 82%;
       will-change: transform;
+    }
+    .ag-mascot-face {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      transition: opacity 0.15s ease;
     }
     .ag-mascot-aura {
       position: absolute;
