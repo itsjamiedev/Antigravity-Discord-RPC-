@@ -36,6 +36,9 @@ describe('Phase 5: Local Usage Dashboard (127.0.0.1)', () => {
       spoolPath,
       tracker,
       configManager,
+      updaterOptions: {
+        configPath: ':memory:',
+      },
     });
 
     const port = await server.start();
