@@ -27,9 +27,20 @@ const { fork } = require('node:child_process');
 
 const API_HOST = '127.0.0.1';
 const API_PORT = 41177;
-const ICON_PATH = path.resolve(__dirname, '..', 'resources', 'mascot.png');
-const FALLBACK_ICON_PATH = path.resolve(__dirname, '..', 'resources', 'icon.png');
-const DAEMON_BUNDLE_PATH = path.resolve(__dirname, '..', 'dist', 'daemon.cjs');
+
+function resolveBundledAsset(...segments) {
+  if (process.resourcesPath) {
+    const packagedCandidate = path.join(process.resourcesPath, ...segments);
+    if (fs.existsSync(packagedCandidate)) {
+      return packagedCandidate;
+    }
+  }
+  return path.resolve(__dirname, '..', ...segments);
+}
+
+const ICON_PATH = resolveBundledAsset('resources', 'mascot.png');
+const FALLBACK_ICON_PATH = resolveBundledAsset('resources', 'icon.png');
+const DAEMON_BUNDLE_PATH = resolveBundledAsset('dist', 'daemon.cjs');
 const SETUP_STATE_PATH = path.join(os.homedir(), '.gemini', 'antigravity-presence', 'desktop-setup.json');
 
 let dashboardWindow = null;
@@ -125,7 +136,9 @@ async function ensureStandaloneCoreEngine() {
     return;
   }
   try {
+    const bundleRoot = path.dirname(path.dirname(DAEMON_BUNDLE_PATH));
     daemonProcess = fork(DAEMON_BUNDLE_PATH, [], {
+      cwd: bundleRoot,
       stdio: 'ignore',
       detached: false,
     });

@@ -9,13 +9,34 @@
   "scripts": {
     "start": "electron .",
     "installer": "electron . --installer",
-    "overlay": "electron . --overlay-only"
+    "overlay": "electron . --overlay-only",
+    "build:win": "electron-builder --win --x64"
   },
   "build": {
     "appId": "org.itsjamiedev.antigravity-presence",
     "productName": "Antigravity Presence",
+    "asar": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "installer.html",
+      "overlay.html",
+      "package.json"
+    ],
     "win": {
-      "target": ["nsis"],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
       "icon": "../resources/mascot.png"
     },
     "nsis": {
@@ -37,6 +58,14 @@
       {
         "from": "../package.json",
         "to": "package.json"
+      },
+      {
+        "from": "../readme.md",
+        "to": "readme.md"
+      },
+      {
+        "from": "../LICENSE.txt",
+        "to": "LICENSE.txt"
       }
     ]
   },
