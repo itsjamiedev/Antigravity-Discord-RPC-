@@ -95,6 +95,17 @@ describe('Phase 5: Local Usage Dashboard (127.0.0.1)', () => {
     expect(updated.companion.corner).toBe('top-left');
   });
 
+  it('exposes Antigravity IDE detection and extension installation via /api/ide-status and /api/ide-install', async () => {
+    const statusRes = await fetch(`${baseUrl}/api/ide-status`);
+    expect(statusRes.status).toBe(200);
+    const statusJson = (await statusRes.json()) as {
+      extensionId: string;
+      targets: Array<{ id: string }>;
+    };
+    expect(statusJson.extensionId).toBe('itsjamiefied.antigravity-presence');
+    expect(Array.isArray(statusJson.targets)).toBe(true);
+  });
+
   it('serves REST endpoints with accurate domain data', async () => {
     // Inject a sample agent event
     const sampleEvent: WhitelistedHookPayload = {

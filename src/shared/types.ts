@@ -273,3 +273,29 @@ export interface DiscordActivity {
   assets?: DiscordActivityAssets;
   instance?: boolean;
 }
+
+export interface IdeTargetStatus {
+  id: 'antigravity-2' | 'antigravity-1';
+  label: string;
+  detected: boolean;
+  binaryPath: string | null;
+  extensionsDir: string;
+  extensionInstallDir: string;
+  installed: boolean;
+  version: string | null;
+  bundleHashMatch: boolean;
+  lastSyncedAt: string | null;
+  actionTaken: 'installed' | 'updated' | 'up_to_date' | 'skipped' | 'error';
+  error?: string;
+}
+
+export interface IdeInstallerReport {
+  extensionId: string;
+  extensionVersion: string;
+  sourceRoot: string;
+  sourceBundleHash: string | null;
+  anyIdeDetected: boolean;
+  allTargetsSynced: boolean;
+  targets: IdeTargetStatus[];
+  checkedAt: string;
+}

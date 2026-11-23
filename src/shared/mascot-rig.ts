@@ -29,7 +29,7 @@ export function getMascotSvgHtml(
   const shineId = `agBodyShine_${instanceId}`;
   const shoeGradId = `agShoeGrad_${instanceId}`;
 
-  return `<div class="ag-mascot-wrap" id="agMascotWrap_${instanceId}" data-state="${initialState}" style="width:${size}px; height:${size}px;">
+  return `<div class="ag-mascot-wrap" id="mascot-rig-${instanceId}" data-instance="${instanceId}" data-state="${initialState}" style="width:${size}px; height:${size}px;">
   <svg class="ag-mascot-svg" viewBox="0 0 160 160" width="${size}" height="${size}" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Antigravity Rainbow Mascot">
     <defs>
       <linearGradient id="${gradId}" x1="18" y1="95" x2="142" y2="95" gradientUnits="userSpaceOnUse">
@@ -124,18 +124,18 @@ export function getMascotSvgHtml(
         </g>
       </g>
 
-      <!-- Floating Arcade Action Sparks (Working / Thinking) -->
+      <!-- Floating Arcade Action Sparks (Working / Thinking) — Pure Vector Geometry -->
       <g class="ag-mascot-sparks">
-        <rect x="26" y="34" width="5" height="5" fill="#FFB84D" />
-        <rect x="128" y="30" width="6" height="6" fill="#34F5A4" />
-        <rect x="78" y="6" width="5" height="5" fill="#38BDF8" />
+        <polygon points="81,2 75,11 80,11 78,18 85,9 80,9" fill="#FFB84D" />
+        <rect x="26" y="34" width="5" height="5" rx="1" fill="#FFB84D" />
+        <rect x="128" y="30" width="6" height="6" rx="1" fill="#34F5A4" />
       </g>
 
-      <!-- Floating Retro Pixel Zzz (Sleeping / Offline) -->
-      <g class="ag-mascot-zzz" fill="#FFB84D" style="font-family: monospace; font-weight: 900;">
-        <text class="ag-z1" x="114" y="42" font-size="13">Z</text>
-        <text class="ag-z2" x="126" y="28" font-size="10">z</text>
-        <text class="ag-z3" x="135" y="17" font-size="8">z</text>
+      <!-- Floating Retro Vector Zzz Paths (Sleeping / Offline) -->
+      <g class="ag-mascot-zzz" stroke="#38E4FF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <path class="ag-z1" d="M113 33 H123 L113 43 H123" />
+        <path class="ag-z2" d="M126 21 H133 L126 28 H133" />
+        <path class="ag-z3" d="M136 11 H141 L136 16 H141" />
       </g>
     </g>
   </svg>

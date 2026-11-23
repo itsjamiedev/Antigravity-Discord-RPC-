@@ -28,11 +28,13 @@ import {
   DEFAULT_DAEMON_HOST,
   DEFAULT_DAEMON_PORT,
   type CompanionSettings,
+  type IdeInstallerReport,
   type ManualEditorState,
   type PrivacySettings,
   type TrackerSnapshot,
   type WhitelistedHookPayload,
 } from '../shared/types.js';
+import { IdeInstaller, type IdeInstallerOptions } from '../installer/ide-installer.js';
 import type { CentralTracker } from '../tracker/tracker.js';
 import { getDashboardHtml } from './html-content.js';
 
@@ -51,6 +53,7 @@ export interface DashboardServerOptions {
   port?: number;
   spoolPath?: string;
   companionConfigPath?: string;
+  ideInstallerOptions?: IdeInstallerOptions;
   tracker: CentralTracker;
   presenceManager?: PresenceManager;
   discordClient?: DiscordIpcClient;
@@ -65,6 +68,7 @@ export interface DashboardFullState extends TrackerSnapshot {
   };
   settings: PrivacySettings;
   companion?: CompanionSettings;
+  ideStatus?: IdeInstallerReport;
   isAntigravityRunning?: boolean;
   workspaces?: {
     count: number;
@@ -82,6 +86,8 @@ export class DashboardServer {
   private readonly presenceManager?: PresenceManager;
   private readonly discordClient?: DiscordIpcClient;
   private readonly configManager: ConfigManager;
+  private readonly ideInstaller: IdeInstaller;
+  private lastIdeStatus: IdeInstallerReport;
   private companionSettings: CompanionSettings;
   private readonly sseClients = new Set<http.ServerResponse>();
   private unsubscribeTracker?: () => void;
@@ -101,7 +107,22 @@ export class DashboardServer {
     this.presenceManager = options.presenceManager;
     this.discordClient = options.discordClient;
     this.configManager = options.configManager;
+    this.ideInstaller = new IdeInstaller(options.ideInstallerOptions);
+    this.lastIdeStatus = this.ideInstaller.inspectStatus();
     this.companionSettings = this.loadCompanionSettings();
+  }
+
+  public getIdeStatus(refresh: boolean = false): IdeInstallerReport {
+    if (refresh) {
+      this.lastIdeStatus = this.ideInstaller.inspectStatus();
+    }
+    return this.lastIdeStatus;
+  }
+
+  public installIdeExtension(force: boolean = false): IdeInstallerReport {
+    this.lastIdeStatus = this.ideInstaller.ensureInstalled(force);
+    this.broadcastUpdate();
+    return this.lastIdeStatus;
   }
 
   private loadCompanionSettings(): CompanionSettings {
@@ -256,6 +277,7 @@ export class DashboardServer {
       },
       settings,
       companion,
+      ideStatus: this.lastIdeStatus,
       isAntigravityRunning: companion.isAntigravityRunning ?? true,
       workspaces,
     };
@@ -469,6 +491,32 @@ export class DashboardServer {
               res.writeHead(400, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: String(err) }));
             }
+          });
+          return;
+        }
+
+        // REST API: Antigravity IDE Auto-Detector Status (GET)
+        if (method === 'GET' && url === '/api/ide-status') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(this.getIdeStatus(true)));
+          return;
+        }
+
+        // REST API: Antigravity IDE Self-Provisioning Extension Installer (POST)
+        if (method === 'POST' && url === '/api/ide-install') {
+          this.readBody(req, res, 4096, (body) => {
+            let force = true;
+            if (body && body.trim()) {
+              try {
+                const parsed = JSON.parse(body) as { force?: boolean };
+                if (typeof parsed.force === 'boolean') {
+                  force = parsed.force;
+                }
+              } catch {}
+            }
+            const report = this.installIdeExtension(force);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: true, ideStatus: report }));
           });
           return;
         }

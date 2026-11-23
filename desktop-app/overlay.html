@@ -451,9 +451,9 @@
       <div class="ag-notch-bar">
         <div class="ag-notch-left">
           <span class="ag-notch-led" id="notchLed"></span>
-          <span class="ag-notch-status" id="notchStatusText">ANTIGRAVITY ONLINE</span>
+          <span class="ag-notch-status" id="notchStatusText">Antigravity Online</span>
         </div>
-        <span class="ag-notch-model" id="notchModelBadge">IDLE • 0 AGENTS</span>
+        <span class="ag-notch-model" id="notchModelBadge">Idle • 0 Agents</span>
         <span class="ag-notch-timer" id="notchTimerText">00:00:00</span>
       </div>
 
@@ -461,27 +461,39 @@
       <div class="ag-notch-drawer" onclick="event.stopPropagation()">
         <div class="ag-notch-metrics">
           <div class="ag-notch-metric">
-            <div class="lbl">24H HOURS</div>
+            <div class="lbl">24h Hours</div>
             <div class="val" id="notchHrs24">0m</div>
           </div>
           <div class="ag-notch-metric">
-            <div class="lbl">OVERALL</div>
+            <div class="lbl">Overall</div>
             <div class="val" id="notchHrsAll">0m</div>
           </div>
           <div class="ag-notch-metric">
-            <div class="lbl">24H TOKENS</div>
+            <div class="lbl">24h Tokens</div>
             <div class="val" id="notchTok24">0</div>
           </div>
           <div class="ag-notch-metric">
-            <div class="lbl">ALL TOKENS</div>
+            <div class="lbl">All Tokens</div>
             <div class="val" id="notchTokAll">0</div>
           </div>
         </div>
         <div class="ag-notch-actions">
-          <button class="ag-retro-btn" onclick="switchToMascot()">🐾 To Mascot Pet</button>
-          <button class="ag-retro-btn" onclick="openMainDashboard()">📊 Dashboard</button>
-          <button class="ag-retro-btn" id="btnNotchSfx" onclick="toggleOverlaySfx()">🔊 SFX</button>
-          <button class="ag-retro-btn danger" onclick="disableOverlay()">✕ Disable Notch</button>
+          <button class="ag-retro-btn" onclick="switchToMascot()" style="display:inline-flex; align-items:center; justify-content:center; gap:5px;">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2L3 13h10L8 2z"/></svg>
+            <span>To Mascot Pet</span>
+          </button>
+          <button class="ag-retro-btn" onclick="openMainDashboard()" style="display:inline-flex; align-items:center; justify-content:center; gap:5px;">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 11V7M8 11V5M11 11V8"/></svg>
+            <span>Dashboard</span>
+          </button>
+          <button class="ag-retro-btn" id="btnNotchSfx" onclick="toggleOverlaySfx()" style="display:inline-flex; align-items:center; justify-content:center; gap:5px;">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="7" width="2.4" height="6" rx="0.8"/><rect x="6.8" y="3" width="2.4" height="10" rx="0.8"/><rect x="11.6" y="5" width="2.4" height="8" rx="0.8"/></svg>
+            <span>Audio</span>
+          </button>
+          <button class="ag-retro-btn danger" onclick="disableOverlay()" style="display:inline-flex; align-items:center; justify-content:center; gap:5px;">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+            <span>Disable Notch</span>
+          </button>
         </div>
       </div>
     </div>
@@ -492,22 +504,46 @@
   <!-- ================================================================== -->
   <div class="ag-mascot-actor interactive-hitbox" id="mascotActor">
     <!-- Live Speech Bubble -->
-    <div class="ag-mascot-bubble" id="mascotBubble">READY IN ANTIGRAVITY!</div>
+    <div class="ag-mascot-bubble" id="mascotBubble">Ready in Antigravity</div>
 
-    <!-- Click Command Menu Popover -->
+    <!-- Click Command Menu Popover (Custom Animated SVG Vector Icons) -->
     <div class="ag-mascot-menu" id="mascotMenu" onclick="event.stopPropagation()">
       <div class="ag-menu-title">
-        <span>ANTIGRAVITY PET v2.0</span>
+        <span>Antigravity Companion</span>
         <span id="menuHrsBadge">0h</span>
       </div>
-      <button class="ag-retro-btn" onclick="commandMascot({ mode: 'notch' })">⚡ Morph into Windows Notch</button>
-      <button class="ag-retro-btn" onclick="commandMascot({ mascotBehavior: 'sit_corner' })">📐 Sit in Desktop Corner</button>
-      <button class="ag-retro-btn" onclick="commandMascot({ mascotBehavior: 'walk_follow' })">🚶 Walk &amp; Follow Cursor</button>
-      <button class="ag-retro-btn" onclick="commandMascot({ mascotBehavior: 'sleep' })">💤 Sleep / Wake Up</button>
-      <button class="ag-retro-btn" onclick="cycleDesktopCorner()">🔄 Switch Corner Anchor</button>
-      <button class="ag-retro-btn" onclick="openMainDashboard()">📊 Open Retro Dashboard</button>
-      <button class="ag-retro-btn" id="btnMenuSfx" onclick="toggleOverlaySfx()">🔊 Mute / Unmute 8-Bit SFX</button>
-      <button class="ag-retro-btn danger" onclick="disableOverlay()">✕ Disable Overlay</button>
+      <button class="ag-retro-btn" onclick="commandMascot({ mode: 'notch' })" style="display:inline-flex; align-items:center; gap:6px; text-align:left;">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M5 3v2.5h6V3"/></svg>
+        <span>Morph into Windows Notch</span>
+      </button>
+      <button class="ag-retro-btn" onclick="commandMascot({ mascotBehavior: 'sit_corner' })" style="display:inline-flex; align-items:center; gap:6px; text-align:left;">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6V3h3M13 6V3h-3M3 10v3h3M13 10v3h-3"/></svg>
+        <span>Sit in Desktop Corner</span>
+      </button>
+      <button class="ag-retro-btn" onclick="commandMascot({ mascotBehavior: 'walk_follow' })" style="display:inline-flex; align-items:center; gap:6px; text-align:left;">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 13l3.5-5.5L9.5 10 13 4"/><circle cx="13" cy="4" r="1.5" fill="currentColor"/></svg>
+        <span>Walk &amp; Follow Cursor</span>
+      </button>
+      <button class="ag-retro-btn" onclick="commandMascot({ mascotBehavior: 'sleep' })" style="display:inline-flex; align-items:center; gap:6px; text-align:left;">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M11.5 10.5A5.5 5.5 0 0 1 5.5 4.5a5.5 5.5 0 1 0 6 6z"/></svg>
+        <span>Sleep / Wake Up</span>
+      </button>
+      <button class="ag-retro-btn" onclick="cycleDesktopCorner()" style="display:inline-flex; align-items:center; gap:6px; text-align:left;">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 0 1-9.4 3.9L2.5 10.5M2.5 8a5.5 5.5 0 0 1 9.4-3.9l1.6 1.4"/></svg>
+        <span>Switch Corner Anchor</span>
+      </button>
+      <button class="ag-retro-btn" onclick="openMainDashboard()" style="display:inline-flex; align-items:center; gap:6px; text-align:left;">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 11V7M8 11V5M11 11V8"/></svg>
+        <span>Open Antigravity Dashboard</span>
+      </button>
+      <button class="ag-retro-btn" id="btnMenuSfx" onclick="toggleOverlaySfx()" style="display:inline-flex; align-items:center; gap:6px; text-align:left;">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="7" width="2.4" height="6" rx="0.8"/><rect x="6.8" y="3" width="2.4" height="10" rx="0.8"/><rect x="11.6" y="5" width="2.4" height="8" rx="0.8"/></svg>
+        <span>Toggle 8-Bit Audio</span>
+      </button>
+      <button class="ag-retro-btn danger" onclick="disableOverlay()" style="display:inline-flex; align-items:center; gap:6px; text-align:left;">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        <span>Disable Overlay</span>
+      </button>
     </div>
 
     <!-- Animated Rainbow "A" Mascot SVG Rig -->
@@ -567,12 +603,13 @@
               <line x1="88" y1="91" x2="152" y2="91" stroke="#34F5A4" stroke-width="2.2" stroke-dasharray="6 4" />
             </g>
           </g>
-          <!-- Thinking Spark & Sleep Zzz -->
+          <!-- Thinking Spark & Sleep Zzz (Pure Vector Geometry, Zero Unicode Emojis) -->
           <g class="ag-mascot-spark">
-            <text x="120" y="17" text-anchor="middle" fill="#FFB84D" font-family="monospace" font-weight="900" font-size="18">⚡</text>
+            <polygon points="122,4 113,17 120,17 117,27 127,14 120,14" fill="#FFB84D" />
           </g>
-          <g class="ag-mascot-zzz">
-            <text x="172" y="54" fill="#38E4FF" font-family="monospace" font-weight="900" font-size="18">Zzz</text>
+          <g class="ag-mascot-zzz" stroke="#38E4FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none">
+            <path d="M168 42 H180 L168 54 H180" />
+            <path d="M185 28 H194 L185 37 H194" />
           </g>
         </g>
       </svg>
@@ -817,7 +854,7 @@
 
       if (!latestData || latestData.isAntigravityRunning === false) {
         rig.setAttribute('data-state', 'offline');
-        bubble.innerText = 'ANTIGRAVITY CLOSED';
+        bubble.innerText = 'Antigravity Closed';
         return;
       }
 
@@ -825,15 +862,15 @@
       if (agents.length > 0) {
         const lead = agents[0];
         rig.setAttribute('data-state', lead.status === 'running_tool' ? 'working' : 'thinking');
-        bubble.innerText = (lead.model || 'AGENT') + (lead.activeTool ? ' • ' + lead.activeTool : ' THINKING...');
+        bubble.innerText = (lead.model || 'Agent') + (lead.activeTool ? ' • ' + lead.activeTool : ' Thinking...');
       } else if (companion.mascotBehavior === 'sleep') {
         rig.setAttribute('data-state', 'sleeping');
-        bubble.innerText = 'ZZZ... SLEEPING';
+        bubble.innerText = 'Resting Circuits...';
       } else {
         rig.setAttribute('data-state', 'idle');
         const tb = latestData.timeBreakdown || (latestData.session && latestData.session.timeBreakdown);
         const allH = formatHours(tb ? tb.overall : (latestData.session ? latestData.session.lifetimeActiveSeconds : 0));
-        bubble.innerText = 'IDLE • ' + allH + ' SPENT';
+        bubble.innerText = 'Idle • ' + allH + ' Spent';
       }
     }
 
@@ -858,17 +895,17 @@
 
       if (!isRunning) {
         if (led) led.className = 'ag-notch-led offline';
-        if (statusTxt) statusTxt.innerText = 'ANTIGRAVITY OFFLINE';
-        if (modelBadge) modelBadge.innerText = 'IDE CLOSED • RPC CLEARED';
+        if (statusTxt) statusTxt.innerText = 'Antigravity Offline';
+        if (modelBadge) modelBadge.innerText = 'IDE Closed • RPC Cleared';
       } else if (agents.length > 0) {
         const lead = agents[0];
         if (led) led.className = 'ag-notch-led';
-        if (statusTxt) statusTxt.innerText = agents.length + ' AGENT' + (agents.length > 1 ? 'S' : '') + ' ACTIVE';
+        if (statusTxt) statusTxt.innerText = agents.length + ' Agent' + (agents.length > 1 ? 's' : '') + ' Active';
         if (modelBadge) modelBadge.innerText = (lead.model || 'Gemini') + (lead.activeTool ? ' • ' + lead.activeTool : '');
       } else {
         if (led) led.className = 'ag-notch-led idle';
-        if (statusTxt) statusTxt.innerText = 'ANTIGRAVITY IDLE';
-        if (modelBadge) modelBadge.innerText = '0 AGENTS RUNNING';
+        if (statusTxt) statusTxt.innerText = 'Antigravity Idle';
+        if (modelBadge) modelBadge.innerText = '0 Agents Running';
       }
 
       const tb = data.timeBreakdown || (data.session && data.session.timeBreakdown) || {};

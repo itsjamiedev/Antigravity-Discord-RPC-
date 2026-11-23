@@ -850,11 +850,11 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     ${sideMascotSvg}
     <div class="side-mascot-info">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span class="eyebrow" style="color:var(--emerald);" id="sideMascotBadge">${sideMascotState.toUpperCase()}</span>
-        <span class="chip mono" style="font-size:8px;" id="sideCompModeChip">MASCOT + NOTCH</span>
+        <span class="eyebrow" style="color:var(--emerald);" id="sideMascotBadge">${sideMascotState.charAt(0).toUpperCase() + sideMascotState.slice(1)}</span>
+        <span class="chip mono" style="font-size:8px;" id="sideCompModeChip">Mascot + Notch</span>
       </div>
       <div class="side-mascot-speech" id="sideMascotSpeech">
-        ${isAgentActive ? `"${activeAgent?.model ?? 'Agent'} Active!"` : '"Ready in Antigravity!"'}
+        ${isAgentActive ? `"${activeAgent?.model ?? 'Agent'} Active"` : '"Ready in Antigravity"'}
       </div>
       <div class="side-time-pills">
         <span class="side-time-pill" id="side24hHours">24H: ${last24hHoursFormatted}</span>
@@ -863,13 +863,15 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     </div>
   </div>
 
-  <!-- DESKTOP NOTCH & MASCOT PET QUICK CONTROLS -->
+  <!-- DESKTOP NOTCH & MASCOT PET QUICK CONTROLS (CUSTOM VECTOR SVG ICONS) -->
   <div class="side-companion-bar">
     <button class="side-retro-btn" id="btnSideNotch" onclick="toggleSideNotch()" title="Toggle between Windows Dynamic Notch and Desktop Mascot">
-      <span id="lblSideNotch">⚡ Toggle Notch</span>
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M5 3v2.5h6V3"/></svg>
+      <span id="lblSideNotch">Toggle Notch</span>
     </button>
     <button class="side-retro-btn" id="btnSideBehavior" onclick="cycleSideBehavior()" title="Command Desktop Mascot: Sit Corner / Walk & Follow / Sleep">
-      <span id="lblSideBehavior">🐾 Mascot: Corner</span>
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2L3 13h10L8 2z"/></svg>
+      <span id="lblSideBehavior">Mascot: Corner</span>
     </button>
   </div>
 
@@ -1083,7 +1085,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       const badge = document.getElementById('sideMascotBadge');
       const sp = document.getElementById('sideMascotSpeech');
       if (rig) rig.setAttribute('data-state', state);
-      if (badge) badge.innerText = state.toUpperCase();
+      if (badge) badge.innerText = state.charAt(0).toUpperCase() + state.slice(1);
       if (sp && speech) sp.innerText = speech;
     }
 
@@ -1091,9 +1093,9 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       if (window.agMascotAudio) window.agMascotAudio.playWake();
       const rig = document.getElementById('mascot-rig-side');
       const prev = rig ? (rig.getAttribute('data-state') || 'idle') : 'idle';
-      setSideMascotState('surprised', '"BEEP! RETRO RIG READY!"');
+      setSideMascotState('surprised', '"Antigravity Rig Ready"');
       setTimeout(function() {
-        setSideMascotState(prev, prev === 'working' || prev === 'thinking' ? '"Agent Working..."' : '"Ready in Antigravity!"');
+        setSideMascotState(prev, prev === 'working' || prev === 'thinking' ? '"Agent Working..."' : '"Ready in Antigravity"');
       }, 950);
     }
 
@@ -1119,17 +1121,17 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       if (!comp) return;
       currentCompanion = comp;
       const chip = document.getElementById('sideCompModeChip');
-      if (chip) chip.innerText = !comp.enabled ? 'OVERLAY OFF' : (comp.mode === 'notch' ? 'NOTCH ACTIVE' : 'MASCOT ACTIVE');
+      if (chip) chip.innerText = !comp.enabled ? 'Overlay Off' : (comp.mode === 'notch' ? 'Notch Active' : 'Mascot Active');
       const btnN = document.getElementById('btnSideNotch');
       const lblN = document.getElementById('lblSideNotch');
       if (btnN && lblN) {
         btnN.classList.toggle('active', comp.enabled && comp.mode === 'notch');
-        lblN.innerText = (comp.enabled && comp.mode === 'notch') ? '⚡ Notch: ON' : '⚡ Toggle Notch';
+        lblN.innerText = (comp.enabled && comp.mode === 'notch') ? 'Notch: On' : 'Toggle Notch';
       }
       const lblB = document.getElementById('lblSideBehavior');
       if (lblB) {
-        const map = { 'sit_corner': '🐾 Mascot: Corner', 'walk_follow': '🐾 Mascot: Follow', 'sleep': '💤 Mascot: Sleep' };
-        lblB.innerText = map[comp.mascotBehavior] || '🐾 Mascot: Corner';
+        const map = { 'sit_corner': 'Mascot: Corner', 'walk_follow': 'Mascot: Follow', 'sleep': 'Mascot: Sleep' };
+        lblB.innerText = map[comp.mascotBehavior] || 'Mascot: Corner';
       }
     }
 

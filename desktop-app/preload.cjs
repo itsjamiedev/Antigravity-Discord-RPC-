@@ -1,8 +1,9 @@
 /**
- * Antigravity Presence Desktop v2.0 — Secure Preload Bridge
+ * Antigravity Presence Desktop v2.1 — Secure Preload Bridge
  *
- * Exposes a strictly typed, context-isolated API to the transparent
- * Mascot & Dynamic Notch overlay renderer (`overlay.html`).
+ * Exposes a strictly typed, context-isolated API to both the transparent
+ * Mascot & Dynamic Notch overlay renderer (`overlay.html`) and the
+ * Minimal Retro Setup & Extension Installer Wizard (`installer.html`).
  */
 
 const { contextBridge, ipcRenderer } = require('electron');
@@ -10,8 +11,6 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('antigravityDesktop', {
   /**
    * Toggle click-through on the full-screen transparent overlay window.
-   * When `ignore` is true, `{ forward: true }` allows mousemove events
-   * to continue firing so entering the mascot/notch hitbox re-enables clicks.
    */
   setIgnoreMouseEvents: (ignore) => {
     ipcRenderer.send('overlay:set-ignore-mouse', Boolean(ignore));
@@ -25,8 +24,28 @@ contextBridge.exposeInMainWorld('antigravityDesktop', {
   },
 
   /**
-   * Subscribe to global Windows desktop cursor coordinates (polled at 50ms
-   * by the main process when the mascot is in `walk_follow` mode).
+   * Open the Minimal Retro-CRT Setup & Extension Installer Wizard.
+   */
+  openInstaller: () => {
+    ipcRenderer.send('desktop:open-installer');
+  },
+
+  /**
+   * Complete the Setup Wizard options (auto-install extension, overlay, login item).
+   */
+  completeSetup: (options) => {
+    ipcRenderer.send('installer:complete-setup', options);
+  },
+
+  /**
+   * Close the Setup Wizard and transition into the main Dashboard + Overlay.
+   */
+  closeInstaller: () => {
+    ipcRenderer.send('installer:close');
+  },
+
+  /**
+   * Subscribe to global Windows desktop cursor coordinates.
    */
   onCursorMove: (callback) => {
     const handler = (_event, point) => callback(point);

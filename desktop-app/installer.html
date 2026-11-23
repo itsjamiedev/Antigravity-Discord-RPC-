@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Antigravity Presence Setup</title>
+  <style>
+    :root {
+      --bg: #0B0C11;
+      --card: #131620;
+      --card-inner: #0D0F17;
+      --border: #252A3D;
+      --acc: #FFB84D;
+      --emerald: #34F5A4;
+      --cyan: #38E4FF;
+      --lavender: #B4A2FF;
+      --coral: #FF5E7E;
+      --t1: #F6F1E9;
+      --t2: rgba(246, 241, 233, 0.76);
+      --t3: rgba(246, 241, 233, 0.44);
+      --font-mono: 'Geist Mono', 'JetBrains Mono', Consolas, monospace;
+      --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--t1);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Subtle CRT Phosphor Scanline Texture */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.14) 0px,
+        rgba(0, 0, 0, 0.14) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      opacity: 0.42;
+    }
+
+    .deck-shell {
+      width: 100%;
+      height: 100%;
+      border: 2px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: radial-gradient(circle at 50% 0%, rgba(255, 184, 77, 0.08) 0%, transparent 62%), var(--bg);
+      position: relative;
+    }
+
+    /* Draggable Hardware Titlebar */
+    .titlebar {
+      -webkit-app-region: drag;
+      height: 38px;
+      padding: 0 14px;
+      border-bottom: 2px solid var(--border);
+      background: var(--card-inner);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .titlebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 12.5px;
+      color: var(--t1);
+      letter-spacing: -0.01em;
+    }
+
+    .titlebar-tag {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--acc);
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255, 184, 77, 0.1);
+      border: 1px solid rgba(255, 184, 77, 0.3);
+    }
+
+    .titlebar-close {
+      -webkit-app-region: no-drag;
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      border: 1.5px solid var(--border);
+      background: var(--card);
+      color: var(--t2);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .titlebar-close:hover {
+      border-color: var(--coral);
+      color: var(--coral);
+    }
+
+    /* Main Content Body */
+    .deck-body {
+      flex: 1;
+      padding: 16px 20px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+    }
+
+    /* Hero Stage: Mascot + Antigravity Punch Header */
+    .hero-banner {
+      background: linear-gradient(145deg, #161A27 0%, #0E111A 100%);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      position: relative;
+    }
+
+    .mascot-stage-box {
+      width: 90px;
+      height: 90px;
+      border-radius: 10px;
+      background: radial-gradient(circle at 50% 55%, rgba(52, 245, 164, 0.12), rgba(13, 15, 23, 0.9));
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .hero-copy {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--emerald);
+      margin-bottom: 4px;
+    }
+
+    .hero-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--t1);
+      line-height: 1.2;
+    }
+
+    .hero-speech {
+      margin-top: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--acc);
+      background: rgba(255, 184, 77, 0.08);
+      border: 1px solid rgba(255, 184, 77, 0.26);
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    /* Detected Antigravity IDE Target Card */
+    .detect-card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+    }
+
+    .detect-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .radar-beacon {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: rgba(52, 245, 164, 0.1);
+      border: 1.5px solid rgba(52, 245, 164, 0.35);
+      color: var(--emerald);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .detect-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--t1);
+    }
+
+    .detect-path {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--t3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 320px;
+      margin-top: 2px;
+    }
+
+    .detect-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 5px;
+      border: 1.5px solid rgba(52, 245, 164, 0.4);
+      background: rgba(52, 245, 164, 0.1);
+      color: var(--emerald);
+      white-space: nowrap;
+    }
+
+    /* 3 Minimal Retro Hardware Toggle Options */
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .opt-row {
+      background: var(--card-inner);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: border-color 0.15s ease;
+    }
+
+    .opt-row:hover {
+      border-color: rgba(255, 184, 77, 0.5);
+    }
+
+    .opt-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .opt-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: rgba(255, 184, 77, 0.1);
+      border: 1px solid rgba(255, 184, 77, 0.25);
+      color: var(--acc);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .opt-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--t1);
+    }
+
+    .opt-sub {
+      font-size: 10.5px;
+      color: var(--t3);
+    }
+
+    .retro-check {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      background: var(--card);
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s ease;
+    }
+
+    .retro-check:checked {
+      background: var(--acc);
+      border-color: var(--acc);
+    }
+
+    .retro-check:checked::after {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      width: 5px;
+      height: 9px;
+      border: solid #0B0C11;
+      border-width: 0 2.2px 2.2px 0;
+      transform: rotate(45deg);
+    }
+
+    /* Footer: 16-Segment Stepped Progress Bar & Primary Action Button */
+    .deck-footer {
+      padding: 12px 20px 16px;
+      border-top: 2px solid var(--border);
+      background: var(--card-inner);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: var(--t2);
+    }
+
+    .stepped-bar {
+      display: grid;
+      grid-template-columns: repeat(16, 1fr);
+      gap: 4px;
+      height: 10px;
+      padding: 2px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 4px;
+    }
+
+    .step-cell {
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 1.5px;
+      transition: background 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .step-cell.lit {
+      background: var(--emerald);
+      box-shadow: 0 0 6px rgba(52, 245, 164, 0.6);
+    }
+
+    .punch-btn {
+      width: 100%;
+      padding: 11px 16px;
+      border-radius: 8px;
+      border: 2px solid var(--acc);
+      background: linear-gradient(180deg, rgba(255, 184, 77, 0.22) 0%, rgba(255, 184, 77, 0.1) 100%);
+      color: var(--acc);
+      font-family: var(--font-sans);
+      font-size: 13.5px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.65);
+      transition: all 0.15s ease;
+    }
+
+    .punch-btn:hover:not(:disabled) {
+      background: var(--acc);
+      color: #0B0C11;
+      transform: translateY(-1px);
+    }
+
+    .punch-btn:disabled {
+      opacity: 0.65;
+      cursor: default;
+    }
+
+    /* Mascot Rig Keyframe Animations (Pure Vector, Zero Emojis) */
+    .ag-mascot-whole {
+      transform-origin: 120px 135px;
+      animation: agFloat 2.8s ease-in-out infinite;
+    }
+    .ag-mascot-arm-l {
+      transform-origin: 58px 115px;
+      animation: agArmL 2.8s ease-in-out infinite;
+    }
+    .ag-mascot-arm-r {
+      transform-origin: 182px 115px;
+      animation: agArmR 2.8s ease-in-out infinite;
+    }
+    .ag-mascot-eyes {
+      transform-origin: 120px 92px;
+      animation: agBlink 4.4s infinite;
+    }
+    .ag-mascot-visor,
+    .ag-mascot-spark {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .mascot-stage-box[data-state="thinking"] .ag-mascot-spark {
+      opacity: 1;
+      animation: agBoltPulse 0.9s ease-in-out infinite;
+    }
+    .mascot-stage-box[data-state="working"] .ag-mascot-visor,
+    .mascot-stage-box[data-state="working"] .ag-mascot-spark {
+      opacity: 1;
+    }
+    .mascot-stage-box[data-state="working"] .ag-mascot-arm-l {
+      animation: agTypeL 0.24s ease-in-out infinite alternate;
+    }
+    .mascot-stage-box[data-state="working"] .ag-mascot-arm-r {
+      animation: agTypeR 0.24s ease-in-out infinite alternate-reverse;
+    }
+    .mascot-stage-box[data-state="surprised"] .ag-mascot-whole {
+      animation: agJump 0.48s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .vec-pulse {
+      animation: agBoltPulse 1.5s ease-in-out infinite;
+    }
+    .vec-spin {
+      animation: agSpin 2.2s linear infinite;
+    }
+
+    @keyframes agFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    @keyframes agArmL {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(8deg); }
+    }
+    @keyframes agArmR {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(-8deg); }
+    }
+    @keyframes agTypeL {
+      0% { transform: rotate(16deg) translateY(-3px); }
+      100% { transform: rotate(-14deg) translateY(4px); }
+    }
+    @keyframes agTypeR {
+      0% { transform: rotate(-16deg) translateY(-3px); }
+      100% { transform: rotate(14deg) translateY(4px); }
+    }
+    @keyframes agBlink {
+      0%, 92%, 100% { transform: scaleY(1); }
+      95% { transform: scaleY(0.08); }
+    }
+    @keyframes agBoltPulse {
+      0%, 100% { transform: scale(1); opacity: 0.85; }
+      50% { transform: scale(1.16); opacity: 1; }
+    }
+    @keyframes agJump {
+      0% { transform: translateY(0) scale(1); }
+      45% { transform: translateY(-16px) scale(1.08); }
+      100% { transform: translateY(0) scale(1); }
+    }
+    @keyframes agSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck-shell">
+    <!-- Custom Hardware Titlebar -->
+    <div class="titlebar">
+      <div class="titlebar-brand">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFB84D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 22 19 2 19" />
+          <polygon points="12 7 17 16 7 16" fill="#FFB84D" opacity="0.28" />
+        </svg>
+        <span>Antigravity Presence Setup</span>
+        <span class="titlebar-tag">v2.1 Self-Installer</span>
+      </div>
+      <button class="titlebar-close" onclick="closeSetupWindow()" title="Close Setup">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M4 4l8 8M12 4l-8 8" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Main Setup Deck Body -->
+    <div class="deck-body">
+      <!-- 1. Mascot Center-Stage Hero -->
+      <div class="hero-banner">
+        <div class="mascot-stage-box" id="installerMascotBox" data-state="idle" onclick="chirpInstallerMascot()" title="Click Antigravity Mascot">
+          <svg width="78" height="78" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="ag-rainbow-inst" x1="25" y1="185" x2="215" y2="55" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#0038FF" />
+                <stop offset="22%" stop-color="#00C2FF" />
+                <stop offset="44%" stop-color="#18F26B" />
+                <stop offset="64%" stop-color="#FFE600" />
+                <stop offset="82%" stop-color="#FF6B00" />
+                <stop offset="100%" stop-color="#FF0F47" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="120" cy="222" rx="54" ry="8" fill="rgba(0,0,0,0.45)" />
+            <g class="ag-mascot-whole">
+              <path d="M84 166 L73 206" stroke="#36425A" stroke-width="11" stroke-linecap="round" />
+              <ellipse cx="67" cy="210" rx="19" ry="10" transform="rotate(-6 67 210)" fill="#465574" stroke="#232B3B" stroke-width="2.5" />
+              <path d="M156 166 L167 206" stroke="#36425A" stroke-width="11" stroke-linecap="round" />
+              <ellipse cx="173" cy="210" rx="19" ry="10" transform="rotate(6 173 210)" fill="#465574" stroke="#232B3B" stroke-width="2.5" />
+              <g class="ag-mascot-arm-l">
+                <path d="M62 112 C34 115, 24 134, 21 146" stroke="#2C3548" stroke-width="10" stroke-linecap="round" fill="none" />
+                <circle cx="20" cy="151" r="11" fill="#354056" />
+              </g>
+              <g class="ag-mascot-arm-r">
+                <path d="M178 112 C206 115, 216 134, 219 146" stroke="#2C3548" stroke-width="10" stroke-linecap="round" fill="none" />
+                <circle cx="220" cy="151" r="11" fill="#354056" />
+              </g>
+              <path
+                d="M120 26 C141 26, 157 52, 198 148 C210 176, 190 198, 166 182 C145 168, 134 150, 120 150 C106 150, 95 168, 74 182 C50 198, 30 176, 42 148 C83 52, 99 26, 120 26 Z"
+                fill="url(#ag-rainbow-inst)"
+                stroke="rgba(255,255,255,0.24)"
+                stroke-width="2"
+              />
+              <g class="ag-mascot-eyes">
+                <rect x="88" y="81" width="21" height="21" rx="5.5" fill="#0B0D13" />
+                <rect x="131" y="81" width="21" height="21" rx="5.5" fill="#0B0D13" />
+                <rect x="92" y="85" width="5" height="5" rx="1.5" fill="#FFFFFF" opacity="0.85" />
+                <rect x="135" y="85" width="5" height="5" rx="1.5" fill="#FFFFFF" opacity="0.85" />
+                <g class="ag-mascot-visor">
+                  <rect x="82" y="79" width="76" height="24" rx="6" fill="rgba(11, 13, 19, 0.88)" stroke="#34F5A4" stroke-width="2.4" />
+                  <line x1="88" y1="91" x2="152" y2="91" stroke="#34F5A4" stroke-width="2.2" stroke-dasharray="6 4" />
+                </g>
+              </g>
+              <g class="ag-mascot-spark">
+                <polygon points="122,3 112,16 120,16 117,27 128,14 120,14" fill="#FFB84D" />
+              </g>
+            </g>
+          </svg>
+        </div>
+
+        <div class="hero-copy">
+          <div class="hero-eyebrow">
+            <svg class="vec-pulse" width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+              <circle cx="8" cy="8" r="4" />
+            </svg>
+            <span id="heroEyebrowText">Antigravity Companion &amp; Extension Provisioner</span>
+          </div>
+          <div class="hero-title">Antigravity Presence Desktop</div>
+          <div class="hero-speech" id="installerSpeech">"Antigravity 2.0 Detected — Ready to Link"</div>
+        </div>
+      </div>
+
+      <!-- 2. Live Antigravity IDE Detection Readout -->
+      <div class="detect-card">
+        <div class="detect-left">
+          <div class="radar-beacon">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+              <circle cx="8" cy="8" r="6" />
+              <circle cx="8" cy="8" r="2.2" fill="currentColor" />
+            </svg>
+          </div>
+          <div>
+            <div class="detect-title" id="detectTitle">Antigravity 2.0 IDE Detected</div>
+            <div class="detect-path" id="detectPath">~/.antigravity-ide/extensions/itsjamiefied.antigravity-presence-1.0.0</div>
+          </div>
+        </div>
+        <span class="detect-badge" id="detectBadge">Ready to Install</span>
+      </div>
+
+      <!-- 3. Hardware Setup Options (Custom Animated SVG Icons) -->
+      <div class="options-list">
+        <label class="opt-row">
+          <div class="opt-left">
+            <div class="opt-icon">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6.5 2.5h3v2.5h4v4h-2.5v3h-4v2.5h-4v-4H5.5v-4h1V2.5z" />
+              </svg>
+            </div>
+            <div>
+              <div class="opt-title">Auto-Install Antigravity IDE Extension</div>
+              <div class="opt-sub">Provisions itsjamiefied.antigravity-presence directly into Antigravity</div>
+            </div>
+          </div>
+          <input type="checkbox" class="retro-check" id="chkInstallExt" checked />
+        </label>
+
+        <label class="opt-row">
+          <div class="opt-left">
+            <div class="opt-icon">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="12" height="10" rx="2" />
+                <path d="M5 3v2.5h6V3" />
+              </svg>
+            </div>
+            <div>
+              <div class="opt-title">Enable Desktop Mascot &amp; Windows Dynamic Notch</div>
+              <div class="opt-sub">Interactive desktop pet and top-screen Antigravity telemetry pill</div>
+            </div>
+          </div>
+          <input type="checkbox" class="retro-check" id="chkEnableOverlay" checked />
+        </label>
+
+        <label class="opt-row">
+          <div class="opt-left">
+            <div class="opt-icon">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                <path d="M8 2v6M4.2 4.2a5.5 5.5 0 1 0 7.6 0" />
+              </svg>
+            </div>
+            <div>
+              <div class="opt-title">Launch Antigravity Presence at Windows Login</div>
+              <div class="opt-sub">Keep zero-lag Discord Rich Presence active whenever Antigravity opens</div>
+            </div>
+          </div>
+          <input type="checkbox" class="retro-check" id="chkAutoStart" checked />
+        </label>
+      </div>
+    </div>
+
+    <!-- Footer: 16-Segment Progress Bar + Primary CTA -->
+    <div class="deck-footer">
+      <div class="progress-meta">
+        <span id="progressStepText">Ready to link Antigravity IDE and launch companion</span>
+        <span id="progressPctText">0%</span>
+      </div>
+      <div class="stepped-bar" id="steppedBar"></div>
+      <button class="punch-btn" id="btnPunchInstall" onclick="runPunchInstall()">
+        <svg class="vec-pulse" width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+          <polygon points="9.5,1 3,9 8,9 6.5,15 13,7 8,7" />
+        </svg>
+        <span id="btnPunchLabel">Punch It — Install &amp; Launch Antigravity</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* 8-Bit Chiptune Web Audio Synthesizer */
+    (function() {
+      let ctx = null;
+      function getCtx() {
+        if (!ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) ctx = new AC();
+        }
+        if (ctx && ctx.state === 'suspended') ctx.resume().catch(function() {});
+        return ctx;
+      }
+      function tone(freq, type, startSec, durSec, gainVal) {
+        const c = getCtx();
+        if (!c) return;
+        const osc = c.createOscillator();
+        const g = c.createGain();
+        osc.type = type || 'square';
+        osc.frequency.setValueAtTime(freq, c.currentTime + startSec);
+        g.gain.setValueAtTime(gainVal || 0.04, c.currentTime + startSec);
+        g.gain.exponentialRampToValueAtTime(0.0008, c.currentTime + startSec + durSec);
+        osc.connect(g);
+        g.connect(c.destination);
+        osc.start(c.currentTime + startSec);
+        osc.stop(c.currentTime + startSec + durSec);
+      }
+      window.installerAudio = {
+        step: function(idx) { tone(380 + idx * 32, 'square', 0, 0.045, 0.03); },
+        fanfare: function() {
+          tone(523.25, 'square', 0, 0.07, 0.045);
+          tone(659.25, 'square', 0.07, 0.07, 0.045);
+          tone(783.99, 'square', 0.14, 0.07, 0.045);
+          tone(1046.5, 'square', 0.21, 0.16, 0.05);
+        }
+      };
+    })();
+
+    const bridge = window.antigravityDesktop;
+    const barEl = document.getElementById('steppedBar');
+    const TOTAL_STEPS = 16;
+
+    for (let i = 0; i < TOTAL_STEPS; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'step-cell';
+      cell.id = 'step-cell-' + i;
+      barEl.appendChild(cell);
+    }
+
+    function setProgress(stepCount, label) {
+      for (let i = 0; i < TOTAL_STEPS; i++) {
+        const cell = document.getElementById('step-cell-' + i);
+        if (cell) cell.classList.toggle('lit', i < stepCount);
+      }
+      const pct = Math.min(100, Math.round((stepCount / TOTAL_STEPS) * 100));
+      document.getElementById('progressPctText').innerText = pct + '%';
+      if (label) document.getElementById('progressStepText').innerText = label;
+    }
+
+    function setMascotState(state, speech) {
+      const box = document.getElementById('installerMascotBox');
+      const sp = document.getElementById('installerSpeech');
+      if (box) box.setAttribute('data-state', state);
+      if (sp && speech) sp.innerText = speech;
+    }
+
+    function chirpInstallerMascot() {
+      window.installerAudio.fanfare();
+      setMascotState('surprised', '"Antigravity Systems Primed"');
+      setTimeout(function() {
+        setMascotState('idle', '"Antigravity 2.0 Detected — Ready to Link"');
+      }, 950);
+    }
+
+    async function inspectIdeTargets() {
+      setMascotState('thinking', '"Scanning for Antigravity IDE..."');
+      try {
+        const res = await fetch('http://127.0.0.1:41177/api/ide-status');
+        if (res.ok) {
+          const report = await res.json();
+          const detected = (report.targets || []).find(function(t) { return t.detected; }) || (report.targets && report.targets[0]);
+          if (detected && detected.detected) {
+            document.getElementById('detectTitle').innerText = detected.label + ' Detected';
+            document.getElementById('detectPath').innerText = detected.extensionInstallDir;
+            document.getElementById('detectBadge').innerText = detected.installed && detected.bundleHashMatch ? 'Installed & Synced' : 'Ready to Install';
+            setMascotState('idle', '"' + detected.label + ' Detected — Ready to Link"');
+          } else {
+            document.getElementById('detectTitle').innerText = 'Antigravity Standalone Mode';
+            document.getElementById('detectPath').innerText = 'Will auto-link when Antigravity IDE is installed';
+            document.getElementById('detectBadge').innerText = 'Standalone Ready';
+            setMascotState('idle', '"Ready in Standalone Mode"');
+          }
+        }
+      } catch {
+        setMascotState('idle', '"Antigravity Setup Ready"');
+      }
+    }
+
+    async function runPunchInstall() {
+      const btn = document.getElementById('btnPunchInstall');
+      const lbl = document.getElementById('btnPunchLabel');
+      btn.disabled = true;
+
+      const installExt = document.getElementById('chkInstallExt').checked;
+      const enableOverlay = document.getElementById('chkEnableOverlay').checked;
+      const autoStart = document.getElementById('chkAutoStart').checked;
+
+      setMascotState('working', '"Linking Antigravity Extension & Companion..."');
+      lbl.innerText = 'Provisioning Antigravity Presence...';
+
+      const stages = [
+        { step: 3, text: 'Verifying Antigravity IDE installation paths...' },
+        { step: 7, text: 'Unpacking dist/extension.cjs & resources...' },
+        { step: 11, text: 'Patching Antigravity extensions.json registry...' },
+        { step: 14, text: 'Configuring Desktop Mascot & Dynamic Notch...' },
+        { step: 16, text: 'Antigravity Presence linked and active!' }
+      ];
+
+      for (let i = 0; i < stages.length; i++) {
+        const st = stages[i];
+        setProgress(st.step, st.text);
+        window.installerAudio.step(st.step);
+
+        if (i === 1 && installExt) {
+          try {
+            await fetch('http://127.0.0.1:41177/api/ide-install', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ force: true })
+            });
+          } catch {}
+        }
+
+        if (i === 3) {
+          try {
+            await fetch('http://127.0.0.1:41177/api/companion', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ enabled: enableOverlay })
+            });
+          } catch {}
+          if (bridge && typeof bridge.completeSetup === 'function') {
+            bridge.completeSetup({
+              installExtension: installExt,
+              enableOverlay: enableOverlay,
+              autoStart: autoStart
+            });
+          }
+        }
+
+        await new Promise(function(r) { setTimeout(r, 240); });
+      }
+
+      window.installerAudio.fanfare();
+      setMascotState('surprised', '"Antigravity Extension Linked & Live"');
+      document.getElementById('detectBadge').innerText = 'Installed & Synced';
+      lbl.innerText = 'Antigravity Linked — Launching Studio...';
+
+      setTimeout(function() {
+        closeSetupWindow();
+      }, 850);
+    }
+
+    function closeSetupWindow() {
+      if (bridge && typeof bridge.closeInstaller === 'function') {
+        bridge.closeInstaller();
+      } else {
+        window.close();
+      }
+    }
+
+    inspectIdeTargets();
+  </script>
+</body>
+</html>

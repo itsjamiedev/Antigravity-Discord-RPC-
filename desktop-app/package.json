@@ -1,14 +1,44 @@
 {
   "name": "antigravity-presence-desktop",
-  "productName": "Antigravity Presence Desktop",
-  "version": "2.0.0",
-  "description": "Standalone Windows Desktop Companion, Interactive Mascot Pet, Windows Dynamic Notch, and Zero-Lag Discord RPC for Google Antigravity",
+  "productName": "Antigravity Presence",
+  "version": "2.1.0",
+  "description": "Standalone Windows Desktop Companion, Self-Provisioning Antigravity IDE Extension Installer, Interactive Mascot Pet, Windows Dynamic Notch, and Zero-Lag Discord RPC",
   "main": "main.cjs",
   "author": "itsjamiedev",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
+    "installer": "electron . --installer",
     "overlay": "electron . --overlay-only"
+  },
+  "build": {
+    "appId": "org.itsjamiedev.antigravity-presence",
+    "productName": "Antigravity Presence",
+    "win": {
+      "target": ["nsis"],
+      "icon": "../resources/mascot.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Antigravity Presence"
+    },
+    "extraResources": [
+      {
+        "from": "../dist",
+        "to": "dist"
+      },
+      {
+        "from": "../resources",
+        "to": "resources"
+      },
+      {
+        "from": "../package.json",
+        "to": "package.json"
+      }
+    ]
   },
   "devDependencies": {
     "electron": "^35.0.0"

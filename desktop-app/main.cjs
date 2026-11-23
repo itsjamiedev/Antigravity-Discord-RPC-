@@ -1,23 +1,27 @@
 /**
- * Antigravity Presence Desktop v2.0 — Standalone Windows Desktop Application
+ * Antigravity Presence Desktop v2.1 — Standalone Windows Desktop Application & Self-Installer
  *
  * Architecture:
  * 1. Single-Instance Supervisor (`app.requestSingleInstanceLock()`).
  * 2. Embedded Core Engine Bootstrap:
- *    - Checks if `http://127.0.0.1:41177/api/health` is already served (e.g., by IDE Leader or background daemon).
- *    - If port 41177 is free, spawns `../dist/daemon.cjs` in-process/child-process so the Desktop App
+ *    - Checks if `http://127.0.0.1:41177/api/health` is already served.
+ *    - If port 41177 is free, spawns `../dist/daemon.cjs` so the Desktop App
  *      works 100% standalone even before Antigravity IDE is opened.
- * 3. Main Retro-CRT Dashboard Window (`1240x820`, dark frame, hides to system tray on close).
- * 4. Transparent Always-On-Top Overlay Window (`overlay.html`):
- *    - Renders the interactive Antigravity Rainbow Mascot Pet (sit in corner, walk & follow cursor,
- *      sleep mode, drag-and-drop, 8-bit chiptune SFX, click command menu) AND the Windows Dynamic Notch.
- *    - Uses `setIgnoreMouseEvents(true, { forward: true })` outside interactive hitboxes for 0% click obstruction.
- * 5. Native Windows System Tray with instant mode/behavior toggles.
+ * 3. Automatic Antigravity IDE Extension Provisioning:
+ *    - On startup, triggers `POST http://127.0.0.1:41177/api/ide-install` so any
+ *      detected Antigravity 2.0 / 1.x installation automatically receives the latest
+ *      `itsjamiefied.antigravity-presence` extension bundle and `extensions.json` registration.
+ * 4. Minimal Retro-CRT Setup & Extension Installer Wizard (`installer.html`):
+ *    - Frameless `580x500` hardware setup deck with the animated Rainbow Mascot center-stage.
+ *    - Automatically presented on first run (or when launched with `--installer` or from Tray).
+ * 5. Main Retro-CRT Dashboard Window (`1260x840`, hides to system tray on close).
+ * 6. Transparent Always-On-Top Overlay Window (`overlay.html`) for the Desktop Mascot Pet & Dynamic Notch.
  */
 
 const { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, shell } = require('electron');
 const path = require('node:path');
 const http = require('node:http');
+const os = require('node:os');
 const fs = require('node:fs');
 const { fork } = require('node:child_process');
 
@@ -26,9 +30,11 @@ const API_PORT = 41177;
 const ICON_PATH = path.resolve(__dirname, '..', 'resources', 'mascot.png');
 const FALLBACK_ICON_PATH = path.resolve(__dirname, '..', 'resources', 'icon.png');
 const DAEMON_BUNDLE_PATH = path.resolve(__dirname, '..', 'dist', 'daemon.cjs');
+const SETUP_STATE_PATH = path.join(os.homedir(), '.gemini', 'antigravity-presence', 'desktop-setup.json');
 
 let dashboardWindow = null;
 let overlayWindow = null;
+let installerWindow = null;
 let tray = null;
 let daemonProcess = null;
 let cursorTrackInterval = null;
@@ -41,7 +47,6 @@ let currentCompanion = {
   soundMuted: false,
 };
 
-// Prevent multiple instances
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
@@ -57,9 +62,38 @@ function getAppIcon() {
   return nativeImage.createFromPath(target);
 }
 
-/**
- * Checks if port 41177 is already serving the Antigravity Presence API.
- */
+function hasCompletedFirstSetup() {
+  try {
+    if (fs.existsSync(SETUP_STATE_PATH)) {
+      const data = JSON.parse(fs.readFileSync(SETUP_STATE_PATH, 'utf8'));
+      return Boolean(data && data.setupCompleted);
+    }
+  } catch {}
+  return false;
+}
+
+function markFirstSetupCompleted(options = {}) {
+  try {
+    const dir = path.dirname(SETUP_STATE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(
+      SETUP_STATE_PATH,
+      JSON.stringify(
+        {
+          setupCompleted: true,
+          completedAt: new Date().toISOString(),
+          ...options,
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+  } catch {}
+}
+
 function checkBackendAlive() {
   return new Promise((resolve) => {
     const req = http.get(
@@ -82,10 +116,6 @@ function checkBackendAlive() {
   });
 }
 
-/**
- * Ensures the Core Engine (`dist/daemon.cjs`) is running so the Desktop App
- * operates 100% standalone without requiring the IDE extension.
- */
 async function ensureStandaloneCoreEngine() {
   const alive = await checkBackendAlive();
   if (alive) {
@@ -107,9 +137,29 @@ async function ensureStandaloneCoreEngine() {
   }
 }
 
-/**
- * Updates companion settings via the local API (`POST /api/companion`).
- */
+function triggerIdeExtensionAutoInstall(force = false) {
+  const body = JSON.stringify({ force: Boolean(force) });
+  const req = http.request(
+    {
+      hostname: API_HOST,
+      port: API_PORT,
+      path: '/api/ide-install',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+      timeout: 2500,
+    },
+    (res) => {
+      res.resume();
+    }
+  );
+  req.on('error', () => {});
+  req.write(body);
+  req.end();
+}
+
 function updateCompanionApi(partial) {
   currentCompanion = { ...currentCompanion, ...partial };
   rebuildTrayMenu();
@@ -151,6 +201,48 @@ function updateCompanionApi(partial) {
 }
 
 /**
+ * Creates or focuses the Minimal Retro-CRT Setup & Extension Installer Wizard (`installer.html`).
+ */
+function createInstallerWindow() {
+  if (installerWindow && !installerWindow.isDestroyed()) {
+    installerWindow.show();
+    installerWindow.focus();
+    return installerWindow;
+  }
+
+  installerWindow = new BrowserWindow({
+    width: 580,
+    height: 500,
+    resizable: false,
+    maximizable: false,
+    minimizable: false,
+    frame: false,
+    title: 'Antigravity Presence Setup',
+    backgroundColor: '#0B0C11',
+    icon: getAppIcon(),
+    center: true,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  installerWindow.loadFile(path.join(__dirname, 'installer.html'));
+  installerWindow.once('ready-to-show', () => {
+    installerWindow.show();
+    installerWindow.focus();
+  });
+
+  installerWindow.on('closed', () => {
+    installerWindow = null;
+  });
+
+  return installerWindow;
+}
+
+/**
  * Creates or focuses the Main Retro-CRT Dashboard Window.
  */
 function createDashboardWindow(showImmediately = true) {
@@ -167,12 +259,13 @@ function createDashboardWindow(showImmediately = true) {
     height: 840,
     minWidth: 940,
     minHeight: 640,
-    title: 'Antigravity Presence v2.0 — Retro Telemetry & Companion Studio',
+    title: 'Antigravity Presence — Retro Telemetry & Companion Studio',
     backgroundColor: '#0B0C11',
     icon: getAppIcon(),
     autoHideMenuBar: true,
     show: false,
     webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -191,7 +284,6 @@ function createDashboardWindow(showImmediately = true) {
     return { action: 'deny' };
   });
 
-  // Hide to system tray on window close unless quitting
   dashboardWindow.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
@@ -252,7 +344,6 @@ function createOverlayWindow() {
 
   overlayWindow.loadFile(path.join(__dirname, 'overlay.html'));
 
-  // Keep overlay aligned if display resolution or taskbar geometry changes
   const syncDisplayBounds = () => {
     if (!overlayWindow || overlayWindow.isDestroyed()) return;
     const wa = screen.getPrimaryDisplay().workArea;
@@ -260,7 +351,6 @@ function createOverlayWindow() {
   };
   screen.on('display-metrics-changed', syncDisplayBounds);
 
-  // Forward global cursor position at 50ms intervals for smooth Mascot walk & follow
   if (cursorTrackInterval) clearInterval(cursorTrackInterval);
   cursorTrackInterval = setInterval(() => {
     if (!overlayWindow || overlayWindow.isDestroyed()) return;
@@ -280,20 +370,30 @@ function createOverlayWindow() {
   return overlayWindow;
 }
 
-/**
- * Builds the Windows System Tray menu for instant Mascot & Notch control.
- */
 function rebuildTrayMenu() {
   if (!tray) return;
 
+  let loginEnabled = false;
+  try {
+    loginEnabled = Boolean(app.getLoginItemSettings().openAtLogin);
+  } catch {}
+
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Antigravity Presence v2.0',
+      label: 'Antigravity Presence v2.1',
       enabled: false,
     },
     {
-      label: 'Open Retro Dashboard Studio',
+      label: 'Open Antigravity Dashboard Studio',
       click: () => showDashboardWindow(),
+    },
+    {
+      label: 'Open Antigravity Setup & Extension Installer',
+      click: () => createInstallerWindow(),
+    },
+    {
+      label: 'Force Sync Antigravity IDE Extension',
+      click: () => triggerIdeExtensionAutoInstall(true),
     },
     { type: 'separator' },
     {
@@ -328,7 +428,7 @@ function rebuildTrayMenu() {
       click: () => updateCompanionApi({ enabled: true, mode: 'mascot', mascotBehavior: 'walk_follow' }),
     },
     {
-      label: 'Mascot: Sleep Mode (Zzz)',
+      label: 'Mascot: Sleep Mode',
       type: 'radio',
       checked: currentCompanion.mascotBehavior === 'sleep',
       click: () => updateCompanionApi({ enabled: true, mode: 'mascot', mascotBehavior: 'sleep' }),
@@ -364,10 +464,21 @@ function rebuildTrayMenu() {
       ],
     },
     {
-      label: 'Mute 8-Bit Chiptune SFX',
+      label: 'Mute 8-Bit Audio',
       type: 'checkbox',
       checked: Boolean(currentCompanion.soundMuted),
       click: (item) => updateCompanionApi({ soundMuted: item.checked }),
+    },
+    {
+      label: 'Launch Antigravity Presence at Windows Login',
+      type: 'checkbox',
+      checked: loginEnabled,
+      click: (item) => {
+        try {
+          app.setLoginItemSettings({ openAtLogin: Boolean(item.checked) });
+        } catch {}
+        rebuildTrayMenu();
+      },
     },
     { type: 'separator' },
     {
@@ -385,7 +496,7 @@ function rebuildTrayMenu() {
 function createSystemTray() {
   const icon = getAppIcon().resize({ width: 16, height: 16 });
   tray = new Tray(icon);
-  tray.setToolTip('Antigravity Presence v2.0 — Mascot, Dynamic Notch & Discord RPC');
+  tray.setToolTip('Antigravity Presence — Mascot, Dynamic Notch & Auto-IDE Sync');
   tray.on('double-click', () => showDashboardWindow());
   rebuildTrayMenu();
 }
@@ -404,20 +515,55 @@ ipcMain.on('desktop:open-dashboard', () => {
   showDashboardWindow();
 });
 
+ipcMain.on('desktop:open-installer', () => {
+  createInstallerWindow();
+});
+
+ipcMain.on('installer:complete-setup', (_event, options) => {
+  markFirstSetupCompleted(options);
+  if (options && typeof options.autoStart === 'boolean') {
+    try {
+      app.setLoginItemSettings({ openAtLogin: options.autoStart });
+    } catch {}
+  }
+  if (options && options.installExtension) {
+    triggerIdeExtensionAutoInstall(true);
+  }
+  if (options && typeof options.enableOverlay === 'boolean') {
+    updateCompanionApi({ enabled: options.enableOverlay });
+  }
+  rebuildTrayMenu();
+});
+
+ipcMain.on('installer:close', () => {
+  if (installerWindow && !installerWindow.isDestroyed()) {
+    installerWindow.close();
+  }
+  showDashboardWindow();
+});
+
 app.whenReady().then(async () => {
   await ensureStandaloneCoreEngine();
 
-  // Wait briefly for port 41177 if we just spawned the daemon
   for (let i = 0; i < 12; i++) {
     if (await checkBackendAlive()) break;
     await new Promise((r) => setTimeout(r, 250));
   }
 
+  // Always auto-detect Antigravity IDE and self-heal extension on startup
+  triggerIdeExtensionAutoInstall(false);
+
   createSystemTray();
   createOverlayWindow();
 
+  const forceInstaller = process.argv.includes('--installer');
   const overlayOnly = process.argv.includes('--overlay-only');
-  createDashboardWindow(!overlayOnly);
+
+  if (forceInstaller || (!overlayOnly && !hasCompletedFirstSetup())) {
+    createInstallerWindow();
+  } else {
+    createDashboardWindow(!overlayOnly);
+  }
 });
 
 app.on('before-quit', () => {

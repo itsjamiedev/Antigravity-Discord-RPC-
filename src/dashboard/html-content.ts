@@ -875,6 +875,43 @@ export function getDashboardHtml(): string {
     footer a:hover {
       color: var(--acc);
     }
+
+    /* CUSTOM ANIMATED SVG VECTOR ICONS (ZERO EMOJIS) */
+    .ag-vec-icon {
+      width: 13px;
+      height: 13px;
+      display: inline-block;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+    .ag-vec-bolt {
+      animation: agVecBoltPulse 1.6s ease-in-out infinite;
+    }
+    .ag-vec-spin {
+      animation: agVecSpin 2.4s linear infinite;
+    }
+    .ag-vec-wave rect {
+      transform-origin: center bottom;
+      animation: agVecEq 0.9s ease-in-out infinite alternate;
+    }
+    .ag-vec-wave rect:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .ag-vec-wave rect:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    @keyframes agVecBoltPulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px currentColor); }
+      50% { transform: scale(1.14); filter: drop-shadow(0 0 6px currentColor); }
+    }
+    @keyframes agVecSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes agVecEq {
+      0% { transform: scaleY(0.45); }
+      100% { transform: scaleY(1); }
+    }
   </style>
 </head>
 <body class="crt-scanlines">
@@ -888,18 +925,21 @@ export function getDashboardHtml(): string {
       <div>
         <div class="brand-title">
           Antigravity Presence
-          <span class="pixel-tag">LOCAL 127.0.0.1</span>
+          <span class="pixel-tag">Local 127.0.0.1</span>
         </div>
       </div>
     </div>
 
     <div class="header-actions">
-      <button class="status-pill" id="btnPauseLeave" onclick="togglePauseLeave()" title="Pause and store session for up to 24 hours across PC shutdown" style="cursor:pointer; background:rgba(232,255,31,0.08); border:1px solid rgba(232,255,31,0.3); color:var(--acc); font-family:inherit; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:6px; outline:none; transition:all .2s ease;">
-        <span id="pauseIcon">⏸️</span>
-        <span id="pauseText">Pause & Leave</span>
+      <button class="status-pill" id="btnPauseLeave" onclick="togglePauseLeave()" title="Pause and store session for up to 24 hours across PC shutdown" style="cursor:pointer; background:rgba(255,184,77,0.08); border:1px solid rgba(255,184,77,0.3); color:var(--acc); font-family:inherit; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:6px; outline:none; transition:all .2s ease;">
+        <span id="pauseIcon" style="display:inline-flex; align-items:center;">
+          <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="3.5" y="3" width="3" height="10" rx="1"/><rect x="9.5" y="3" width="3" height="10" rx="1"/></svg>
+        </span>
+        <span id="pauseText">Pause &amp; Leave</span>
       </button>
-      <div class="status-pill" id="tokenmaxxingPill" style="border-color:rgba(232,255,31,0.3); background:rgba(232,255,31,0.06);">
-        <span style="color:var(--acc); font-weight:700;" id="tokenmaxxingText">⚡ TOKENMAXXING • 0</span>
+      <div class="status-pill" id="tokenmaxxingPill" style="border-color:rgba(255,184,77,0.3); background:rgba(255,184,77,0.06);">
+        <svg class="ag-vec-icon ag-vec-bolt" style="color:var(--acc);" viewBox="0 0 16 16" fill="currentColor"><polygon points="9.5,1 3,9 8,9 6.5,15 13,7 8,7"/></svg>
+        <span style="color:var(--acc); font-weight:700;" id="tokenmaxxingText">Tokenmaxxing • 0</span>
       </div>
       <div class="status-pill" id="workspacePill" title="Open workspaces">
         <span id="workspaceText">1 Workspace</span>
@@ -941,20 +981,20 @@ export function getDashboardHtml(): string {
         <div class="retro-hero-stage" id="retroHeroStage">
           <!-- Mascot Interactive Pedestal -->
           <div class="mascot-pedestal" onclick="interactDashMascot()" title="Click to interact with Antigravity Mascot (Chiptune SFX)">
-            <span class="mascot-pedestal-tag" id="dashMascotStateTag">IDLE</span>
+            <span class="mascot-pedestal-tag" id="dashMascotStateTag">Idle</span>
             ${mascotHeroSvg}
-            <div class="mascot-speech" id="dashMascotSpeech">"READY FOR NEXT TURN!"</div>
-            <div class="mascot-sub" id="dashMascotSub">Click mascot to chirp • Retro Companion v2.0</div>
+            <div class="mascot-speech" id="dashMascotSpeech">"Ready in Antigravity"</div>
+            <div class="mascot-sub" id="dashMascotSub">Click mascot to chirp • Antigravity Companion v2.1</div>
           </div>
 
           <!-- 5-Window Time & Token Analytics Matrix (24H | WEEK | MONTH | YEAR | OVERALL) -->
           <div class="retro-time-matrix">
             <div class="card-top" style="margin-bottom:0;">
               <div>
-                <div class="cap">ANTIGRAVITY TIME &amp; TOKEN TELEMETRY MATRIX</div>
+                <div class="cap">Antigravity Time &amp; Token Telemetry Matrix</div>
                 <div class="ttl" style="margin-top:2px;">
                   <span id="matrixTitle">Multi-Range Time &amp; Token Ledger</span>
-                  <span class="chip" style="margin-left:8px; color:var(--emerald); border-color:rgba(52,245,164,0.35);" id="agRunningChip">● ANTIGRAVITY ONLINE</span>
+                  <span class="chip" style="margin-left:8px; color:var(--emerald); border-color:rgba(52,245,164,0.35);" id="agRunningChip">● Antigravity Online</span>
                 </div>
               </div>
               <div class="seg" id="timeRangeSeg">
@@ -996,19 +1036,28 @@ export function getDashboardHtml(): string {
 
             <div class="retro-companion-controls">
               <button type="button" class="retro-btn active" id="btnCompEnabled" onclick="toggleCompanionEnabled()">
-                <i>●</i> <span id="lblCompEnabled">Desktop Companion: ON</span>
+                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>
+                <span id="lblCompEnabled">Desktop Companion: On</span>
               </button>
               <button type="button" class="retro-btn" id="btnCompMode" onclick="toggleCompanionMode()">
-                <span id="lblCompMode">Mode: MASCOT PET</span>
+                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M5 3v2.5h6V3"/></svg>
+                <span id="lblCompMode">Mode: Mascot Pet</span>
               </button>
               <button type="button" class="retro-btn" id="btnCompBehavior" onclick="cycleCompanionBehavior()">
-                <span id="lblCompBehavior">Action: SIT IN CORNER</span>
+                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2L3 13h10L8 2z"/></svg>
+                <span id="lblCompBehavior">Action: Sit in Corner</span>
               </button>
               <button type="button" class="retro-btn" id="btnCompCorner" onclick="cycleCompanionCorner()">
-                <span id="lblCompCorner">Corner: BOTTOM-RIGHT</span>
+                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6V3h3M13 6V3h-3M3 10v3h3M13 10v3h-3"/></svg>
+                <span id="lblCompCorner">Corner: Bottom-Right</span>
               </button>
-              <button type="button" class="retro-btn" id="btnCompSfx" onclick="toggleCompanionSfx()">
-                <span id="lblCompSfx">🔊 8-Bit SFX: ON</span>
+              <button type="button" class="retro-btn active" id="btnCompSfx" onclick="toggleCompanionSfx()">
+                <svg class="ag-vec-icon ag-vec-wave" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="7" width="2.4" height="6" rx="0.8"/><rect x="6.8" y="3" width="2.4" height="10" rx="0.8"/><rect x="11.6" y="5" width="2.4" height="8" rx="0.8"/></svg>
+                <span id="lblCompSfx">8-Bit Audio: On</span>
+              </button>
+              <button type="button" class="retro-btn active" id="btnIdeExtensionSync" onclick="reinstallIdeExtension()" title="Click to auto-detect Antigravity IDE and sync extension bundle">
+                <svg class="ag-vec-icon" id="iconIdeSync" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 0 1-9.4 3.9L2.5 10.5M2.5 8a5.5 5.5 0 0 1 9.4-3.9l1.6 1.4"/></svg>
+                <span id="lblIdeExtensionSync">Antigravity IDE Extension: Synced</span>
               </button>
             </div>
           </div>
@@ -1021,11 +1070,14 @@ export function getDashboardHtml(): string {
           <div class="in-c">
             <div class="card-top">
               <div>
-                <div class="cap">CUMULATIVE TOKENS STREAM</div>
+                <div class="cap">Cumulative Tokens Stream</div>
                 <div class="ttl" style="margin-top:2px;">
                   <span id="nwTitleText">Session Token Volume</span>
                   <span class="delta" id="nwDelta">+0 this turn</span>
-                  <span class="chip" style="margin-left:8px; font-size:11px; color:var(--acc); border-color:var(--acc);" id="nwMaxxingChip">⚡ AI MAXXING</span>
+                  <span class="chip" style="margin-left:8px; font-size:11px; color:var(--acc); border-color:var(--acc); display:inline-flex; align-items:center; gap:4px;" id="nwMaxxingChip">
+                    <svg class="ag-vec-icon ag-vec-bolt" viewBox="0 0 16 16" fill="currentColor"><polygon points="9.5,1 3,9 8,9 6.5,15 13,7 8,7"/></svg>
+                    AI Maxxing
+                  </span>
                 </div>
               </div>
               <div class="seg" id="nwSeg">
@@ -1540,6 +1592,28 @@ export function getDashboardHtml(): string {
           </div>
         </div>
       </div>
+
+      <!-- ANTIGRAVITY IDE AUTO-DETECTOR & EXTENSION SELF-INSTALLER -->
+      <div class="card full-width" style="height: auto; margin-top: 16px;">
+        <div class="rim"></div>
+        <div class="in-c">
+          <div class="card-top">
+            <div class="cap">Antigravity IDE Integration &amp; Auto-Installer</div>
+            <span class="chip" id="settingsIdeSyncChip">Auto-Provisioning Ready</span>
+          </div>
+          <div class="ttl">Antigravity IDE Extension Auto-Detector</div>
+          <div style="font-size:0.8rem; color:var(--t2); margin-top:6px; max-width:680px;">
+            The standalone Antigravity Desktop App automatically detects your installed Google Antigravity IDE profiles and keeps the <span class="mono" style="color:var(--acc);">itsjamiefied.antigravity-presence</span> extension installed and synchronized.
+          </div>
+          <div id="settingsIdeTargetsList" style="display:flex; flex-direction:column; gap:10px; margin-top:16px; max-width:680px;"></div>
+          <div style="display:flex; gap:10px; margin-top:16px;">
+            <button type="button" class="retro-btn active" onclick="reinstallIdeExtension()">
+              <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 0 1-9.4 3.9L2.5 10.5M2.5 8a5.5 5.5 0 0 1 9.4-3.9l1.6 1.4"/></svg>
+              <span>Force Reinstall &amp; Sync Antigravity Extension</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </section>
 
   </main>
@@ -1803,7 +1877,7 @@ export function getDashboardHtml(): string {
       const speech = document.getElementById('dashMascotSpeech');
       const sub = document.getElementById('dashMascotSub');
       if (rig) rig.setAttribute('data-state', state);
-      if (tag) tag.innerText = state.toUpperCase();
+      if (tag) tag.innerText = state.charAt(0).toUpperCase() + state.slice(1);
       if (speech && speechText) speech.innerText = speechText;
       if (sub && subText) sub.innerText = subText;
     }
@@ -1812,14 +1886,81 @@ export function getDashboardHtml(): string {
       if (window.agMascotAudio) window.agMascotAudio.playWake();
       const rig = document.getElementById('mascot-rig-dash');
       const prevState = rig ? (rig.getAttribute('data-state') || 'idle') : 'idle';
-      setDashMascotState('surprised', '"BEEP BOOP! SYSTEM READY!"', 'Chiptune synth active • Click controls to morph');
+      setDashMascotState('surprised', '"Antigravity Systems Ready"', 'Chiptune synth active • Click controls to morph');
       setTimeout(function() {
         if (currentData) {
           renderOverview(currentData);
         } else {
-          setDashMascotState(prevState, '"READY FOR NEXT TURN!"', 'Click mascot to chirp • Retro Companion v2.0');
+          setDashMascotState(prevState, '"Ready in Antigravity"', 'Click mascot to chirp • Antigravity Companion v2.1');
         }
       }, 1100);
+    }
+
+    async function reinstallIdeExtension() {
+      const icon = document.getElementById('iconIdeSync');
+      const lbl = document.getElementById('lblIdeExtensionSync');
+      if (icon) icon.classList.add('ag-vec-spin');
+      if (lbl) lbl.innerText = 'Antigravity IDE: Syncing...';
+      if (window.agMascotAudio) window.agMascotAudio.playWake();
+
+      try {
+        const res = await fetch(API_BASE + '/api/ide-install', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ force: true })
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.ideStatus) {
+            renderIdeStatusUi(json.ideStatus);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to reinstall IDE extension:', err);
+      } finally {
+        if (icon) icon.classList.remove('ag-vec-spin');
+      }
+    }
+
+    function renderIdeStatusUi(report) {
+      if (!report) return;
+      const lbl = document.getElementById('lblIdeExtensionSync');
+      const btn = document.getElementById('btnIdeExtensionSync');
+      const chip = document.getElementById('settingsIdeSyncChip');
+      const list = document.getElementById('settingsIdeTargetsList');
+
+      if (lbl && btn) {
+        if (report.allTargetsSynced) {
+          btn.classList.add('active');
+          lbl.innerText = 'Antigravity IDE Extension: Synced (v' + report.extensionVersion + ')';
+        } else if (report.anyIdeDetected) {
+          btn.classList.remove('active');
+          lbl.innerText = 'Antigravity IDE Extension: Click to Sync';
+        } else {
+          btn.classList.remove('active');
+          lbl.innerText = 'Antigravity IDE: Standalone Mode';
+        }
+      }
+
+      if (chip) {
+        chip.innerText = report.allTargetsSynced ? 'All Targets Synced' : (report.anyIdeDetected ? 'Update Available' : 'Standalone Mode');
+      }
+
+      if (list && Array.isArray(report.targets)) {
+        list.innerHTML = report.targets.map(function(t) {
+          const badgeColor = t.installed && t.bundleHashMatch ? 'var(--emerald)' : (t.detected ? 'var(--acc)' : 'var(--t3)');
+          const badgeText = t.installed && t.bundleHashMatch ? 'Installed & Synced' : (t.detected ? 'Detected (Ready to Install)' : 'Not Installed');
+          return (
+            '<div style="background:var(--card-inner); border:2px solid var(--hair); border-radius:8px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center;">' +
+            '<div>' +
+            '<div style="font-weight:700; font-size:13px; color:var(--t1);">' + t.label + '</div>' +
+            '<div class="mono" style="font-size:11px; color:var(--t3); margin-top:3px;">' + t.extensionInstallDir + '</div>' +
+            '</div>' +
+            '<span class="chip mono" style="color:' + badgeColor + '; border-color:' + badgeColor + ';">' + badgeText + '</span>' +
+            '</div>'
+          );
+        }).join('');
+      }
     }
 
     async function updateCompanion(partial) {
@@ -1890,42 +2031,45 @@ export function getDashboardHtml(): string {
       const lblEnabled = document.getElementById('lblCompEnabled');
       if (btnEnabled && lblEnabled) {
         btnEnabled.classList.toggle('active', !!comp.enabled);
-        lblEnabled.innerText = 'Desktop Companion: ' + (comp.enabled ? 'ON' : 'OFF');
+        lblEnabled.innerText = 'Desktop Companion: ' + (comp.enabled ? 'On' : 'Off');
       }
 
       const btnMode = document.getElementById('btnCompMode');
       const lblMode = document.getElementById('lblCompMode');
       if (btnMode && lblMode) {
         btnMode.classList.toggle('active', comp.mode === 'notch');
-        lblMode.innerText = comp.mode === 'notch' ? 'Mode: DYNAMIC NOTCH' : 'Mode: MASCOT PET';
+        lblMode.innerText = comp.mode === 'notch' ? 'Mode: Dynamic Notch' : 'Mode: Mascot Pet';
       }
 
       const lblBeh = document.getElementById('lblCompBehavior');
       if (lblBeh) {
         const bMap = {
-          'sit_corner': 'Action: SIT IN CORNER',
-          'walk_follow': 'Action: WALK & FOLLOW',
-          'sleep': 'Action: SLEEPING (ZZZ)'
+          'sit_corner': 'Action: Sit in Corner',
+          'walk_follow': 'Action: Walk & Follow',
+          'sleep': 'Action: Sleep Mode'
         };
-        lblBeh.innerText = bMap[comp.mascotBehavior] || 'Action: SIT IN CORNER';
+        lblBeh.innerText = bMap[comp.mascotBehavior] || 'Action: Sit in Corner';
       }
 
       const lblCorner = document.getElementById('lblCompCorner');
       if (lblCorner) {
-        lblCorner.innerText = 'Corner: ' + (comp.corner || 'bottom-right').toUpperCase();
+        const cName = (comp.corner || 'bottom-right').split('-').map(function(w) {
+          return w.charAt(0).toUpperCase() + w.slice(1);
+        }).join('-');
+        lblCorner.innerText = 'Corner: ' + cName;
       }
 
       const btnSfx = document.getElementById('btnCompSfx');
       const lblSfx = document.getElementById('lblCompSfx');
       if (btnSfx && lblSfx) {
         btnSfx.classList.toggle('active', !comp.soundMuted);
-        lblSfx.innerText = comp.soundMuted ? '🔇 8-Bit SFX: MUTED' : '🔊 8-Bit SFX: ON';
+        lblSfx.innerText = comp.soundMuted ? '8-Bit Audio: Muted' : '8-Bit Audio: On';
       }
 
       const agChip = document.getElementById('agRunningChip');
       if (agChip) {
         const online = isAgRunning !== false;
-        agChip.innerText = online ? '● ANTIGRAVITY ONLINE' : '○ ANTIGRAVITY CLOSED';
+        agChip.innerText = online ? '● Antigravity Online' : '○ Antigravity Closed';
         agChip.style.color = online ? 'var(--emerald)' : 'var(--coral)';
         agChip.style.borderColor = online ? 'rgba(52,245,164,0.35)' : 'rgba(255,94,126,0.35)';
       }
@@ -2036,29 +2180,29 @@ export function getDashboardHtml(): string {
       const sub = document.getElementById('kpiSessionSub');
 
       if (paused) {
-        if (icon) icon.innerText = '▶️';
+        if (icon) icon.innerHTML = '<svg class="ag-vec-icon" viewBox="0 0 16 16" fill="currentColor"><polygon points="4,3 13,8 4,13"/></svg>';
         if (text) text.innerText = 'Resume Session';
         if (btn) {
-          btn.style.borderColor = 'rgba(16,185,129,0.5)';
-          btn.style.color = '#10b981';
-          btn.style.background = 'rgba(16,185,129,0.12)';
+          btn.style.borderColor = 'rgba(52,245,164,0.5)';
+          btn.style.color = 'var(--emerald)';
+          btn.style.background = 'rgba(52,245,164,0.12)';
         }
         if (badge) {
           badge.className = 'status-badge idle';
-          badge.innerText = 'PAUSED (SAVED)';
+          badge.innerText = 'Paused (Saved)';
         }
         if (sub) sub.innerText = 'Timer frozen — 24h retention active';
       } else {
-        if (icon) icon.innerText = '⏸️';
+        if (icon) icon.innerHTML = '<svg class="ag-vec-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="3.5" y="3" width="3" height="10" rx="1"/><rect x="9.5" y="3" width="3" height="10" rx="1"/></svg>';
         if (text) text.innerText = 'Pause & Leave';
         if (btn) {
-          btn.style.borderColor = 'rgba(232,255,31,0.3)';
+          btn.style.borderColor = 'rgba(255,184,77,0.3)';
           btn.style.color = 'var(--acc)';
-          btn.style.background = 'rgba(232,255,31,0.08)';
+          btn.style.background = 'rgba(255,184,77,0.08)';
         }
         if (badge) {
           badge.className = 'status-badge running_tool';
-          badge.innerText = '24H PERSISTENT';
+          badge.innerText = '24h Persistent';
         }
         if (sub) sub.innerText = 'Auto-saved for 24h shutdown recovery';
       }
@@ -2479,7 +2623,7 @@ export function getDashboardHtml(): string {
       const totalTok = (data.session && data.session.tokens) ? data.session.tokens.totalTokens : 0;
       const maxxingText = document.getElementById('tokenmaxxingText');
       if (maxxingText) {
-        maxxingText.innerText = '⚡ TOKENMAXXING • ' + formatNumberShort(totalTok);
+        maxxingText.innerText = 'Tokenmaxxing • ' + formatNumberShort(totalTok);
       }
 
       // 3. Delta
@@ -2562,9 +2706,12 @@ export function getDashboardHtml(): string {
         lifetimeEl.innerText = '24h: ' + formatLifetimeHours(tb.last24h || 0) + ' • Overall: ' + formatLifetimeHours(lifeSecs);
       }
 
-      // Update Mascot Pedestal state & Companion controls
+      // Update Mascot Pedestal state, Companion controls & IDE status
       if (data.companion) {
         renderCompanionUi(data.companion, data.isAntigravityRunning);
+      }
+      if (data.ideStatus) {
+        renderIdeStatusUi(data.ideStatus);
       }
       if (lastActiveAgentCount > 0 && activeCount === 0 && window.agMascotAudio) {
         window.agMascotAudio.playComplete();
@@ -2572,20 +2719,20 @@ export function getDashboardHtml(): string {
       lastActiveAgentCount = activeCount;
 
       if (data.isAntigravityRunning === false) {
-        setDashMascotState('offline', '"ANTIGRAVITY IDE CLOSED"', 'Discord RPC cleared • Waiting for launch');
+        setDashMascotState('offline', '"Antigravity IDE Closed"', 'Discord RPC cleared • Waiting for launch');
       } else if (data.companion && data.companion.mascotBehavior === 'sleep' && activeCount === 0) {
-        setDashMascotState('sleeping', '"ZZZ... RESTING CIRCUITS"', 'Click mascot to wake up');
+        setDashMascotState('sleeping', '"Resting Circuits..."', 'Click mascot to wake up');
       } else if (activeCount > 0) {
         const lead = data.activeAgents[0];
         const mState = lead.status === 'running_tool' ? 'working' : 'thinking';
         const speech = lead.status === 'running_tool'
-          ? '"EXECUTING ' + (lead.activeTool || 'TOOL').toUpperCase() + '!"'
-          : '"THINKING WITH ' + (lead.model || 'GEMINI').toUpperCase() + '..."';
+          ? '"Executing ' + (lead.activeTool || 'Tool') + '"'
+          : '"Thinking with ' + (lead.model || 'Gemini') + '"';
         setDashMascotState(mState, speech, activeCount + ' active agent' + (activeCount === 1 ? '' : 's') + ' • Zero-lag RPC live');
       } else if (data.companion && data.companion.mascotBehavior === 'walk_follow') {
-        setDashMascotState('walking', '"FOLLOWING YOUR CURSOR!"', 'Walking on desktop • Click to command');
+        setDashMascotState('walking', '"Following Your Cursor"', 'Walking on desktop • Click to command');
       } else {
-        setDashMascotState('idle', '"IDLE IN ANTIGRAVITY"', 'Overall: ' + formatLifetimeHours(tb.overall || 0) + ' • ' + formatNumberShort(totalTok) + ' tokens');
+        setDashMascotState('idle', '"Idle in Antigravity"', 'Overall: ' + formatLifetimeHours(tb.overall || 0) + ' • ' + formatNumberShort(totalTok) + ' tokens');
       }
 
       // 5. Mirrored Wave Flow, Sparklines & Hourly Activity
