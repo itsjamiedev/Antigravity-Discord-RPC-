@@ -226,8 +226,10 @@ function createInstallerWindow() {
   }
 
   installerWindow = new BrowserWindow({
-    width: 460,
-    height: 390,
+    width: 480,
+    height: 530,
+    minWidth: 480,
+    minHeight: 530,
     resizable: false,
     maximizable: false,
     minimizable: false,
@@ -348,6 +350,9 @@ function createOverlayWindow() {
     skipTaskbar: true,
     hasShadow: false,
     focusable: false,
+    roundedCorners: false,
+    title: '',
+    show: false,
     icon: getAppIcon(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -364,6 +369,11 @@ function createOverlayWindow() {
   overlayWindow.setIgnoreMouseEvents(true, { forward: true });
 
   overlayWindow.loadFile(path.join(__dirname, 'overlay.html'));
+  overlayWindow.once('ready-to-show', () => {
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      overlayWindow.showInactive();
+    }
+  });
 
   const syncDisplayBounds = () => {
     if (!overlayWindow || overlayWindow.isDestroyed()) return;
