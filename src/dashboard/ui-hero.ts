@@ -285,15 +285,28 @@ export function getDashboardThemeCss(): string {
 
     /* DRAWER */
     .drawer-overlay {
-      position: fixed; inset: 0; background: rgba(20, 25, 26, 0.35);
+      position: fixed; inset: 0; background: rgba(20, 25, 26, 0.55);
+      backdrop-filter: blur(4px);
       display: none; justify-content: flex-end; z-index: 999;
     }
     .drawer-overlay.open { display: flex; }
-    .drawer {
-      width: 460px; max-width: 100%; height: 100%; background: #FFFFFF;
-      padding: 24px; overflow-y: auto; border-left: 1px solid var(--hair);
-      box-shadow: -10px 0 30px rgba(20, 25, 26, 0.1);
+    .drawer-panel, .drawer {
+      width: 460px; max-width: 100%; height: 100%; background: #CEC6B6; color: #14191A;
+      padding: 24px; overflow-y: auto; border-left: 1px solid #B2A998;
+      box-shadow: -12px 0 36px rgba(0, 0, 0, 0.35);
+      display: flex; flex-direction: column; gap: 18px;
     }
+    .drawer-header {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+      padding-bottom: 14px; border-bottom: 1px solid #B2A998;
+    }
+    .drawer-close {
+      width: 30px; height: 30px; border-radius: 50%; border: 1px solid #B2A998;
+      background: #C0B8A8; color: #14191A; font-size: 18px; line-height: 1;
+      cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    }
+    .drawer-close:hover { background: #14191A; color: #FFFFFF; }
+    .drawer-body { display: flex; flex-direction: column; gap: 16px; }
 
     .tip {
       position: fixed; z-index: 1000; pointer-events: none; opacity: 0;

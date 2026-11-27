@@ -161,16 +161,22 @@ export function getDashboardHtml(): string {
                 <span class="muted" style="font-size:13px; font-weight:500; margin-left:8px;" id="analyticsDailySubtitle">Last 14 Days</span>
               </div>
             </div>
-            <div style="display:flex; align-items:center; gap:16px;">
-              <div class="legend" style="display:flex; gap:14px; font-size:12px; font-weight:600;">
-                <span style="display:inline-flex; align-items:center; gap:5px; color:#10b981;">
-                  <i style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></i>Cache Read
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <div class="nx-seg-pills" id="analyticsChartTypeSeg">
+                <button type="button" class="nx-seg-btn active" onclick="setAnalyticsChartType('bar', this)">BAR</button>
+                <button type="button" class="nx-seg-btn" onclick="setAnalyticsChartType('line', this)">LINE</button>
+                <button type="button" class="nx-seg-btn" onclick="setAnalyticsChartType('area', this)">RIB AREA</button>
+                <button type="button" class="nx-seg-btn" onclick="setAnalyticsChartType('donut', this)">DONUT</button>
+              </div>
+              <div class="legend" style="display:flex; gap:12px; font-size:11px; font-weight:700;">
+                <span style="display:inline-flex; align-items:center; gap:5px; color:#137A50;">
+                  <i style="width:8px; height:8px; border-radius:50%; background:#137A50; display:inline-block;"></i>Cache
                 </span>
-                <span style="display:inline-flex; align-items:center; gap:5px; color:#ffffff;">
-                  <i style="width:8px; height:8px; border-radius:50%; background:#ffffff; display:inline-block;"></i>Input
+                <span style="display:inline-flex; align-items:center; gap:5px; color:#14191A;">
+                  <i style="width:8px; height:8px; border-radius:50%; background:#14191A; display:inline-block;"></i>Input
                 </span>
-                <span style="display:inline-flex; align-items:center; gap:5px; color:#E8FF1F;">
-                  <i style="width:8px; height:8px; border-radius:50%; background:#E8FF1F; display:inline-block;"></i>Output
+                <span style="display:inline-flex; align-items:center; gap:5px; color:#464B48;">
+                  <i style="width:8px; height:8px; border-radius:50%; background:#656A66; display:inline-block;"></i>Output
                 </span>
               </div>
               <span class="chip" id="analyticsTotal14d">0 TOKENS</span>
@@ -1938,6 +1944,14 @@ export function getDashboardHtml(): string {
     /*  Renderers: Analytics Tab & 14-Day Stacked Token Histogram         */
     /* ------------------------------------------------------------------ */
     let analyticsTimeline = [];
+    let analyticsChartType = 'bar';
+
+    function setAnalyticsChartType(type, btn) {
+      analyticsChartType = type;
+      document.querySelectorAll('#analyticsChartTypeSeg .nx-seg-btn').forEach(function(b) { b.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+      if (currentData) renderAnalyticsTab(currentData);
+    }
 
     function renderAnalyticsTab(data) {
       if (!data) return;
@@ -2047,57 +2061,108 @@ export function getDashboardHtml(): string {
 
       let s = '';
 
-      // Horizontal Grid Lines & Y-Axis Labels
-      const gridSteps = 4;
-      for (let i = 0; i <= gridSteps; i++) {
-        const yVal = (maxVal / gridSteps) * (gridSteps - i);
-        const yPos = padTop + (i / gridSteps) * plotH;
+      if (analyticsChartType === 'donut') {
+        const cx = w / 2;
+        const cy = h / 2;
+        const r = Math.min(w, h) * 0.34;
+        const circ = 2 * Math.PI * r;
+        const modelList = (data.modelStats || []).slice(0, 5);
+        const totM = modelList.reduce(function(acc, m) { return acc + (m.tokens ? m.tokens.totalTokens : 0); }, 0) || 1;
+        const palette = ['#14191A', '#137A50', '#4E6482', '#656A66', '#9D9484'];
+        let offset = 0;
 
-        s += '<line x1="' + padLeft + '" y1="' + yPos + '" x2="' + (w - padRight) + '" y2="' + yPos + '" stroke="rgba(255,255,255,0.08)" stroke-dasharray="' + (i === gridSteps ? 'none' : '3,4') + '" stroke-width="1"/>';
-        s += '<text x="' + (padLeft - 10) + '" y="' + (yPos + 4) + '" fill="rgba(255,255,255,0.4)" font-size="11" font-family="Geist Mono" text-anchor="end">' + formatNumberShort(yVal) + '</text>';
-      }
+        s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#B2A998" stroke-width="26"/>';
+        modelList.forEach(function(m, idx) {
+          const val = m.tokens ? m.tokens.totalTokens : 0;
+          const dash = (val / totM) * circ;
+          s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + palette[idx % palette.length] + '" stroke-width="26" stroke-dasharray="' + dash + ' ' + circ + '" stroke-dashoffset="' + (-offset) + '" transform="rotate(-90 ' + cx + ' ' + cy + ')"/>';
+          offset += dash;
+        });
+        s += '<text x="' + cx + '" y="' + (cy - 4) + '" fill="#14191A" font-size="22" font-weight="800" font-family="Geist Mono" text-anchor="middle">' + formatNumberShort(totM) + '</text>';
+        s += '<text x="' + cx + '" y="' + (cy + 16) + '" fill="#464B48" font-size="11" font-weight="700" font-family="Geist" text-anchor="middle">' + modelList.length + ' MODELS</text>';
+        svg.innerHTML = s;
+      } else {
+        // Horizontal Grid Lines & Y-Axis Labels
+        const gridSteps = 4;
+        for (let i = 0; i <= gridSteps; i++) {
+          const yVal = (maxVal / gridSteps) * (gridSteps - i);
+          const yPos = padTop + (i / gridSteps) * plotH;
 
-      // Draw 14 stacked bars
-      const barCount = dayList.length;
-      const slotW = plotW / barCount;
-      const barW = Math.max(14, Math.min(38, slotW - 12));
-
-      dayList.forEach(function(d, i) {
-        const xCenter = padLeft + i * slotW + slotW / 2;
-        const xLeft = xCenter - barW / 2;
-
-        const total = d.totalTokens;
-        const cacheH = (d.cacheReadTokens / maxVal) * plotH;
-        const inH = (d.inputTokens / maxVal) * plotH;
-        const outH = (d.outputTokens / maxVal) * plotH;
-
-        const yBase = padTop + plotH;
-
-        if (total === 0) {
-          s += '<rect x="' + xLeft + '" y="' + (yBase - 4) + '" width="' + barW + '" height="4" rx="2" fill="rgba(255,255,255,0.06)"/>';
-        } else {
-          // 1. Cache Read (Emerald bottom)
-          const yCache = yBase - cacheH;
-          if (cacheH > 0) {
-            s += '<rect x="' + xLeft + '" y="' + yCache + '" width="' + barW + '" height="' + cacheH + '" rx="' + (inH + outH === 0 ? 6 : 0) + '" fill="#10b981" opacity="0.9"/>';
-          }
-
-          // 2. Input Tokens (White middle)
-          const yIn = yCache - inH;
-          if (inH > 0) {
-            s += '<rect x="' + xLeft + '" y="' + yIn + '" width="' + barW + '" height="' + inH + '" rx="' + (outH === 0 && cacheH === 0 ? 6 : 0) + '" fill="#ffffff" opacity="0.95"/>';
-          }
-
-          // 3. Output Tokens (Electric Lime top)
-          const yOut = yIn - outH;
-          if (outH > 0) {
-            s += '<rect x="' + xLeft + '" y="' + yOut + '" width="' + barW + '" height="' + outH + '" rx="6" fill="#E8FF1F"/>';
-          }
+          s += '<line x1="' + padLeft + '" y1="' + yPos + '" x2="' + (w - padRight) + '" y2="' + yPos + '" stroke="#B2A998" stroke-dasharray="' + (i === gridSteps ? 'none' : '3,4') + '" stroke-width="1"/>';
+          s += '<text x="' + (padLeft - 10) + '" y="' + (yPos + 4) + '" fill="#464B48" font-size="11" font-family="Geist Mono" text-anchor="end">' + formatNumberShort(yVal) + '</text>';
         }
 
-        // X-Axis Date Label
-        const isToday = i === barCount - 1;
-        s += '<text x="' + xCenter + '" y="' + (yBase + 22) + '" fill="' + (isToday ? '#E8FF1F' : 'rgba(255,255,255,0.5)') + '" font-size="11" font-weight="' + (isToday ? '700' : '500') + '" font-family="Geist" text-anchor="middle">' + d.label + '</text>';
+        const barCount = dayList.length;
+        const slotW = plotW / barCount;
+        const barW = Math.max(14, Math.min(38, slotW - 12));
+        const yBase = padTop + plotH;
+
+        if (analyticsChartType === 'line' || analyticsChartType === 'area') {
+          let linePath = '';
+          let areaPath = 'M ' + (padLeft + slotW / 2) + ' ' + yBase;
+          dayList.forEach(function(d, i) {
+            const x = padLeft + i * slotW + slotW / 2;
+            const y = yBase - (d.totalTokens / maxVal) * plotH;
+            if (analyticsChartType === 'area') {
+              const barH = Math.max(2, yBase - y);
+              s += '<rect x="' + (x - 4) + '" y="' + y + '" width="8" height="' + barH + '" rx="3" fill="' + (i === barCount - 1 ? '#DCF291' : '#9D9484') + '" opacity="0.65"/>';
+            }
+            if (i === 0) {
+              linePath += 'M ' + x + ' ' + y;
+            } else {
+              const px = padLeft + (i - 1) * slotW + slotW / 2;
+              const py = yBase - (dayList[i - 1].totalTokens / maxVal) * plotH;
+              const cpx = (px + x) / 2;
+              linePath += ' C ' + cpx + ' ' + py + ', ' + cpx + ' ' + y + ', ' + x + ' ' + y;
+            }
+            areaPath += ' L ' + x + ' ' + y;
+          });
+          areaPath += ' L ' + (padLeft + (barCount - 1) * slotW + slotW / 2) + ' ' + yBase + ' Z';
+          if (analyticsChartType === 'area') {
+            s += '<path d="' + areaPath + '" fill="rgba(20,25,26,0.08)"/>';
+          }
+          s += '<path d="' + linePath + '" fill="none" stroke="#14191A" stroke-width="2.5" stroke-linecap="round"/>';
+          dayList.forEach(function(d, i) {
+            const x = padLeft + i * slotW + slotW / 2;
+            const y = yBase - (d.totalTokens / maxVal) * plotH;
+            const isToday = i === barCount - 1;
+            s += '<circle cx="' + x + '" cy="' + y + '" r="' + (isToday ? 5 : 3.5) + '" fill="' + (isToday ? '#DCF291' : '#14191A') + '" stroke="#14191A" stroke-width="1.5"/>';
+          });
+        } else {
+          // Stacked Bar Chart
+          dayList.forEach(function(d, i) {
+            const xCenter = padLeft + i * slotW + slotW / 2;
+            const xLeft = xCenter - barW / 2;
+            const total = d.totalTokens;
+            const cacheH = (d.cacheReadTokens / maxVal) * plotH;
+            const inH = (d.inputTokens / maxVal) * plotH;
+            const outH = (d.outputTokens / maxVal) * plotH;
+
+            if (total === 0) {
+              s += '<rect x="' + xLeft + '" y="' + (yBase - 4) + '" width="' + barW + '" height="4" rx="2" fill="#B2A998"/>';
+            } else {
+              const yCache = yBase - cacheH;
+              if (cacheH > 0) {
+                s += '<rect x="' + xLeft + '" y="' + yCache + '" width="' + barW + '" height="' + cacheH + '" rx="' + (inH + outH === 0 ? 6 : 0) + '" fill="#137A50" opacity="0.92"/>';
+              }
+              const yIn = yCache - inH;
+              if (inH > 0) {
+                s += '<rect x="' + xLeft + '" y="' + yIn + '" width="' + barW + '" height="' + inH + '" rx="' + (outH === 0 && cacheH === 0 ? 6 : 0) + '" fill="#14191A" opacity="0.92"/>';
+              }
+              const yOut = yIn - outH;
+              if (outH > 0) {
+                s += '<rect x="' + xLeft + '" y="' + yOut + '" width="' + barW + '" height="' + outH + '" rx="6" fill="#DCF291" stroke="#14191A" stroke-width="1"/>';
+              }
+            }
+          });
+        }
+
+        dayList.forEach(function(d, i) {
+          const xCenter = padLeft + i * slotW + slotW / 2;
+          const isToday = i === barCount - 1;
+          s += '<text x="' + xCenter + '" y="' + (yBase + 22) + '" fill="#14191A" font-size="11" font-weight="' + (isToday ? '800' : '500') + '" font-family="Geist" text-anchor="middle">' + d.label + '</text>';
+        });
+      }
 
         // Hitbox for Tooltip Hover
         const colLeft = padLeft + i * slotW;
@@ -2175,8 +2240,24 @@ export function getDashboardHtml(): string {
       document.getElementById('drawerOverlay').classList.add('open');
       document.getElementById('drawerConvId').innerText = convId;
 
+      if (currentData) {
+        const localConv = (currentData.conversations || []).find(function(c) { return c.conversationId === convId; });
+        if (localConv) {
+          renderDrawerData(localConv);
+        } else {
+          const localAgent = (currentData.agents || []).find(function(a) { return a.conversationId === convId; });
+          if (localAgent) {
+            renderDrawerData({
+              currentModel: localAgent.model,
+              tokens: { inputTokens: 0, cacheReadTokens: 0, outputTokens: 0, totalTokens: 0 },
+              recentEvents: localAgent.activeTool ? [{ type: 'TOOL_CALL', toolName: localAgent.activeTool, timestamp: localAgent.lastEventAt }] : []
+            });
+          }
+        }
+      }
+
       try {
-        const res = await fetch('/api/conversations/' + convId);
+        const res = await fetch(API_BASE + '/api/conversations/' + convId);
         if (res.ok) {
           const detail = await res.json();
           renderDrawerData(detail);
