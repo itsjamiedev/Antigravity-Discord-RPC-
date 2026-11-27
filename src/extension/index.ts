@@ -120,9 +120,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   presenceManager = new PresenceManager(discordClient, configManager);
 
   // Auto-connect Discord RPC immediately on IDE launch (Antigravity 2.0 instant start)
-  void discordClient.connect().catch((err) => {
-    console.log('[Antigravity Presence] Discord auto-connect pending:', err?.message || err);
-  });
+  try {
+    discordClient.connect();
+  } catch (err) {
+    console.log('[Antigravity Presence] Discord auto-connect pending:', (err as Error)?.message || err);
+  }
 
   // 5. Initialize PureTracker (zero C++ dependencies, fresh session on IDE restart)
   tracker = new PureTracker(false, undefined, undefined, undefined, true);
