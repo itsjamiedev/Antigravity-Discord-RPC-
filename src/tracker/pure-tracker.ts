@@ -45,7 +45,8 @@ export class PureTracker {
     _isLeader: boolean = false,
     customTokenStorePath?: string,
     customSessionFilePath?: string,
-    customTimeLedgerPath?: string
+    customTimeLedgerPath?: string,
+    freshSessionOnStart: boolean = false
   ) {
     this.sessionManager = new SessionManager(customSessionFilePath);
     const derivedTimePath =
@@ -99,6 +100,10 @@ export class PureTracker {
       timeBreakdown: initialTimeBreakdown,
       tokenBreakdown: initialTokenBreakdown,
     };
+
+    if (freshSessionOnStart) {
+      this.startFreshSession();
+    }
   }
 
   public getSessionManager(): SessionManager {

@@ -336,109 +336,29 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   <title>Antigravity Presence</title>
   <style>
     :root {
-      --bg: #07090F;
-      --card: rgba(16, 20, 32, 0.58);
-      --card-inner: rgba(10, 13, 21, 0.65);
-      --border: rgba(255, 255, 255, 0.11);
-      --border-hover: rgba(52, 245, 164, 0.45);
-      --acc: #FFB84D;
-      --acc-glow: rgba(255, 184, 77, 0.16);
+      --bg: #131418;
+      --card: #1C1D22;
+      --card-inner: #16171B;
+      --border: #282A31;
+      --border-subtle: #202227;
+      --border-hover: #3E424E;
+      --slate-denim: #4E6482;
+      --slate-denim-dark: #3D4E64;
+      --sandstone: #C7C5B8;
+      --sandstone-text: #131418;
+      --ice: #5B9CF6;
+      --ice-dim: rgba(91, 156, 246, 0.15);
       --emerald: #34F5A4;
-      --lavender: #B4A2FF;
-      --cyan: #38E4FF;
-      --coral: #FF5E7E;
-      --t1: #F8FAFC;
-      --t2: rgba(248, 250, 252, 0.72);
-      --t3: rgba(248, 250, 252, 0.44);
-      --ease: cubic-bezier(0.22, 1, 0.36, 1);
-      --font-mc: 'Minecraft', 'Minecraft Seven', 'Minecraftia', 'Silkscreen', 'Geist Mono', monospace;
+      --t1: #FFFFFF;
+      --t2: #C4C8D4;
+      --t3: #8A909E;
+      --t4: #555A68;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
       --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
     ${sideMascotCss}
-
-    /* LIQUID GLASS SIDEBAR MASCOT STAGE & NOTCH DOCK */
-    .side-mascot-stage {
-      background: var(--card);
-      backdrop-filter: blur(20px) saturate(175%);
-      -webkit-backdrop-filter: blur(20px) saturate(175%);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 8px 9px;
-      margin-bottom: 7px;
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-      cursor: pointer;
-      transition: border-color 0.2s var(--ease);
-    }
-    .side-mascot-stage:hover {
-      border-color: var(--border-hover);
-    }
-    .side-mascot-info {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-    .side-mascot-speech {
-      font-family: var(--font-mc);
-      font-size: 9.5px;
-      color: var(--t1);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .side-time-pills {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-    }
-    .side-time-pill {
-      font-family: var(--font-mc);
-      font-size: 8.5px;
-      padding: 2px 6px;
-      border-radius: 6px;
-      background: rgba(52, 245, 164, 0.1);
-      border: 1px solid rgba(52, 245, 164, 0.28);
-      color: var(--emerald);
-    }
-    .side-companion-bar {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 5px;
-      margin-bottom: 7px;
-    }
-    .side-retro-btn {
-      background: var(--card);
-      backdrop-filter: blur(14px);
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      padding: 5.5px 6px;
-      font-family: var(--font-mc);
-      font-size: 8.5px;
-      color: var(--t2);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-      transition: all 0.15s var(--ease);
-    }
-    .side-retro-btn:hover {
-      border-color: rgba(255, 255, 255, 0.24);
-      color: var(--t1);
-      transform: translateY(-1px);
-    }
-    .side-retro-btn.active {
-      border-color: rgba(52, 245, 164, 0.4);
-      color: var(--emerald);
-      background: rgba(52, 245, 164, 0.1);
-    }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -447,42 +367,46 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       font-family: var(--font-sans);
       font-size: 11.5px;
       line-height: 1.4;
-      padding: 8px 6px 16px;
+      padding: 8px 8px 16px;
       overflow-x: hidden;
       user-select: none;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* TOP BAR */
+    /* TOP 9-DOT HEADER */
     .top-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 2px 2px 8px;
-      margin-bottom: 6px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 4px 2px 10px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border);
     }
     .brand-mark {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-weight: 700;
-      font-size: 12px;
-      letter-spacing: -0.02em;
+      gap: 7px;
+      font-weight: 800;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
       color: var(--t1);
     }
-    .brand-mark svg {
-      color: var(--acc);
-      filter: drop-shadow(0 0 5px rgba(232, 255, 31, 0.5));
+    .grid-dots-icon {
+      color: var(--t2);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
     .live-pill {
       font-size: 9px;
       font-weight: 700;
-      letter-spacing: 0.03em;
-      padding: 2px 6px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 2px 7px;
       border-radius: 999px;
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      background: rgba(52, 245, 164, 0.1);
+      border: 1px solid rgba(52, 245, 164, 0.3);
       color: var(--emerald);
       display: inline-flex;
       align-items: center;
@@ -493,27 +417,21 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       height: 5px;
       border-radius: 50%;
       background: currentColor;
-      box-shadow: 0 0 6px currentColor;
     }
 
-    /* BENTO CARD CONTAINER */
+    /* BENTO CARD CONTAINER (INDUSTRIAL MATTE) */
     .bento-card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 9px 10px;
-      margin-bottom: 7px;
+      border-radius: 8px;
+      padding: 10px 11px;
+      margin-bottom: 8px;
       position: relative;
       overflow: hidden;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-      transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+      transition: border-color 0.15s var(--ease);
     }
     .bento-card:hover {
-      border-color: rgba(255, 255, 255, 0.16);
-    }
-    .bento-card.hero-card:hover {
       border-color: var(--border-hover);
-      box-shadow: 0 4px 18px -4px rgba(232, 255, 31, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
     /* CARD HEADER & EYEBROW */
@@ -526,150 +444,178 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     .eyebrow {
       font-size: 9px;
       font-weight: 700;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--t3);
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
     }
-    .eyebrow svg {
-      opacity: 0.7;
+    .colon-sep {
+      color: var(--t4);
     }
     .chip {
       font-size: 9px;
       font-weight: 700;
-      letter-spacing: 0.03em;
-      padding: 1px 5px;
+      letter-spacing: 0.05em;
+      padding: 2px 5px;
       border-radius: 4px;
       border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.04);
+      background: var(--card-inner);
       color: var(--t2);
       display: inline-flex;
       align-items: center;
       gap: 3px;
     }
 
-    /* DUAL STUDIO HUB (IN-IDE + BROWSER) */
-    .hub-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 7px;
-    }
-    .hub-tile {
+    /* MASCOT STAGE */
+    .side-mascot-stage {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 7px 8px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 52px;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.2s var(--ease);
-    }
-    .hub-tile:hover {
-      border-color: rgba(255, 255, 255, 0.22);
-      background: var(--card-inner);
-      transform: translateY(-1px);
-    }
-    .hub-tile.primary:hover {
-      border-color: rgba(232, 255, 31, 0.4);
-      box-shadow: 0 4px 12px -2px rgba(232, 255, 31, 0.15);
-    }
-    .hub-tile-head {
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s var(--ease);
     }
-    .hub-badge {
-      font-size: 8px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      padding: 1px 4px;
-      border-radius: 3px;
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--t3);
+    .side-mascot-stage:hover {
+      border-color: var(--border-hover);
     }
-    .hub-tile.primary .hub-badge {
-      background: rgba(232, 255, 31, 0.12);
-      color: var(--acc);
+    .side-mascot-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
-    .hub-title {
-      font-weight: 700;
-      font-size: 11px;
+    .side-mascot-speech {
+      font-size: 10px;
+      font-weight: 600;
       color: var(--t1);
-      margin-top: 2px;
-      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .hub-sub {
-      font-size: 9px;
+    .side-time-pills {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .side-time-pill {
+      font-family: var(--font-mono);
+      font-size: 8.5px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
       color: var(--t3);
     }
 
-    /* 2-COLUMN SPLIT BENTO (SESSION + RADAR) */
-    .split-bento-grid {
+    /* COMPANION ACTION BUTTONS */
+    .side-companion-bar {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 6px;
-      margin-bottom: 7px;
+      margin-bottom: 8px;
     }
-    .split-tile {
+    .side-retro-btn {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 11px;
-      padding: 8px 8px 7px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 84px;
-    }
-    .clock-display {
-      font-size: 1.15rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: var(--acc);
-      margin: 2px 0 6px;
-      text-shadow: 0 0 10px rgba(232, 255, 31, 0.2);
-    }
-    .clock-actions {
-      display: flex;
-      gap: 4px;
-    }
-    .micro-btn {
-      flex: 1;
-      padding: 4px 6px;
       border-radius: 6px;
-      border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.05);
+      padding: 6px 8px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
       color: var(--t2);
-      font-size: 9.5px;
-      font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 5px;
+      transition: all 0.15s var(--ease);
+    }
+    .side-retro-btn:hover {
+      border-color: var(--border-hover);
+      color: var(--t1);
+      background: var(--card-inner);
+    }
+    .side-retro-btn.active {
+      border-color: rgba(52, 245, 164, 0.4);
+      color: var(--emerald);
+      background: rgba(52, 245, 164, 0.08);
+    }
+
+    /* 2-COLUMN SPLIT BENTO (SESSION HERO + AGENTS RADAR) */
+    .split-bento-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .split-tile {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 94px;
+      transition: border-color 0.15s var(--ease);
+    }
+    .split-tile:hover {
+      border-color: var(--border-hover);
+    }
+    .bold-num-row {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      margin: 3px 0 6px;
+    }
+    .big-num {
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--t1);
+      line-height: 1;
+    }
+    .sub-ratio {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--t3);
+      letter-spacing: 0.04em;
+    }
+    .clock-actions {
+      display: flex;
       gap: 4px;
+      margin-top: 4px;
+    }
+    .micro-btn {
+      flex: 1;
+      padding: 4px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--card-inner);
+      color: var(--t2);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
       outline: none;
-      transition: all 0.18s var(--ease);
+      transition: all 0.15s var(--ease);
     }
     .micro-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: #23252C;
       color: var(--t1);
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-    .micro-btn.primary {
-      background: rgba(232, 255, 31, 0.08);
-      border-color: rgba(232, 255, 31, 0.28);
-      color: var(--acc);
-    }
-    .micro-btn.primary:hover {
-      background: rgba(232, 255, 31, 0.18);
-      border-color: var(--acc);
+      border-color: var(--border-hover);
     }
 
     /* RADAR ACTIVE AGENT BOX */
@@ -677,40 +623,34 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       display: flex;
       flex-direction: column;
       gap: 3px;
-      margin-top: 3px;
+      margin-top: 2px;
     }
     .agent-active-badge {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       font-weight: 700;
-      font-size: 11px;
+      font-size: 10.5px;
       color: var(--t1);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .radar-sonar-dot {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
-      background: var(--acc);
-      box-shadow: 0 0 8px var(--acc);
+      background: var(--ice);
+      box-shadow: 0 0 6px var(--ice);
       flex-shrink: 0;
-      animation: sonarPulse 1.8s infinite ease-in-out;
     }
     .radar-sonar-dot.idle {
-      background: var(--t3);
+      background: var(--t4);
       box-shadow: none;
-      animation: none;
-    }
-    @keyframes sonarPulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.35); opacity: 0.6; }
     }
     .agent-tool-text {
       font-size: 9px;
-      color: var(--t2);
+      color: var(--t3);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -718,23 +658,24 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
 
     /* HERO TOKEN VOLUME */
     .hero-tokens {
-      font-size: 1.35rem;
+      font-size: 1.55rem;
       font-weight: 800;
       letter-spacing: -0.03em;
       color: var(--t1);
-      margin: 3px 0 6px;
+      margin: 2px 0 6px;
+      line-height: 1;
     }
     .ratio-bar {
       height: 4px;
       border-radius: 2px;
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--card-inner);
       display: flex;
       overflow: hidden;
-      margin-bottom: 7px;
+      margin-bottom: 8px;
     }
     .ratio-fill-cache { background: var(--emerald); }
-    .ratio-fill-in { background: #ffffff; }
-    .ratio-fill-out { background: var(--acc); }
+    .ratio-fill-in { background: #FFFFFF; }
+    .ratio-fill-out { background: var(--ice); }
 
     .micro-stats-row {
       display: grid;
@@ -749,9 +690,12 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     .micro-stat-label {
       color: var(--t3);
       font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
       display: flex;
       align-items: center;
-      gap: 3px;
+      gap: 4px;
     }
     .micro-stat-label i {
       width: 5px;
@@ -761,8 +705,179 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     }
     .micro-stat-val {
       font-weight: 700;
-      color: var(--t2);
+      color: var(--t1);
       margin-top: 1px;
+    }
+
+    /* SLATE DENIM BLUE ACCENT CARD (AESTHETIC-USABILITY EFFECT) */
+    .bento-accent-denim {
+      background: var(--slate-denim);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 12px 13px;
+      margin-bottom: 8px;
+      position: relative;
+      overflow: hidden;
+      color: #FFFFFF;
+      min-height: 118px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .denim-geometric-art {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      width: 130px;
+      height: 130px;
+      pointer-events: none;
+      opacity: 0.85;
+    }
+    .denim-title {
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      line-height: 1.15;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      position: relative;
+      z-index: 2;
+    }
+    .denim-desc {
+      font-size: 8.5px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      line-height: 1.35;
+      text-transform: uppercase;
+      opacity: 0.88;
+      max-width: 170px;
+      position: relative;
+      z-index: 2;
+    }
+    .denim-dots {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      margin-top: 8px;
+      position: relative;
+      z-index: 2;
+    }
+    .denim-dots span {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.35);
+    }
+    .denim-dots span.active {
+      background: #FFFFFF;
+      width: 6px;
+      border-radius: 3px;
+    }
+
+    /* SANDSTONE ALABASTER ACTION CARD */
+    .bento-accent-sandstone {
+      background: var(--sandstone);
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      padding: 11px 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: var(--sandstone-text);
+      transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+    }
+    .bento-accent-sandstone:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    .sandstone-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .sandstone-title {
+      font-weight: 900;
+      font-size: 11.5px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .sandstone-arrow-btn {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--sandstone-text);
+      color: var(--sandstone);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+    .sandstone-sub {
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0.75;
+    }
+
+    /* DUAL STUDIO HUB (IN-IDE + BROWSER) */
+    .hub-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .hub-tile {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 50px;
+      transition: all 0.15s var(--ease);
+    }
+    .hub-tile:hover {
+      border-color: var(--border-hover);
+      background: var(--card-inner);
+    }
+    .hub-tile.primary:hover {
+      border-color: var(--ice);
+    }
+    .hub-tile-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .hub-badge {
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: var(--card-inner);
+      color: var(--t3);
+    }
+    .hub-tile.primary .hub-badge {
+      background: var(--ice-dim);
+      color: var(--ice);
+    }
+    .hub-title {
+      font-weight: 700;
+      font-size: 10.5px;
+      color: var(--t1);
+      margin-top: 2px;
+      letter-spacing: -0.01em;
+    }
+    .hub-sub {
+      font-size: 8.5px;
+      color: var(--t3);
     }
 
     /* MODEL SHARE BENTO */
@@ -772,7 +887,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     .model-meta {
       display: flex;
       justify-content: space-between;
-      font-size: 10px;
+      font-size: 9.5px;
       margin-bottom: 2px;
     }
     .model-name {
@@ -784,17 +899,17 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       text-overflow: ellipsis;
     }
     .model-stat-num {
-      color: var(--t2);
+      color: var(--t3);
     }
     .model-bar-wrap {
       height: 3px;
-      border-radius: 2px;
-      background: rgba(255, 255, 255, 0.07);
+      border-radius: 1.5px;
+      background: var(--card-inner);
       overflow: hidden;
     }
     .model-bar-fill {
       height: 100%;
-      border-radius: 2px;
+      border-radius: 1.5px;
     }
 
     /* FOOTER BAR */
@@ -802,10 +917,10 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 6px 2px 0;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 8px 2px 0;
+      border-top: 1px solid var(--border);
       margin-top: 4px;
-      font-size: 9.5px;
+      font-size: 9px;
       color: var(--t3);
     }
     .reconnect-btn {
@@ -813,8 +928,10 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       background: transparent;
       border: none;
       cursor: pointer;
-      font-size: 9.5px;
-      font-weight: 600;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
       display: inline-flex;
       align-items: center;
       gap: 4px;
@@ -823,7 +940,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       transition: color 0.15s ease;
     }
     .reconnect-btn:hover {
-      color: var(--acc);
+      color: var(--ice);
     }
 
     .mono { font-family: var(--font-mono); }
@@ -831,14 +948,23 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
 </head>
 <body>
 
-  <!-- TOP HEADER -->
+  <!-- TOP 9-DOT HEADER (NEO-SWISS INDUSTRIAL TICKER) -->
   <div class="top-header">
     <div class="brand-mark">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="12 2 22 18 2 18" />
-        <polygon points="12 7 17 15 7 15" fill="currentColor" opacity="0.3" />
-      </svg>
-      <span>Antigravity Presence</span>
+      <span class="grid-dots-icon">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+          <circle cx="3" cy="3" r="1.4"/>
+          <circle cx="8" cy="3" r="1.4"/>
+          <circle cx="13" cy="3" r="1.4"/>
+          <circle cx="3" cy="8" r="1.4"/>
+          <circle cx="8" cy="8" r="1.4"/>
+          <circle cx="13" cy="8" r="1.4"/>
+          <circle cx="3" cy="13" r="1.4"/>
+          <circle cx="8" cy="13" r="1.4"/>
+          <circle cx="13" cy="13" r="1.4"/>
+        </svg>
+      </span>
+      <span>Antigravity</span>
     </div>
     <div class="live-pill" id="sideStatusBadge">
       <span class="live-dot"></span>
@@ -846,7 +972,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     </div>
   </div>
 
-  <!-- RETRO ARCADE MASCOT STAGE -->
+  <!-- MASCOT STAGE -->
   <div class="side-mascot-stage" onclick="chirpSideMascot()" title="Click mascot to chirp (8-bit SFX)">
     ${sideMascotSvg}
     <div class="side-mascot-info">
@@ -864,7 +990,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     </div>
   </div>
 
-  <!-- DESKTOP NOTCH & MASCOT PET QUICK CONTROLS (CUSTOM VECTOR SVG ICONS) -->
+  <!-- DESKTOP NOTCH & MASCOT PET QUICK CONTROLS -->
   <div class="side-companion-bar">
     <button class="side-retro-btn" id="btnSideNotch" onclick="toggleSideNotch()" title="Toggle between Windows Dynamic Notch and Desktop Mascot">
       <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M5 3v2.5h6V3"/></svg>
@@ -876,57 +1002,26 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
     </button>
   </div>
 
-  <!-- DUAL DASHBOARD ACCESS HUB (IN-IDE + BROWSER) -->
-  <div class="hub-grid">
-    <div class="hub-tile primary" id="btnOpenFull" onclick="openFullDashboard()" title="Open interactive Bento dashboard as an editor tab inside Antigravity IDE">
-      <div class="hub-tile-head">
-        <span class="hub-badge">EDITOR TAB</span>
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="2" width="12" height="12" rx="2.5"/>
-          <path d="M8 2v12"/>
-        </svg>
-      </div>
-      <div>
-        <div class="hub-title">In-IDE Studio</div>
-        <div class="hub-sub">Bento metrics panel</div>
-      </div>
-    </div>
-    <div class="hub-tile" id="btnOpenBrowser" onclick="openBrowserDashboard()" title="Launch companion dashboard at http://127.0.0.1:41177 in your browser">
-      <div class="hub-tile-head">
-        <span class="hub-badge">127.0.0.1</span>
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10 2h4v4M6.5 9.5L14 2M14 8.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h4.5"/>
-        </svg>
-      </div>
-      <div>
-        <div class="hub-title">Web Browser</div>
-        <div class="hub-sub">Chrome / Edge / Brave</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 2-COLUMN SPLIT BENTO (SESSION DURATION + ACTIVE AGENT RADAR) -->
+  <!-- 2-COLUMN SPLIT BENTO (SESSION HERO + ACTIVE AGENT RADAR) -->
   <div class="split-bento-grid">
     <!-- Tile A: Session Duration & Clock Controls -->
     <div class="split-tile">
       <div>
         <div class="card-head" style="margin-bottom:0;">
           <span class="eyebrow">
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
-              <circle cx="8" cy="8" r="6.2"/>
-              <path d="M8 4.5V8l2.5 1.5"/>
-            </svg>
-            SESSION
+            TODAY'S FOCUS <span class="colon-sep">:</span>
           </span>
-          <span class="chip mono" id="sideTimerStatus">RUNNING</span>
+          <span class="sub-ratio mono">/ 6H</span>
         </div>
-        <div class="clock-display mono" id="sideTimerDisplay">${timeFormatted}</div>
-        <div class="mono" id="sideLifetimeHours" style="font-size:10px; color:var(--acc); font-weight:600; margin-top:2px;">Overall: ${lifetimeHoursFormatted}</div>
+        <div class="bold-num-row">
+          <div class="big-num mono" id="sideTimerDisplay">${timeFormatted}</div>
+        </div>
+        <div class="mono" id="sideLifetimeHours" style="font-size:9.5px; color:var(--t3); font-weight:600;">Overall: ${lifetimeHoursFormatted}</div>
       </div>
       <div class="clock-actions">
-        <button class="micro-btn primary" id="btnPause" onclick="togglePause()">
+        <button class="micro-btn" id="btnPause" onclick="togglePause()">
           <span id="btnPauseIcon">
-            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+            <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor">
               <rect x="4" y="3" width="2.8" height="10" rx="1.2"/>
               <rect x="9.2" y="3" width="2.8" height="10" rx="1.2"/>
             </svg>
@@ -934,7 +1029,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
           <span id="btnPauseLabel">Pause</span>
         </button>
         <button class="micro-btn" id="btnFresh" onclick="startFresh()" title="Start fresh session">
-          <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
             <path d="M2.5 8a5.5 5.5 0 0 1 9.4-3.9L14 6m0-4v4h-4M13.5 8a5.5 5.5 0 0 1-9.4 3.9L2 10m0 4v-4h4"/>
           </svg>
           <span>Fresh</span>
@@ -944,14 +1039,17 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
 
     <!-- Tile B: Active Agent Radar -->
     <div class="split-tile">
-      <div class="card-head" style="margin-bottom:0;">
-        <span class="eyebrow">
-          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
-            <path d="M8 1.5l1.6 4.9 4.9 1.6-4.9 1.6L8 14.5l-1.6-4.9-4.9-1.6 4.9-1.6L8 1.5z"/>
-          </svg>
-          AGENTS
-        </span>
-        <span class="chip mono" id="sideAgentCountChip">${activeAgents.length} ACTIVE</span>
+      <div>
+        <div class="card-head" style="margin-bottom:0;">
+          <span class="eyebrow">
+            AGENTS <span class="colon-sep">:</span>
+          </span>
+          <span class="sub-ratio mono" id="sideAgentCountChip">${activeAgents.length} / 4</span>
+        </div>
+        <div class="bold-num-row">
+          <div class="big-num mono" style="color:var(--ice);">${activeAgents.length}</div>
+          <span class="sub-ratio mono">ACTIVE</span>
+        </div>
       </div>
       <div class="radar-content" id="sideAgentContainer">
         ${
@@ -961,38 +1059,33 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
                 <span>${activeAgent?.model ?? 'AI Agent'}</span>
               </div>
               <div class="agent-tool-text">
-                ${activeAgent?.activeTool ? `Tool: ${activeAgent.activeTool}` : 'Thinking & Planning...'}
+                ${activeAgent?.activeTool ? `Tool: ${activeAgent.activeTool}` : 'Planning & Acting...'}
               </div>`
             : `<div class="agent-active-badge">
                 <span class="radar-sonar-dot idle"></span>
-                <span style="color:var(--t2);">Standing By</span>
+                <span style="color:var(--t3);">Standing By</span>
               </div>
-              <div class="agent-tool-text">Context intact</div>`
+              <div class="agent-tool-text">Telemetry Ready</div>`
         }
       </div>
-      <div style="font-size:8.5px; color:var(--t3); margin-top:4px;">Auto-broadcasting</div>
     </div>
   </div>
 
   <!-- HERO TOKEN VOLUME BENTO CARD -->
-  <div class="bento-card hero-card">
+  <div class="bento-card">
     <div class="card-head">
       <span class="eyebrow">
-        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
-          <ellipse cx="8" cy="4" rx="6" ry="2.2"/>
-          <path d="M2 4v4c0 1.2 2.7 2.2 6 2.2s6-1 6-2.2V4M2 8v4c0 1.2 2.7 2.2 6 2.2s6-1 6-2.2V8"/>
-        </svg>
-        TOKEN VOLUME
+        TOTAL BALANCE <span class="colon-sep">:</span>
       </span>
-      <span class="chip mono" style="color:var(--emerald); border-color:rgba(16,185,129,0.3);" id="sideCacheRatio">${cacheRatio}% SAVED</span>
+      <span class="chip mono" style="color:var(--emerald); border-color:rgba(52,245,164,0.3);" id="sideCacheRatio">${cacheRatio}% SAVED</span>
     </div>
 
-    <div style="display:flex; align-items:baseline; justify-content:space-between; margin: 3px 0 6px;">
+    <div style="display:flex; align-items:baseline; justify-content:space-between; margin: 2px 0 6px;">
       <div class="hero-tokens mono" id="sideTotalTokens" style="margin:0;">${formatNumber(totalTokens)}</div>
-      <div class="mono" id="sideSessionTokens" style="font-size:11px; font-weight:700; color:var(--acc);">${formatCompactNumber(sessionTokens)} session</div>
+      <div class="mono" id="sideSessionTokens" style="font-size:10px; font-weight:700; color:var(--ice);">${formatCompactNumber(sessionTokens)} session</div>
     </div>
 
-    <!-- Segmented Cache Ratio Bar -->
+    <!-- Segmented Ratio Bar -->
     <div class="ratio-bar">
       <div class="ratio-fill-cache" id="barCache" style="width: ${cacheBarRatio}%;"></div>
       <div class="ratio-fill-in" id="barIn" style="width: ${inRatio}%;"></div>
@@ -1006,12 +1099,73 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
         <span class="micro-stat-val" id="sideCacheTokens">${formatCompactNumber(cacheTokens)}</span>
       </div>
       <div class="micro-stat-col">
-        <span class="micro-stat-label"><i style="background:#ffffff;"></i> In</span>
+        <span class="micro-stat-label"><i style="background:#FFFFFF;"></i> In</span>
         <span class="micro-stat-val" id="sideInTokens">${formatCompactNumber(inTokens)}</span>
       </div>
       <div class="micro-stat-col">
-        <span class="micro-stat-label"><i style="background:var(--acc);"></i> Out</span>
+        <span class="micro-stat-label"><i style="background:var(--ice);"></i> Out</span>
         <span class="micro-stat-val" id="sideOutTokens">${formatCompactNumber(outTokens)}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLATE DENIM BLUE ACCENT CARD (AESTHETIC-USABILITY EFFECT) -->
+  <div class="bento-accent-denim">
+    <svg class="denim-geometric-art" viewBox="0 0 160 160">
+      <circle cx="80" cy="80" r="62" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.2"/>
+      <circle cx="80" cy="80" r="38" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.2"/>
+      <line x1="18" y1="80" x2="142" y2="80" stroke="rgba(255,255,255,0.2)" stroke-width="1.2"/>
+      <line x1="80" y1="18" x2="80" y2="142" stroke="rgba(255,255,255,0.2)" stroke-width="1.2"/>
+      <line x1="18" y1="142" x2="142" y2="18" stroke="rgba(255,255,255,0.25)" stroke-width="1.2"/>
+      <path d="M 80 18 A 62 62 0 0 1 142 80" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.8"/>
+    </svg>
+    <div>
+      <div class="denim-title">AESTHETIC-<br>USABILITY<br>EFFECT</div>
+      <div class="denim-desc">USERS OFTEN PERCEIVE AESTHETICALLY PLEASING DESIGN AS DESIGN THAT'S MORE USABLE.</div>
+    </div>
+    <div class="denim-dots">
+      <span class="active"></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- SANDSTONE ALABASTER ACTION CARD -->
+  <div class="bento-accent-sandstone" onclick="openFullDashboard()" title="Launch In-IDE Studio & Metrics Dashboard">
+    <div class="sandstone-top">
+      <div class="sandstone-title">CUSTOM DASHBOARD</div>
+      <div class="sandstone-arrow-btn">
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 12L12 4M12 4H6M12 4V10"/>
+        </svg>
+      </div>
+    </div>
+    <div class="sandstone-sub">IN-IDE STUDIO & WEB • 10 / 20 TEMPLATES</div>
+  </div>
+
+  <!-- DUAL DASHBOARD ACCESS HUB (IN-IDE + BROWSER) -->
+  <div class="hub-grid">
+    <div class="hub-tile primary" id="btnOpenFull" onclick="openFullDashboard()" title="Open interactive Bento dashboard as an editor tab inside Antigravity IDE">
+      <div class="hub-tile-head">
+        <span class="hub-badge">EDITOR TAB</span>
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="2" width="12" height="12" rx="2.5"/>
+          <path d="M8 2v12"/>
+        </svg>
+      </div>
+      <div>
+        <div class="hub-title">In-IDE Studio</div>
+        <div class="hub-sub">Bento metrics panel</div>
+      </div>
+    </div>
+    <div class="hub-tile" id="btnOpenBrowser" onclick="openBrowserDashboard()" title="Launch companion dashboard at http://127.0.0.1:41177 in your browser">
+      <div class="hub-tile-head">
+        <span class="hub-badge">127.0.0.1</span>
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 2h4v4M6.5 9.5L14 2M14 8.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h4.5"/>
+        </svg>
+      </div>
+      <div>
+        <div class="hub-title">Web Browser</div>
+        <div class="hub-sub">Chrome / Edge / Brave</div>
       </div>
     </div>
   </div>
@@ -1020,11 +1174,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   <div class="bento-card">
     <div class="card-head">
       <span class="eyebrow">
-        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
-          <circle cx="8" cy="8" r="6"/>
-          <path d="M8 2a6 6 0 0 1 6 6H8V2z"/>
-        </svg>
-        MODEL SHARE
+        MODEL ALLOCATION <span class="colon-sep">:</span>
       </span>
       <span class="chip mono" id="sideModelCount">${models.length} MODELS</span>
     </div>
@@ -1038,12 +1188,12 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
                 const share = totalTokens > 0 ? Math.round((m.tokens.totalTokens / totalTokens) * 100) : 0;
                 const color =
                   idx === 0
-                    ? 'var(--acc)'
+                    ? 'var(--ice)'
                     : idx === 1
-                      ? 'var(--cyan)'
+                      ? '#FFFFFF'
                       : idx === 2
-                        ? 'var(--lavender)'
-                        : 'var(--coral)';
+                        ? 'var(--slate-denim)'
+                        : 'var(--emerald)';
                 return `<div class="model-row">
                   <div class="model-meta">
                     <span class="model-name">${m.model}</span>
@@ -1064,7 +1214,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   <div class="footer-bar">
     <span id="footerWorkspaceText">1 Workspace active</span>
     <button class="reconnect-btn" onclick="reconnectDiscord()" title="Reconnect Discord RPC">
-      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
         <path d="M1 8a7 7 0 1 1 12 5M15 8A7 7 0 0 1 3 3"/>
         <path d="M15 3v5h-5M1 13V8h5"/>
       </svg>

@@ -31,21 +31,23 @@ export function getDashboardHtml(): string {
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;700&family=Geist:wght@400;500;600;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #07090F;
-      --card-bg: rgba(16, 20, 32, 0.58);
-      --card-inner: rgba(10, 13, 21, 0.65);
+      --bg: #131418;
+      --card-bg: #1C1D22;
+      --card-inner: #16171B;
+      --border: #282A31;
       --acc: #FFB84D;
-      --t1: #F8FAFC;
-      --t2: rgba(248, 250, 252, 0.74);
-      --t3: rgba(148, 163, 184, 0.54);
-      --hair: rgba(255, 255, 255, 0.11);
-      --hair-subtle: rgba(255, 255, 255, 0.06);
-      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --t1: #FFFFFF;
+      --t2: #C4C8D4;
+      --t3: #8A909E;
+      --t4: #525866;
+      --hair: #282A31;
+      --hair-subtle: #202227;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
 
       --flash: #FFB84D;
-      --argon: #38BDF8;
+      --argon: #5B9CF6;
       --sonnet: #FF5E7E;
-      --lite: #38BDF8;
+      --lite: #5B9CF6;
       --emerald: #34F5A4;
       --purple: #C084FC;
       --rose: #FF5E7E;
@@ -57,6 +59,475 @@ export function getDashboardHtml(): string {
     }
 
     ${mascotStyles}
+
+    /* ========================================================================== */
+    /*  NEO-SWISS INDUSTRIAL BENTO GRID (REFERENCE REPLICA)                       */
+    /* ========================================================================== */
+    .ref-top-ticker {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #16171B;
+      border: 1px solid #282A31;
+      border-radius: 8px;
+      padding: 8px 16px;
+      margin-bottom: 14px;
+      grid-column: span 12;
+    }
+    .ref-ticker-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      overflow-x: auto;
+    }
+    .ref-dot-matrix {
+      color: #8A909E;
+      display: inline-flex;
+      align-items: center;
+    }
+    .ref-ticker-strip {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .ticker-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .ticker-label {
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #6C7280;
+    }
+    .ticker-val {
+      font-size: 11px;
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: 0.02em;
+      font-family: var(--font-mono);
+    }
+    .ticker-val.green {
+      color: #34F5A4;
+    }
+    .ref-user-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #C4C8D4;
+    }
+    .ref-user-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #5B9CF6;
+    }
+
+    .ref-bento-container {
+      display: grid;
+      grid-template-columns: 210px 220px 1.4fr 260px;
+      gap: 12px;
+      margin-bottom: 16px;
+      grid-column: span 12;
+    }
+    @media (max-width: 1280px) {
+      .ref-bento-container {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    @media (max-width: 768px) {
+      .ref-bento-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .ref-col {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .ref-card {
+      background: #1C1D22;
+      border: 1px solid #282A31;
+      border-radius: 8px;
+      padding: 14px 16px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.15s ease;
+    }
+    .ref-card:hover {
+      border-color: #3E424E;
+    }
+
+    .ref-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .ref-eyebrow {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #8A909E;
+    }
+    .ref-eyebrow .colon {
+      color: #525866;
+    }
+    .ref-unit-ratio {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #8A909E;
+      font-family: var(--font-mono);
+    }
+    .ref-big-num {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #FFFFFF;
+      line-height: 1;
+      font-family: var(--font-mono);
+      margin-top: 6px;
+    }
+    .ref-num-sub-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    /* Card 1 & 2: Focus & Tasks */
+    .card-focus, .card-tasks {
+      height: 98px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Card 3: Runtime */
+    .card-runtime {
+      height: 200px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .ref-arrow-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #282A31;
+      border: none;
+      color: #C4C8D4;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .ref-arrow-btn:hover {
+      background: #3E424E;
+      color: #FFFFFF;
+    }
+    .ref-works-block {
+      margin-top: 6px;
+    }
+    .ref-sub-label {
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #6C7280;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .ref-avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+    .ref-av-thumb {
+      height: 38px;
+      border-radius: 4px;
+      background: #252730;
+      border: 1px solid #2E323D;
+      position: relative;
+      overflow: hidden;
+    }
+    .ref-av-thumb.av-1 { background: linear-gradient(135deg, #2A3B50, #1C2430); }
+    .ref-av-thumb.av-2 { background: linear-gradient(135deg, #3C334A, #201D28); }
+    .ref-av-thumb.av-3 { background: linear-gradient(135deg, #2C423E, #182622); }
+    .ref-av-thumb.av-4 { background: linear-gradient(135deg, #443B2E, #262118); }
+    .ref-av-thumb.av-5 { background: linear-gradient(135deg, #3E2B38, #22181F); }
+    .ref-av-thumb.av-6 { background: linear-gradient(135deg, #2A3644, #192028); }
+
+    /* Card 4: Invoices (Tall) */
+    .card-invoices {
+      height: 208px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .ref-invoices-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid #282A31;
+      padding-top: 10px;
+      font-size: 10px;
+      font-family: var(--font-mono);
+    }
+    .ref-footer-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #8A909E;
+    }
+    .ref-footer-val {
+      font-weight: 700;
+      color: #C4C8D4;
+    }
+
+    /* Card 5: Denim Accent Card */
+    .card-denim {
+      background: #4E6482;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #FFFFFF;
+      height: 200px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card-denim .denim-geometric-art {
+      position: absolute;
+      top: -16px;
+      right: -16px;
+      width: 160px;
+      height: 160px;
+      pointer-events: none;
+      opacity: 0.85;
+    }
+    .card-denim .denim-title {
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      line-height: 1.15;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 2;
+    }
+    .card-denim .denim-desc {
+      font-size: 8.5px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      line-height: 1.4;
+      text-transform: uppercase;
+      opacity: 0.9;
+      max-width: 170px;
+      position: relative;
+      z-index: 2;
+    }
+    .card-denim .denim-dots {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+    .card-denim .denim-dots span {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.35);
+    }
+    .card-denim .denim-dots span.active {
+      background: #FFFFFF;
+      width: 7px;
+      border-radius: 3.5px;
+    }
+
+    /* Card 6: Balance (Wide) */
+    .card-balance {
+      height: 208px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .ref-time-pills {
+      display: flex;
+      gap: 5px;
+    }
+    .ref-pill-btn {
+      background: #252730;
+      border: 1px solid #2E323D;
+      border-radius: 4px;
+      color: #8A909E;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 7px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .ref-pill-btn:hover {
+      color: #FFFFFF;
+      border-color: #3E424E;
+    }
+    .ref-pill-btn.active {
+      background: #384252;
+      border-color: #5B9CF6;
+      color: #FFFFFF;
+    }
+    .ref-balance-body {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-top: 14px;
+    }
+    .ref-balance-subtitle {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #8A909E;
+      margin-bottom: 6px;
+    }
+    .balance-num {
+      font-size: 2.8rem;
+      line-height: 1;
+    }
+    .ref-token-m {
+      font-size: 1.5rem;
+      color: #5B9CF6;
+      margin-left: 2px;
+    }
+    .ref-bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 85px;
+      padding-bottom: 2px;
+    }
+    .ref-vbar {
+      width: 14px;
+      border-radius: 2px;
+      background: #D4D2C9;
+    }
+    .ref-vbar.active {
+      background: #5B9CF6;
+    }
+    .ref-vbar.h-40 { height: 35px; }
+    .ref-vbar.h-65 { height: 55px; }
+    .ref-vbar.h-95 { height: 80px; }
+    .ref-vbar.h-70 { height: 60px; }
+    .ref-vbar.h-80 { height: 70px; }
+
+    /* Card 7: API Usage */
+    .card-api-usage {
+      height: 200px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .ref-api-progress-bar {
+      height: 6px;
+      border-radius: 3px;
+      background: #252730;
+      display: flex;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .ref-api-fill-1 {
+      background: #5B9CF6;
+    }
+    .ref-api-fill-2 {
+      background: #3A4B62;
+    }
+
+    /* Card 8: Gauge */
+    .card-gauge {
+      height: 208px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ref-gauge-wrapper {
+      position: relative;
+      width: 150px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ref-gauge-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .ref-gauge-center {
+      position: absolute;
+      text-align: center;
+    }
+    .gauge-num {
+      font-size: 2rem;
+      margin-top: 0;
+    }
+    .ref-gauge-label {
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #8A909E;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    /* Card 9: Sandstone Alabaster Custom Dashboard */
+    .card-sandstone {
+      background: #C7C5B8;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      color: #131418;
+      height: 200px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .card-sandstone:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    }
+    .card-sandstone .sandstone-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-sandstone .sandstone-title {
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .card-sandstone .sandstone-arrow-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #131418;
+      color: #C7C5B8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card-sandstone .sandstone-sub {
+      font-size: 9.5px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
 
     /* Precision craft card headers per /impeccable */
     .cap {
@@ -997,6 +1468,197 @@ export function getDashboardHtml(): string {
     <!-- OVERVIEW TAB -->
     <section id="tab-overview" class="view-panel active">
       <div class="bento-grid">
+
+        <!-- TOP TICKER BAR (EXACT INDUSTRIAL REFERENCE REPLICA) -->
+        <div class="ref-top-ticker">
+          <div class="ref-ticker-left">
+            <span class="ref-dot-matrix">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                <circle cx="3" cy="3" r="1.4"/><circle cx="8" cy="3" r="1.4"/><circle cx="13" cy="3" r="1.4"/>
+                <circle cx="3" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="13" cy="8" r="1.4"/>
+                <circle cx="3" cy="13" r="1.4"/><circle cx="8" cy="13" r="1.4"/><circle cx="13" cy="13" r="1.4"/>
+              </svg>
+            </span>
+            <div class="ref-ticker-strip">
+              <div class="ticker-item"><span class="ticker-label">ACTIVE MODEL</span><span class="ticker-val" id="refModelVal">Gemini 3.8 Flash</span></div>
+              <div class="ticker-item"><span class="ticker-label">CACHE HIT</span><span class="ticker-val" id="refCacheVal">92.8%</span></div>
+              <div class="ticker-item"><span class="ticker-label">TOTAL TOKENS</span><span class="ticker-val" id="refTokensVal">1.592M</span></div>
+              <div class="ticker-item"><span class="ticker-label">SESSION FOCUS</span><span class="ticker-val" id="refSessionVal">1.8 / 6H</span></div>
+              <div class="ticker-item"><span class="ticker-label">LIFETIME ALL</span><span class="ticker-val" id="refLifetimeVal">31.4h</span></div>
+              <div class="ticker-item"><span class="ticker-label">DISCORD RPC</span><span class="ticker-val green" id="refDiscordVal">CONNECTED</span></div>
+            </div>
+          </div>
+          <div class="ref-ticker-right">
+            <div class="ref-user-badge">
+              <span class="ref-user-dot"></span>
+              <span class="ref-user-name">ANTIGRAVITY #4015</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4-COLUMN HORIZONTAL BENTO GRID (REFERENCE REPLICA) -->
+        <div class="ref-bento-container">
+
+          <!-- COLUMN 1: LEFT STACK -->
+          <div class="ref-col col-1">
+            <!-- Card 1: Today's Focus -->
+            <div class="ref-card card-focus">
+              <div class="ref-card-head">
+                <span class="ref-eyebrow">TODAY'S FOCUS <span class="colon">:</span></span>
+                <span class="ref-unit-ratio">/ 6H</span>
+              </div>
+              <div class="ref-big-num" id="refTodayFocusNum">1.8</div>
+            </div>
+
+            <!-- Card 2: Completed Tasks -->
+            <div class="ref-card card-tasks">
+              <div class="ref-card-head">
+                <span class="ref-eyebrow">COMPLETED TASKS <span class="colon">:</span></span>
+                <span class="ref-unit-ratio">/ 5</span>
+              </div>
+              <div class="ref-big-num" id="refCompletedTasksNum">2</div>
+            </div>
+
+            <!-- Card 3: Agent Runtime (MJ Fast Hours) -->
+            <div class="ref-card card-runtime">
+              <div class="ref-card-head">
+                <span class="ref-eyebrow">AGENT RUNTIME</span>
+                <button class="ref-arrow-btn" onclick="switchTab('agents', this)" title="View All Agents">
+                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12L12 4M12 4H6M12 4V10"/></svg>
+                </button>
+              </div>
+              <div class="ref-num-sub-row">
+                <span class="ref-big-num" id="refRuntimeNum">6.9</span>
+                <span class="ref-unit-ratio">/ 15H</span>
+              </div>
+              <div class="ref-works-block">
+                <div class="ref-sub-label">ACTIVE AVATARS</div>
+                <div class="ref-avatar-grid">
+                  <div class="ref-av-thumb av-1"></div>
+                  <div class="ref-av-thumb av-2"></div>
+                  <div class="ref-av-thumb av-3"></div>
+                  <div class="ref-av-thumb av-4"></div>
+                  <div class="ref-av-thumb av-5"></div>
+                  <div class="ref-av-thumb av-6"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- COLUMN 2: CENTER-LEFT STACK -->
+          <div class="ref-col col-2">
+            <!-- Card 4: Paid Invoices / Prompts Processed (Tall) -->
+            <div class="ref-card card-invoices">
+              <div>
+                <div class="ref-card-head">
+                  <span class="ref-eyebrow">PROMPTS PROCESSED <span class="colon">:</span></span>
+                  <span class="ref-unit-ratio">/ 32</span>
+                </div>
+                <div class="ref-big-num" id="refInvoicesNum" style="margin-top: 14px;">24</div>
+              </div>
+              <div class="ref-invoices-footer">
+                <span class="ref-footer-label">TOTAL</span>
+                <span class="ref-footer-val" id="refInvoicesTotalVal">124K / 500K</span>
+              </div>
+            </div>
+
+            <!-- Card 5: Slate Denim Blue (Aesthetic-Usability Effect) -->
+            <div class="ref-card card-denim">
+              <svg class="denim-geometric-art" viewBox="0 0 180 180">
+                <circle cx="90" cy="90" r="72" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.3"/>
+                <circle cx="90" cy="90" r="44" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.3"/>
+                <line x1="18" y1="90" x2="162" y2="90" stroke="rgba(255,255,255,0.2)" stroke-width="1.3"/>
+                <line x1="90" y1="18" x2="90" y2="162" stroke="rgba(255,255,255,0.2)" stroke-width="1.3"/>
+                <line x1="18" y1="162" x2="162" y2="18" stroke="rgba(255,255,255,0.25)" stroke-width="1.3"/>
+                <path d="M 90 18 A 72 72 0 0 1 162 90" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+              </svg>
+              <div>
+                <div class="denim-title">AESTHETIC-<br>USABILITY<br>EFFECT</div>
+                <div class="denim-desc">USERS OFTEN PERCEIVE AESTHETICALLY PLEASING DESIGN AS DESIGN THAT'S MORE USABLE.</div>
+              </div>
+              <div class="denim-dots">
+                <span class="active"></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- COLUMN 3: CENTER-RIGHT STACK -->
+          <div class="ref-col col-3">
+            <!-- Card 6: Total Balance Tokens (Wide) -->
+            <div class="ref-card card-balance">
+              <div class="ref-card-head">
+                <span class="ref-eyebrow">TOTAL BALANCE (TOKENS)</span>
+                <div class="ref-time-pills">
+                  <button class="ref-pill-btn active" onclick="setRefRange('7d')">7D</button>
+                  <button class="ref-pill-btn" onclick="setRefRange('30d')">30D</button>
+                  <button class="ref-pill-btn" onclick="setRefRange('5m')">5M</button>
+                  <button class="ref-pill-btn" onclick="setRefRange('12m')">12M</button>
+                </div>
+              </div>
+              <div class="ref-balance-body">
+                <div class="ref-balance-left">
+                  <div class="ref-balance-subtitle" id="refBalanceSub">1.8347 JAN, 2026</div>
+                  <div class="ref-big-num balance-num" id="refBalanceBigNum">1.592<span class="ref-token-m">M</span></div>
+                </div>
+                <!-- 5-bar vertical histogram -->
+                <div class="ref-bar-chart">
+                  <div class="ref-vbar h-40"></div>
+                  <div class="ref-vbar h-65"></div>
+                  <div class="ref-vbar h-95 active"></div>
+                  <div class="ref-vbar h-70"></div>
+                  <div class="ref-vbar h-80"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 7: AI Model Ingestion / API Usage -->
+            <div class="ref-card card-api-usage">
+              <div class="ref-card-head">
+                <span class="ref-eyebrow">CHATGPT / GEMINI USAGE</span>
+              </div>
+              <div class="ref-num-sub-row" style="margin-top:10px;">
+                <span class="ref-big-num" id="refApiUsageNum">5.01</span>
+                <span class="ref-unit-ratio">/ $10.00</span>
+              </div>
+              <!-- Segmented horizontal bar -->
+              <div class="ref-api-progress-bar">
+                <div class="ref-api-fill-1" style="width: 50%;"></div>
+                <div class="ref-api-fill-2" style="width: 25%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- COLUMN 4: RIGHT STACK -->
+          <div class="ref-col col-4">
+            <!-- Card 8: Radial Circular Gauge (Work-Life / Efficiency Balance) -->
+            <div class="ref-card card-gauge">
+              <div class="ref-gauge-wrapper">
+                <svg class="ref-gauge-svg" viewBox="0 0 160 160">
+                  <circle cx="80" cy="80" r="64" fill="none" stroke="#252730" stroke-width="8"/>
+                  <circle cx="80" cy="80" r="64" fill="none" stroke="#5B9CF6" stroke-width="8" stroke-dasharray="402" stroke-dashoffset="108" stroke-linecap="round"/>
+                </svg>
+                <div class="ref-gauge-center">
+                  <div class="ref-big-num gauge-num" id="refGaugeNum">7.89</div>
+                  <div class="ref-gauge-label">WORK-LIFE BALANCE</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 9: Sandstone Alabaster Custom Dashboard -->
+            <div class="ref-card card-sandstone" onclick="switchTab('analytics', this)" title="Open Full Analytics Dashboard">
+              <div class="sandstone-top">
+                <div class="sandstone-title">CUSTOM DASHBOARD</div>
+                <div class="sandstone-arrow-btn">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12L12 4M12 4H6M12 4V10"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="sandstone-sub">10 / 20 TEMPLATES</div>
+            </div>
+          </div>
+
+        </div>
 
         <!-- 30-MINUTE GITHUB AUTO-UPDATE & RELEASE NOTES CARD (VISIBLE WHEN UPDATE AVAILABLE) -->
         <div class="glass-update-banner" id="glassUpdateBanner">
@@ -2761,7 +3423,93 @@ export function getDashboardHtml(): string {
     /* ------------------------------------------------------------------ */
     /*  Renderers: Overview KPI & Tables                                  */
     /* ------------------------------------------------------------------ */
+    function setRefRange(range) {
+      document.querySelectorAll('.ref-pill-btn').forEach(function(b) { b.classList.remove('active'); });
+      const activeBtn = document.querySelector('.ref-pill-btn[onclick*="' + range + '"]');
+      if (activeBtn) activeBtn.classList.add('active');
+    }
+
     function renderOverview(data) {
+      // 0. Reference Horizontal Bento Live Updates
+      const refTotalTok = (data.session && data.session.tokens) ? data.session.tokens.totalTokens : 0;
+      const refInTok = (data.session && data.session.tokens) ? data.session.tokens.inputTokens : 0;
+      const refCacheTok = (data.session && data.session.tokens) ? data.session.tokens.cacheReadTokens : 0;
+      const refOutTok = (data.session && data.session.tokens) ? data.session.tokens.outputTokens : 0;
+      const refCacheRatio = (refInTok + refCacheTok > 0) ? Math.round((refCacheTok / (refInTok + refCacheTok)) * 100) : 0;
+      const refSessionTokRec = (data.session && data.session.sessionTokens) ? data.session.sessionTokens : (data.sessionTokens || { totalTokens: 0 });
+      const refSessionTok = refSessionTokRec.totalTokens || 0;
+      const refAgents = data.activeAgents || [];
+      const refTb = data.timeBreakdown || (data.session && data.session.timeBreakdown) || {};
+      const refLifeSecs = typeof refTb.overall === 'number' ? refTb.overall : (data.session ? data.session.lifetimeActiveSeconds : 0) || 0;
+      const refLast24Secs = typeof refTb.last24h === 'number' ? refTb.last24h : 0;
+      const refElapsedSec = (data.session && typeof data.session.elapsedSeconds === 'number') ? data.session.elapsedSeconds : 0;
+
+      const elFocus = document.getElementById('refTodayFocusNum');
+      if (elFocus) {
+        const focusHrs = (Math.max(refElapsedSec, refLast24Secs) / 3600);
+        elFocus.innerText = focusHrs >= 10 ? focusHrs.toFixed(0) : focusHrs.toFixed(1);
+      }
+      const elTasks = document.getElementById('refCompletedTasksNum');
+      if (elTasks) {
+        elTasks.innerText = String(data.session ? (data.session.totalConversations || refAgents.length || 0) : 0);
+      }
+      const elRuntime = document.getElementById('refRuntimeNum');
+      if (elRuntime) {
+        const runtimeHrs = (refLifeSecs / 3600);
+        elRuntime.innerText = runtimeHrs >= 10 ? runtimeHrs.toFixed(0) : runtimeHrs.toFixed(1);
+      }
+      const elInvoices = document.getElementById('refInvoicesNum');
+      if (elInvoices) {
+        const promptEvents = (data.session && typeof data.session.totalEventsProcessed === 'number')
+          ? data.session.totalEventsProcessed
+          : 0;
+        elInvoices.innerText = String(promptEvents);
+      }
+      const elInvoicesTotal = document.getElementById('refInvoicesTotalVal');
+      if (elInvoicesTotal) {
+        elInvoicesTotal.innerText = formatNumberShort(refSessionTok) + ' / ' + formatNumberShort(Math.max(500000, refSessionTok));
+      }
+      const elBalance = document.getElementById('refBalanceBigNum');
+      if (elBalance) {
+        if (refTotalTok >= 1000000) {
+          elBalance.innerHTML = (refTotalTok / 1000000).toFixed(3) + '<span class="ref-token-m">M</span>';
+        } else if (refTotalTok >= 1000) {
+          elBalance.innerHTML = (refTotalTok / 1000).toFixed(1) + '<span class="ref-token-m">K</span>';
+        } else {
+          elBalance.innerHTML = String(refTotalTok) + '<span class="ref-token-m">TOK</span>';
+        }
+      }
+      const elApiUsage = document.getElementById('refApiUsageNum');
+      if (elApiUsage) {
+        const estCost = ((refInTok * 0.075 + refOutTok * 0.30) / 1000000);
+        elApiUsage.innerText = estCost >= 10 ? estCost.toFixed(1) : estCost.toFixed(2);
+      }
+      const elGauge = document.getElementById('refGaugeNum');
+      if (elGauge) {
+        const effScore = refCacheRatio > 0 ? (refCacheRatio / 10).toFixed(2) : '0.00';
+        elGauge.innerText = effScore;
+      }
+      const elModelVal = document.getElementById('refModelVal');
+      if (elModelVal) {
+        elModelVal.innerText = (refAgents.length > 0 && refAgents[0].model) ? refAgents[0].model : 'Standby';
+      }
+      const elCacheVal = document.getElementById('refCacheVal');
+      if (elCacheVal) elCacheVal.innerText = refCacheRatio + '%';
+      const elTokensVal = document.getElementById('refTokensVal');
+      if (elTokensVal) elTokensVal.innerText = formatNumberShort(refTotalTok);
+      const elSessionVal = document.getElementById('refSessionVal');
+      if (elSessionVal) {
+        const hrs = (refElapsedSec / 3600).toFixed(1);
+        elSessionVal.innerText = hrs + ' / 6H';
+      }
+      const elLifetimeVal = document.getElementById('refLifetimeVal');
+      if (elLifetimeVal) elLifetimeVal.innerText = formatLifetimeHours(refLifeSecs);
+      const elDiscordVal = document.getElementById('refDiscordVal');
+      if (elDiscordVal && data.discord) {
+        elDiscordVal.innerText = data.discord.connected ? 'CONNECTED' : 'STANDBY';
+        elDiscordVal.className = 'ticker-val ' + (data.discord.connected ? 'green' : '');
+      }
+
       // 1. Workspaces Pill
       const wsCount = (data.workspaces && data.workspaces.count) || 1;
       const wsNames = (data.workspaces && data.workspaces.names) || [];

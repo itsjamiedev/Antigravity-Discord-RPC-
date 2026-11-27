@@ -106,6 +106,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   discordClient.onStateChange((state) => {
     if (state === 'connected') {
       updateStatusBar();
+      if (presenceManager && tracker) {
+        presenceManager.updateFromSnapshot(tracker.getSnapshot());
+      }
     } else if (state === 'disconnected') {
       if (statusBarItem && isLeader) {
         statusBarItem.text = '$(circle-slash) Antigravity: Disconnected';
@@ -116,8 +119,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // 4. Initialize Presence Manager
   presenceManager = new PresenceManager(discordClient, configManager);
 
-  // 5. Initialize PureTracker (zero C++ dependencies)
-  tracker = new PureTracker();
+  // Auto-connect Discord RPC immediately on IDE launch (Antigravity 2.0 instant start)
+  void discordClient.connect().catch((err) => {
+    console.log('[Antigravity Presence] Discord auto-connect pending:', err?.message || err);
+  });
+
+  // 5. Initialize PureTracker (zero C++ dependencies, fresh session on IDE restart)
+  tracker = new PureTracker(false, undefined, undefined, undefined, true);
 
   // 6. Initialize Activity Bar Sidebar Dashboard Provider
   sidebarProvider = new SidebarDashboardProvider(vscode, tracker.getSnapshot());
@@ -134,6 +142,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
   tracker.subscribe((snap) => {
     sidebarProvider?.updateSnapshot(snap);
+    if (presenceManager && (isLeader || !dashboardServer)) {
+      presenceManager.updateFromSnapshot(snap);
+    }
   });
 
   // 7. Attempt Leader Election (Port 41177 Dashboard Server)
