@@ -1,18 +1,18 @@
 export function getDashboardThemeCss(): string {
   return `
     :root {
-      --bg: #DCE2E0;
-      --shell: #F4F7F6;
-      --card-bg: #FFFFFF;
-      --card-inner: #F4F7F6;
+      --bg: #C8C2B5;
+      --shell: #DCD6C9;
+      --card-bg: #EAE5D9;
+      --card-inner: #DED8CA;
       --acc: #14191A;
       --lime: #DCF291;
       --t1: #14191A;
-      --t2: #485452;
-      --t3: #6B7678;
-      --t4: #9AA6A3;
-      --hair: #E4EAE8;
-      --hair-strong: #CBD6D3;
+      --t2: #3A3F3D;
+      --t3: #575C59;
+      --t4: #7A7E79;
+      --hair: #C9C2B3;
+      --hair-strong: #B5AE9E;
       --emerald: #179C65;
       --coral: #DC2626;
       --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -236,7 +236,7 @@ export function getDashboardThemeCss(): string {
     .table-container { width: 100%; overflow-x: auto; margin-top: 12px; }
     table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
     thead th {
-      background: #EDF1F0;
+      background: #E8E2D6;
       color: var(--t3);
       font-size: 10px;
       font-weight: 700;
@@ -248,11 +248,11 @@ export function getDashboardThemeCss(): string {
     thead th:last-child { border-radius: 0 8px 8px 0; }
     tbody td {
       padding: 11px 12px;
-      border-bottom: 1px solid #EDF2F0;
+      border-bottom: 1px solid #E8E2D6;
       color: var(--t1);
       font-weight: 500;
     }
-    tbody tr:hover { background: #F9FBFA; cursor: pointer; }
+    tbody tr:hover { background: #F2EDE3; cursor: pointer; }
 
     .status-badge {
       display: inline-flex;

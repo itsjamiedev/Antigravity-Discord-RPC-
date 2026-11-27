@@ -42,7 +42,7 @@ export function getSidebarProfileAndTabsHtml(params: SidebarProfileAndTabsParams
       </button>
     </div>
 
-    <div onclick="chirpSideMascot()" title="Click mascot" style="display:flex; align-items:center; gap:10px; background:#F4F7F6; border:1px solid #E4EAE8; border-radius:10px; padding:8px; cursor:pointer;">
+    <div onclick="chirpSideMascot()" title="Click mascot" style="display:flex; align-items:center; gap:10px; background:#DED8CA; border:1px solid #C9C2B3; border-radius:10px; padding:8px; cursor:pointer;">
       ${sideMascotSvg}
       <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">

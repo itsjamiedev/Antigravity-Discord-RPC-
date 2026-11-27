@@ -17,13 +17,13 @@ function escapeHtml(value: string): string {
 export function getSidebarThemeCss(): string {
   return `
     :root {
-      --canvas: #E4EAE8;
-      --card: #FFFFFF;
-      --card-border: #E4EAE8;
-      --card-border-hover: #CED7D4;
-      --sub-surface: #F4F7F6;
+      --canvas: #D5CFC2;
+      --card: #EAE5D9;
+      --card-border: #C9C2B3;
+      --card-border-hover: #B5AE9E;
+      --sub-surface: #DED8CA;
       --ink: #14191A;
-      --muted: #6B7678;
+      --muted: #525754;
       --hero-start: #1C2324;
       --hero-end: #242D2F;
       --accent-lime: #DCF291;

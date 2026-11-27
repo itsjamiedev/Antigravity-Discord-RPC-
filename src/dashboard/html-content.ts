@@ -35,7 +35,7 @@ export function getDashboardHtml(): string {
   <style>
     ${getDashboardThemeCss()}
     ${mascotStyles}
-    .card { background: #FFFFFF; border: 1px solid #E4EAE8; border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px -2px rgba(20, 25, 26, 0.04); }
+    .card { background: #EAE5D9; border: 1px solid #C9C2B3; border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px -2px rgba(20, 25, 26, 0.06); }
     .rim, .core { display: none !important; }
     .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .big-num { font-size: 2rem; font-weight: 800; color: #14191A; font-family: var(--font-mono); }
@@ -638,7 +638,9 @@ export function getDashboardHtml(): string {
     function setNwSpan(span) {
       nwSpan = span;
       document.querySelectorAll('#nwSeg button').forEach(function(b) {
-        b.setAttribute('aria-pressed', b.innerText.toLowerCase() === span ? 'true' : 'false');
+        const isMatch = (b.getAttribute('onclick') || '').indexOf("'" + span + "'") !== -1;
+        b.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
+        b.classList.toggle('active', isMatch);
       });
       if (currentData) renderNwStream(currentData);
     }
@@ -1199,11 +1201,14 @@ export function getDashboardHtml(): string {
       }
       const spanTotal = spanIn + spanCache + spanOut;
 
-      // Update DotNumber matrix
-      if (!dotNumInstance) {
-        dotNumInstance = createDotNumber(document.getElementById('nwDotNumber'), 4);
+      // Update DotNumber matrix safely (optional)
+      const dotHost = document.getElementById('nwDotNumber');
+      if (dotHost && !dotNumInstance) {
+        dotNumInstance = createDotNumber(dotHost, 4);
       }
-      dotNumInstance.count(spanTotal);
+      if (dotNumInstance) {
+        dotNumInstance.count(spanTotal);
+      }
 
       // Update Title & Legend & Hero Total
       const titleEl = document.getElementById('nwTitleText');

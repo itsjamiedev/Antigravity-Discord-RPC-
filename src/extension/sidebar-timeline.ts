@@ -42,7 +42,7 @@ export function getSidebarTimelineAndTokensHtml(params: SidebarTimelineAndTokens
   const ribbedBarsHtml = ribHeights
     .map((height, idx) => {
       const isAccent = idx >= ribHeights.length - 3;
-      const bg = isAccent ? '#14191A' : '#CBD6D3';
+      const bg = isAccent ? '#1C2022' : '#C8C0B0';
       return `<span class="rib-bar" style="flex:1; height:${height}%; background:${bg}; border-radius:2px;"></span>`;
     })
     .join('');
