@@ -17,17 +17,17 @@ function escapeHtml(value: string): string {
 export function getSidebarThemeCss(): string {
   return `
     :root {
-      --canvas: #D5CFC2;
-      --card: #EAE5D9;
-      --card-border: #C9C2B3;
-      --card-border-hover: #B5AE9E;
-      --sub-surface: #DED8CA;
+      --canvas: #1E2223;
+      --card: #CEC6B6;
+      --card-border: #B2A998;
+      --card-border-hover: #9D9484;
+      --sub-surface: #C0B8A8;
       --ink: #14191A;
-      --muted: #525754;
-      --hero-start: #1C2324;
-      --hero-end: #242D2F;
+      --muted: #464B48;
+      --hero-start: #14191A;
+      --hero-end: #1E2426;
       --accent-lime: #DCF291;
-      --accent-emerald: #179C65;
+      --accent-emerald: #137A50;
       --frosted: rgba(255, 255, 255, 0.12);
       --frosted-hover: rgba(255, 255, 255, 0.2);
       --radius-card: 14px;
@@ -295,7 +295,7 @@ export function getSidebarThemeCss(): string {
       justify-content: space-between;
       padding: 6px 4px 2px;
       font-size: 10px;
-      color: var(--muted);
+      color: #A9B6B3;
     }
     .reconnect-btn {
       background: var(--card);

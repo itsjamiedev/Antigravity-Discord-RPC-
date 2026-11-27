@@ -1,19 +1,19 @@
 export function getDashboardThemeCss(): string {
   return `
     :root {
-      --bg: #C8C2B5;
-      --shell: #DCD6C9;
-      --card-bg: #EAE5D9;
-      --card-inner: #DED8CA;
+      --bg: #141718;
+      --shell: #1E2223;
+      --card-bg: #CEC6B6;
+      --card-inner: #C0B8A8;
       --acc: #14191A;
       --lime: #DCF291;
       --t1: #14191A;
-      --t2: #3A3F3D;
-      --t3: #575C59;
-      --t4: #7A7E79;
-      --hair: #C9C2B3;
-      --hair-strong: #B5AE9E;
-      --emerald: #179C65;
+      --t2: #2E3331;
+      --t3: #464B48;
+      --t4: #656A66;
+      --hair: #B2A998;
+      --hair-strong: #9D9484;
+      --emerald: #137A50;
       --coral: #DC2626;
       --ease: cubic-bezier(0.16, 1, 0.3, 1);
       --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -28,20 +28,20 @@ export function getDashboardThemeCss(): string {
       color: var(--t1);
       font-family: var(--font-sans);
       min-height: 100vh;
-      padding: 18px;
+      padding: 8px;
       -webkit-font-smoothing: antialiased;
     }
 
     .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
     .nx-shell {
-      max-width: 1360px;
+      max-width: 100%;
       margin: 0 auto;
       background: var(--shell);
-      border: 1px solid rgba(255, 255, 255, 0.8);
-      border-radius: 22px;
-      padding: 18px;
-      box-shadow: 0 20px 50px -15px rgba(20, 25, 26, 0.14);
+      border: 1px solid #2C3233;
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.45);
     }
 
     /* DARK CHARCOAL HERO BANNER */
@@ -236,7 +236,7 @@ export function getDashboardThemeCss(): string {
     .table-container { width: 100%; overflow-x: auto; margin-top: 12px; }
     table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
     thead th {
-      background: #E8E2D6;
+      background: #C0B8A8;
       color: var(--t3);
       font-size: 10px;
       font-weight: 700;
@@ -248,11 +248,11 @@ export function getDashboardThemeCss(): string {
     thead th:last-child { border-radius: 0 8px 8px 0; }
     tbody td {
       padding: 11px 12px;
-      border-bottom: 1px solid #E8E2D6;
+      border-bottom: 1px solid #B8B0A0;
       color: var(--t1);
       font-weight: 500;
     }
-    tbody tr:hover { background: #F2EDE3; cursor: pointer; }
+    tbody tr:hover { background: #C7BFAF; cursor: pointer; }
 
     .status-badge {
       display: inline-flex;

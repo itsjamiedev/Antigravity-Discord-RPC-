@@ -35,7 +35,7 @@ export function getDashboardHtml(): string {
   <style>
     ${getDashboardThemeCss()}
     ${mascotStyles}
-    .card { background: #EAE5D9; border: 1px solid #C9C2B3; border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px -2px rgba(20, 25, 26, 0.06); }
+    .card { background: #CEC6B6; border: 1px solid #B2A998; border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.14); }
     .rim, .core { display: none !important; }
     .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .big-num { font-size: 2rem; font-weight: 800; color: #14191A; font-family: var(--font-mono); }
@@ -445,12 +445,6 @@ export function getDashboardHtml(): string {
       </div>
     </div>
   </div>
-
-  <!-- FOOTER -->
-  <footer>
-    <div>Antigravity Presence • Privacy-Safe Local Companion • 100% Local (127.0.0.1)</div>
-    <div>Made with <span style="color:#f43f5e;">❤</span> by <a href="https://github.com/itsjamiedev" target="_blank">itsjamiedev</a> — a 16-year-old developer using Google Antigravity</div>
-  </footer>
 
   <!-- CLIENT-SIDE LOGIC -->
   <script>

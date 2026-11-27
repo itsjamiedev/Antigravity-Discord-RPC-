@@ -18,7 +18,7 @@ export function getDashboardRightColumnHtml(): string {
           </button>
         </div>
 
-        <div style="background:#DED8CA;border-radius:14px;padding:16px;border:1px solid #C9C2B3;">
+        <div style="background:#C0B8A8;border-radius:14px;padding:16px;border:1px solid #B2A998;">
           <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5E6E6B;margin-bottom:14px;">
             OVERALL IDE TIME &amp; TIMELINE
           </div>
