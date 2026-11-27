@@ -14,6 +14,9 @@
  */
 
 import { getMascotCss, getMascotSfxJs, getMascotSvgHtml } from '../shared/mascot-rig.js';
+import { getDashboardThemeCss, getDashboardHeroHtml } from './ui-hero.js';
+import { getDashboardLeftColumnHtml } from './ui-charts.js';
+import { getDashboardRightColumnHtml } from './ui-timeline.js';
 
 export function getDashboardHtml(): string {
   const mascotHeroSvg = getMascotSvgHtml('dashHero', 92, 'idle');
@@ -30,1977 +33,42 @@ export function getDashboardHtml(): string {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;700&family=Geist:wght@400;500;600;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet" />
   <style>
-    :root {
-      --bg: #131418;
-      --card-bg: #1C1D22;
-      --card-inner: #16171B;
-      --border: #282A31;
-      --acc: #FFB84D;
-      --t1: #FFFFFF;
-      --t2: #C4C8D4;
-      --t3: #8A909E;
-      --t4: #525866;
-      --hair: #282A31;
-      --hair-subtle: #202227;
-      --ease: cubic-bezier(0.16, 1, 0.3, 1);
-
-      --flash: #FFB84D;
-      --argon: #5B9CF6;
-      --sonnet: #FF5E7E;
-      --lite: #5B9CF6;
-      --emerald: #34F5A4;
-      --purple: #C084FC;
-      --rose: #FF5E7E;
-      --amber: #FFB84D;
-
-      --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --font-mono: "Geist Mono", "JetBrains Mono", SFMono-Regular, monospace;
-      --font-pixel: "Minecraft", "Minecraft Seven", "Minecraftia", "Silkscreen", "Geist Mono", monospace;
-    }
-
+    ${getDashboardThemeCss()}
     ${mascotStyles}
-
-    /* ========================================================================== */
-    /*  NEO-SWISS INDUSTRIAL BENTO GRID (REFERENCE REPLICA)                       */
-    /* ========================================================================== */
-    .ref-top-ticker {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #16171B;
-      border: 1px solid #282A31;
-      border-radius: 8px;
-      padding: 8px 16px;
-      margin-bottom: 14px;
-      grid-column: span 12;
-    }
-    .ref-ticker-left {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      overflow-x: auto;
-    }
-    .ref-dot-matrix {
-      color: #8A909E;
-      display: inline-flex;
-      align-items: center;
-    }
-    .ref-ticker-strip {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-    .ticker-item {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .ticker-label {
-      font-size: 8.5px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: #6C7280;
-    }
-    .ticker-val {
-      font-size: 11px;
-      font-weight: 700;
-      color: #FFFFFF;
-      letter-spacing: 0.02em;
-      font-family: var(--font-mono);
-    }
-    .ticker-val.green {
-      color: #34F5A4;
-    }
-    .ref-user-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 9.5px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: #C4C8D4;
-      background: #1C1D22;
-      border: 1px solid #282A31;
-      padding: 3px 10px 3px 4px;
-      border-radius: 999px;
-    }
-    .ref-user-avatar {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 1px solid #3E424E;
-      display: none;
-    }
-    .ref-user-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #5B9CF6;
-      margin-left: 4px;
-    }
-
-    .ref-bento-container {
-      display: grid;
-      grid-template-columns: 210px 220px 1.4fr 260px;
-      gap: 12px;
-      margin-bottom: 16px;
-      grid-column: span 12;
-    }
-    @media (max-width: 1280px) {
-      .ref-bento-container {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-    @media (max-width: 768px) {
-      .ref-bento-container {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .ref-col {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .ref-card {
-      background: #1C1D22;
-      border: 1px solid #282A31;
-      border-radius: 8px;
-      padding: 14px 16px;
-      position: relative;
-      overflow: hidden;
-      transition: border-color 0.15s ease;
-    }
-    .ref-card:hover {
-      border-color: #3E424E;
-    }
-
-    .ref-card-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .ref-eyebrow {
-      font-size: 9.5px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: #8A909E;
-    }
-    .ref-eyebrow .colon {
-      color: #525866;
-    }
-    .ref-unit-ratio {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      color: #8A909E;
-      font-family: var(--font-mono);
-    }
-    .ref-big-num {
-      font-size: 2.2rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: #FFFFFF;
-      line-height: 1;
-      font-family: var(--font-mono);
-      margin-top: 6px;
-    }
-    .ref-num-sub-row {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-    }
-
-    /* Card 1 & 2: Focus & Tasks */
-    .card-focus, .card-tasks {
-      height: 98px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    /* Card 3: Runtime */
-    .card-runtime {
-      height: 200px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .ref-arrow-btn {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: #282A31;
-      border: none;
-      color: #C4C8D4;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .ref-arrow-btn:hover {
-      background: #3E424E;
-      color: #FFFFFF;
-    }
-    .ref-works-block {
-      margin-top: 6px;
-    }
-    .ref-sub-label {
-      font-size: 8px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      color: #6C7280;
-      text-transform: uppercase;
-      margin-bottom: 5px;
-    }
-    .ref-avatar-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 4px;
-    }
-    .ref-av-thumb {
-      height: 38px;
-      border-radius: 4px;
-      background: #252730;
-      border: 1px solid #2E323D;
-      position: relative;
-      overflow: hidden;
-    }
-    .ref-av-thumb.av-1 { background: linear-gradient(135deg, #2A3B50, #1C2430); }
-    .ref-av-thumb.av-2 { background: linear-gradient(135deg, #3C334A, #201D28); }
-    .ref-av-thumb.av-3 { background: linear-gradient(135deg, #2C423E, #182622); }
-    .ref-av-thumb.av-4 { background: linear-gradient(135deg, #443B2E, #262118); }
-    .ref-av-thumb.av-5 { background: linear-gradient(135deg, #3E2B38, #22181F); }
-    .ref-av-thumb.av-6 { background: linear-gradient(135deg, #2A3644, #192028); }
-
-    /* Card 4: Invoices (Tall) */
-    .card-invoices {
-      height: 208px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .ref-invoices-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-top: 1px solid #282A31;
-      padding-top: 10px;
-      font-size: 10px;
-      font-family: var(--font-mono);
-    }
-    .ref-footer-label {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: #8A909E;
-    }
-    .ref-footer-val {
-      font-weight: 700;
-      color: #C4C8D4;
-    }
-
-    /* Card 5: Denim Accent Card */
-    .card-denim {
-      background: #4E6482;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #FFFFFF;
-      height: 200px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .card-denim .denim-geometric-art {
-      position: absolute;
-      top: -16px;
-      right: -16px;
-      width: 160px;
-      height: 160px;
-      pointer-events: none;
-      opacity: 0.85;
-    }
-    .card-denim .denim-title {
-      font-size: 15px;
-      font-weight: 900;
-      letter-spacing: 0.06em;
-      line-height: 1.15;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-      position: relative;
-      z-index: 2;
-    }
-    .card-denim .denim-desc {
-      font-size: 8.5px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      line-height: 1.4;
-      text-transform: uppercase;
-      opacity: 0.9;
-      max-width: 170px;
-      position: relative;
-      z-index: 2;
-    }
-    .card-denim .denim-dots {
-      display: flex;
-      gap: 5px;
-      align-items: center;
-      position: relative;
-      z-index: 2;
-    }
-    .card-denim .denim-dots span {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.35);
-    }
-    .card-denim .denim-dots span.active {
-      background: #FFFFFF;
-      width: 7px;
-      border-radius: 3.5px;
-    }
-
-    /* Card 6: Balance (Wide) */
-    .card-balance {
-      height: 208px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .ref-time-pills {
-      display: flex;
-      gap: 5px;
-    }
-    .ref-pill-btn {
-      background: #252730;
-      border: 1px solid #2E323D;
-      border-radius: 4px;
-      color: #8A909E;
-      font-size: 9px;
-      font-weight: 700;
-      padding: 2px 7px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .ref-pill-btn:hover {
-      color: #FFFFFF;
-      border-color: #3E424E;
-    }
-    .ref-pill-btn.active {
-      background: #384252;
-      border-color: #5B9CF6;
-      color: #FFFFFF;
-    }
-    .ref-balance-body {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-top: 14px;
-    }
-    .ref-balance-subtitle {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      color: #8A909E;
-      margin-bottom: 6px;
-    }
-    .balance-num {
-      font-size: 2.8rem;
-      line-height: 1;
-    }
-    .ref-token-m {
-      font-size: 1.5rem;
-      color: #5B9CF6;
-      margin-left: 2px;
-    }
-    .ref-bar-chart {
-      display: flex;
-      align-items: flex-end;
-      gap: 8px;
-      height: 85px;
-      padding-bottom: 2px;
-    }
-    .ref-vbar {
-      width: 14px;
-      border-radius: 2px;
-      background: #D4D2C9;
-    }
-    .ref-vbar.active {
-      background: #5B9CF6;
-    }
-    .ref-vbar.h-40 { height: 35px; }
-    .ref-vbar.h-65 { height: 55px; }
-    .ref-vbar.h-95 { height: 80px; }
-    .ref-vbar.h-70 { height: 60px; }
-    .ref-vbar.h-80 { height: 70px; }
-
-    /* Card 7: API Usage */
-    .card-api-usage {
-      height: 200px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .ref-api-progress-bar {
-      height: 6px;
-      border-radius: 3px;
-      background: #252730;
-      display: flex;
-      overflow: hidden;
-      margin-bottom: 8px;
-    }
-    .ref-api-fill-1 {
-      background: #5B9CF6;
-    }
-    .ref-api-fill-2 {
-      background: #3A4B62;
-    }
-
-    /* Card 8: Gauge */
-    .card-gauge {
-      height: 208px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .ref-gauge-wrapper {
-      position: relative;
-      width: 150px;
-      height: 150px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .ref-gauge-svg {
-      width: 100%;
-      height: 100%;
-      transform: rotate(-90deg);
-    }
-    .ref-gauge-center {
-      position: absolute;
-      text-align: center;
-    }
-    .gauge-num {
-      font-size: 2rem;
-      margin-top: 0;
-    }
-    .ref-gauge-label {
-      font-size: 8px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      color: #8A909E;
-      text-transform: uppercase;
-      margin-top: 4px;
-    }
-
-    /* Card 9: Sandstone Alabaster Custom Dashboard */
-    .card-sandstone {
-      background: #C7C5B8;
-      border: 1px solid rgba(0, 0, 0, 0.15);
-      color: #131418;
-      height: 200px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    .card-sandstone:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-    }
-    .card-sandstone .sandstone-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .card-sandstone .sandstone-title {
-      font-size: 13px;
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-    .card-sandstone .sandstone-arrow-btn {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: #131418;
-      color: #C7C5B8;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .card-sandstone .sandstone-sub {
-      font-size: 9.5px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      opacity: 0.8;
-    }
-
-    /* Precision craft card headers per /impeccable */
-    .cap {
-      display: block !important;
-      font-family: var(--font-sans);
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--t3);
-      margin-bottom: 3px;
-    }
-
-    /* LIQUID GLASS HERO & 5-WINDOW MATRIX */
-    .retro-hero-stage {
-      grid-column: span 12;
-      background: var(--card-bg);
-      backdrop-filter: blur(28px) saturate(200%);
-      -webkit-backdrop-filter: blur(28px) saturate(200%);
-      border: 1px solid var(--hair);
-      box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.14);
-      border-radius: 20px;
-      padding: 18px 24px;
-      display: grid;
-      grid-template-columns: 240px 1fr;
-      gap: 22px;
-      align-items: center;
-      position: relative;
-      overflow: hidden;
-    }
-    @media (max-width: 1100px) {
-      .retro-hero-stage {
-        grid-template-columns: 1fr;
-      }
-    }
-    .mascot-pedestal {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      background: rgba(16, 22, 34, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 8px 24px -4px rgba(0, 0, 0, 0.5);
-      border-radius: 16px;
-      padding: 16px 18px;
-      cursor: pointer;
-      position: relative;
-      text-align: center;
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
-    }
-    .mascot-pedestal:hover {
-      transform: translateY(-2px);
-      border-color: rgba(52, 245, 164, 0.4);
-    }
-    .mascot-pedestal-tag {
-      font-family: var(--font-pixel);
-      font-size: 9.5px;
-      color: var(--emerald);
-      padding: 2px 10px;
-      border-radius: 999px;
-      background: rgba(52, 245, 164, 0.1);
-      border: 1px solid rgba(52, 245, 164, 0.3);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .mascot-speech {
-      font-family: var(--font-sans);
-      font-weight: 600;
-      font-size: 12px;
-      color: var(--t1);
-    }
-    .mascot-sub {
-      font-size: 11px;
-      color: var(--t3);
-      letter-spacing: 0.02em;
-    }
-    .retro-time-matrix {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .retro-5col-strip {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 10px;
-    }
-    @media (max-width: 820px) {
-      .retro-5col-strip {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    .retro-time-cell {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 12px 14px;
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .retro-time-cell:hover,
-    .retro-time-cell.active {
-      border-color: rgba(255, 184, 77, 0.45);
-      background: rgba(255, 184, 77, 0.09);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px -4px rgba(255, 184, 77, 0.15);
-    }
-    .retro-time-cell .w-lbl {
-      font-family: var(--font-sans);
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--t3);
-    }
-    .retro-time-cell .w-hrs {
-      font-family: var(--font-sans);
-      font-weight: 700;
-      font-size: 1.25rem;
-      letter-spacing: -0.02em;
-      color: var(--t1);
-      margin-top: 4px;
-    }
-    .retro-time-cell .w-tok {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      color: var(--cyan);
-      margin-top: 2px;
-    }
-    .retro-companion-controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-    }
-    .retro-btn {
-      background: rgba(255, 255, 255, 0.045);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--hair);
-      color: var(--t2);
-      font-family: var(--font-sans);
-      font-size: 11.5px;
-      font-weight: 600;
-      padding: 6px 11px;
-      border-radius: 10px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.16s var(--ease);
-    }
-    .retro-btn:hover {
-      border-color: rgba(255, 255, 255, 0.26);
-      color: var(--t1);
-      background: rgba(255, 255, 255, 0.09);
-    }
-    .retro-btn.active {
-      border-color: rgba(52, 245, 164, 0.4);
-      color: var(--emerald);
-      background: rgba(52, 245, 164, 0.1);
-    }
-
-    /* LIQUID GLASS UPDATE & RELEASE NOTES BANNER */
-    .glass-update-banner {
-      grid-column: span 12;
-      background: linear-gradient(135deg, rgba(52, 245, 164, 0.12) 0%, rgba(16, 20, 32, 0.72) 100%);
-      backdrop-filter: blur(24px) saturate(180%);
-      border: 1px solid rgba(52, 245, 164, 0.38);
-      border-radius: 16px;
-      padding: 14px 18px;
-      display: none;
-      flex-direction: column;
-      gap: 10px;
-      box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-    }
-    .glass-update-banner.visible {
-      display: flex;
-    }
-    .update-notes-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      max-height: 120px;
-      overflow-y: auto;
-      padding: 8px 12px;
-      background: rgba(0, 0, 0, 0.28);
-      border: 1px solid var(--hair);
-      border-radius: 10px;
-      font-size: 12px;
-      color: var(--t2);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    body {
-      background-color: var(--bg);
-      color: var(--t1);
-      font-family: var(--font-sans);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-      background-image: 
-        radial-gradient(circle at 15% 0%, rgba(232, 255, 31, 0.05) 0%, transparent 40%),
-        radial-gradient(circle at 85% 100%, rgba(169, 178, 255, 0.05) 0%, transparent 45%);
-    }
-
-    /* TOP BAR */
-    header {
-      background: rgba(10, 10, 12, 0.85);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border-bottom: 1px solid var(--hair);
-      padding: 14px 28px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .brand-group {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .brand-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(232, 255, 31, 0.2), rgba(169, 178, 255, 0.15));
-      border: 1px solid rgba(232, 255, 31, 0.35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 20px rgba(232, 255, 31, 0.15);
-    }
-
-    .brand-icon svg {
-      width: 20px;
-      height: 20px;
-      fill: var(--acc);
-    }
-
-    .brand-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .pixel-tag {
-      font-family: var(--font-pixel);
-      font-size: 0.68rem;
-      background: rgba(232, 255, 31, 0.12);
-      border: 1px solid rgba(232, 255, 31, 0.3);
-      color: var(--acc);
-      padding: 2px 7px;
-      border-radius: 6px;
-      letter-spacing: 0.05em;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 14px;
-      border-radius: 9999px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--hair);
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: var(--t2);
-      transition: all 0.25s var(--ease);
-    }
-
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--t3);
-      transition: background 0.25s var(--ease);
-    }
-
-    .status-dot.active {
-      background: var(--emerald);
-      box-shadow: 0 0 10px var(--emerald);
-    }
-
-    .status-dot.amber {
-      background: var(--amber);
-      box-shadow: 0 0 8px var(--amber);
-    }
-
-    .status-dot.pulsing {
-      animation: pulse-dot 1.6s infinite ease-in-out;
-    }
-
-    @keyframes pulse-dot {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.35); opacity: 0.7; }
-    }
-
-    /* NAVIGATION TABS */
-    .tabs-wrapper {
-      padding: 14px 28px 0;
-      border-bottom: 1px solid var(--hair-subtle);
-      display: flex;
-      justify-content: flex-start;
-      background: transparent;
-    }
-
-    .nav-tabs {
-      display: flex;
-      gap: 8px;
-    }
-
-    .tab-btn {
-      background: transparent;
-      border: 1px solid transparent;
-      color: var(--t2);
-      font-family: var(--font-sans);
-      font-size: 0.85rem;
-      font-weight: 500;
-      padding: 8px 18px;
-      border-radius: 999px;
-      cursor: pointer;
-      position: relative;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .tab-btn:hover {
-      color: var(--t1);
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .tab-btn.active {
-      color: #fff;
-      background: rgba(255, 184, 77, 0.15);
-      border-color: rgba(255, 184, 77, 0.35);
-      box-shadow: 0 4px 16px -2px rgba(255, 184, 77, 0.25);
-      font-weight: 600;
-    }
-
-    /* MAIN CONTAINER */
-    main {
-      flex: 1;
-      padding: 24px 28px 48px;
-      max-width: 1440px;
-      margin: 0 auto;
-      width: 100%;
-    }
-
-    .view-panel {
-      display: none;
-    }
-
-    .view-panel.active {
-      display: block;
-      animation: fadeIn 0.3s var(--ease);
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: none; }
-    }
-
-    /* PRO BENTO GRID */
-    .bento-grid {
-      display: grid;
-      grid-template-columns: repeat(12, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .card {
-      position: relative;
-      border-radius: 18px;
-      overflow: hidden;
-      background: var(--card-bg);
-      backdrop-filter: blur(22px) saturate(170%);
-      -webkit-backdrop-filter: blur(22px) saturate(170%);
-      border: 1px solid var(--hair);
-      box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-      transition: border-color 0.22s var(--ease), box-shadow 0.22s var(--ease);
-    }
-
-    .card:hover {
-      border-color: rgba(255, 255, 255, 0.22);
-    }
-
-    .ttl {
-      font-family: var(--font-sans);
-      font-size: 0.95rem;
-      font-weight: 600;
-      letter-spacing: -0.015em;
-      color: var(--t1);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .big-num {
-      font-size: 1.9rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      line-height: 1.1;
-      font-family: var(--font-pixel);
-      font-variant-numeric: tabular-nums;
-      color: #fff;
-    }
-
-    .rim {
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-      pointer-events: none;
-      z-index: 9;
-    }
-
-    .core {
-      position: absolute;
-      left: 10%;
-      right: 10%;
-      top: 16%;
-      bottom: -6%;
-      border-radius: 90px;
-      filter: blur(60px);
-      pointer-events: none;
-      opacity: 0.85;
-    }
-
-    .in-c {
-      position: relative;
-      padding: 22px 24px;
-      z-index: 2;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .h1 { height: 380px; }
-    .h2 { height: 168px; }
-    .h3 { height: 330px; }
-
-    #nw { grid-column: span 8; }
-    #alloc { grid-column: span 4; }
-    .kpi { grid-column: span 3; }
-    #flow { grid-column: span 5; }
-    #crypto { grid-column: span 4; }
-    #stocks { grid-column: span 3; }
-    .full-width { grid-column: span 12; }
-
-    @media (max-width: 1199px) {
-      #nw { grid-column: span 12; }
-      #alloc { grid-column: span 6; }
-      .kpi { grid-column: span 6; }
-      #flow { grid-column: span 12; }
-      #crypto, #stocks { grid-column: span 6; }
-    }
-
-    @media (max-width: 767px) {
-      .bento-grid { gap: 12px; }
-      #nw { height: 420px; }
-      #alloc { grid-column: span 12; }
-      .kpi { grid-column: span 12; }
-      #crypto, #stocks { grid-column: span 12; }
-    }
-
-    /* CARD HEADER TYPOGRAPHY */
-    .card-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .ttl {
-      font-size: 1.05rem;
-      font-weight: 600;
-      letter-spacing: -0.02em;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .cap {
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--t2);
-    }
-
-    .big-num {
-      font-size: 2.2rem;
-      font-weight: 300;
-      letter-spacing: -0.04em;
-      line-height: 1.1;
-      font-family: var(--font-sans);
-      font-variant-numeric: tabular-nums;
-      color: #fff;
-    }
-
-    .delta {
-      font: 600 12.5px var(--font-mono);
-      color: var(--acc);
-      letter-spacing: -0.02em;
-    }
-
-    .muted {
-      font-size: 12px;
-      color: var(--t3);
-      font-weight: 500;
-    }
-
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      height: 22px;
-      padding: 0 9px;
-      border-radius: 11px;
-      background: rgba(0, 0, 0, 0.85);
-      color: #fff;
-      font: 600 11px var(--font-mono);
-      letter-spacing: -0.02em;
-      border: 1px solid var(--hair);
-    }
-
-    .legend {
-      display: flex;
-      gap: 16px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--t2);
-    }
-
-    .legend span {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .legend i {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-    }
-
-    .row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .mono {
-      font-family: var(--font-mono);
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* SEGMENTED TOGGLE */
-    .seg {
-      display: flex;
-      padding: 3px;
-      gap: 2px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .seg button {
-      border: 0;
-      height: 26px;
-      min-width: 40px;
-      padding: 0 10px;
-      border-radius: 10px;
-      background: transparent;
-      color: var(--t2);
-      font: 600 11.5px var(--font-sans);
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-    }
-
-    .seg button[aria-pressed="true"] {
-      background: #fff;
-      color: #000;
-    }
-
-    /* DOT MATRIX SVG */
-    .dots circle {
-      transition: opacity 0.26s, transform 0.26s;
-      transform-box: fill-box;
-      transform-origin: center;
-    }
-
-    /* FLOATING TOOLTIP */
-    .tip {
-      position: fixed;
-      z-index: 200;
-      pointer-events: none;
-      background: rgba(14, 14, 16, 0.94);
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 14px;
-      padding: 10px 14px;
-      font-size: 12px;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.7);
-      opacity: 0;
-      transform: translateY(4px);
-      transition: opacity 0.15s, transform 0.15s;
-      white-space: nowrap;
-      min-width: 160px;
-    }
-
-    .tip.on {
-      opacity: 1;
-      transform: none;
-    }
-
-    .tip .t {
-      color: var(--t2);
-      margin-bottom: 6px;
-      font-weight: 600;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .tip .r {
-      display: flex;
-      justify-content: space-between;
-      gap: 14px;
-      align-items: center;
-      line-height: 20px;
-    }
-
-    .tip .r span {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--t2);
-    }
-
-    .tip i {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-    }
-
-    .tip b {
-      font: 500 12px var(--font-mono);
-      color: #fff;
-    }
-
-    /* SVG CHART ELEMENTS */
-    svg line.hl {
-      stroke: rgba(255, 255, 255, 0.35);
-      stroke-dasharray: 3 3;
-      stroke-width: 1px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.15s;
-    }
-
-    svg g.chart-hover:hover line.hl {
-      opacity: 1;
-    }
-
-    /* CONVERSATION TABLE & DRAWER */
-    .table-container {
-      width: 100%;
-      overflow-x: auto;
-      margin-top: 14px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.82rem;
-    }
-
-    th {
-      text-align: left;
-      padding: 10px 14px;
-      color: var(--t3);
-      font-weight: 600;
-      font-size: 0.72rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      border-bottom: 1px solid var(--hair);
-    }
-
-    td {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--hair-subtle);
-      color: var(--t2);
-    }
-
-    tr:hover td {
-      background: rgba(255, 255, 255, 0.02);
-      color: var(--t1);
-      cursor: pointer;
-    }
-
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      font-weight: 700;
-    }
-
-    .status-badge.thinking {
-      background: rgba(56, 189, 248, 0.14);
-      color: #38bdf8;
-      border: 1px solid rgba(56, 189, 248, 0.3);
-    }
-
-    .status-badge.running_tool {
-      background: rgba(232, 255, 31, 0.14);
-      color: var(--acc);
-      border: 1px solid rgba(232, 255, 31, 0.3);
-    }
-
-    .status-badge.idle {
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--t3);
-      border: 1px solid var(--hair);
-    }
-
-    /* SLIDE OVER DRAWER */
-    .drawer-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(8px);
-      z-index: 300;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s var(--ease);
-    }
-
-    .drawer-overlay.open {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .drawer-panel {
-      position: fixed;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: 480px;
-      max-width: 90vw;
-      background: #0d0d10;
-      border-left: 1px solid var(--hair);
-      z-index: 310;
-      transform: translateX(100%);
-      transition: transform 0.3s var(--ease);
-      display: flex;
-      flex-direction: column;
-      box-shadow: -10px 0 40px rgba(0, 0, 0, 0.8);
-      overflow-y: auto;
-    }
-
-    .drawer-overlay.open .drawer-panel {
-      transform: translateX(0);
-    }
-
-    .drawer-header {
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--hair);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .drawer-close {
-      background: transparent;
-      border: none;
-      color: var(--t2);
-      font-size: 1.4rem;
-      cursor: pointer;
-      line-height: 1;
-    }
-
-    .drawer-body {
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    /* FOOTER */
-    footer {
-      border-top: 1px solid var(--hair);
-      padding: 20px 28px;
-      text-align: center;
-      color: var(--t3);
-      font-size: 0.75rem;
-      font-family: var(--font-sans);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    footer a {
-      color: var(--t2);
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      color: var(--acc);
-    }
-
-    /* CUSTOM ANIMATED SVG VECTOR ICONS (ZERO EMOJIS) */
-    .ag-vec-icon {
-      width: 13px;
-      height: 13px;
-      display: inline-block;
-      vertical-align: middle;
-      flex-shrink: 0;
-    }
-    .ag-vec-bolt {
-      animation: agVecBoltPulse 1.6s ease-in-out infinite;
-    }
-    .ag-vec-spin {
-      animation: agVecSpin 2.4s linear infinite;
-    }
-    .ag-vec-wave rect {
-      transform-origin: center bottom;
-      animation: agVecEq 0.9s ease-in-out infinite alternate;
-    }
-    .ag-vec-wave rect:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-    .ag-vec-wave rect:nth-child(3) {
-      animation-delay: 0.4s;
-    }
-    @keyframes agVecBoltPulse {
-      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px currentColor); }
-      50% { transform: scale(1.14); filter: drop-shadow(0 0 6px currentColor); }
-    }
-    @keyframes agVecSpin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    @keyframes agVecEq {
-      0% { transform: scaleY(0.45); }
-      100% { transform: scaleY(1); }
-    }
+    .card { background: #FFFFFF; border: 1px solid #E4EAE8; border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px -2px rgba(20, 25, 26, 0.04); }
+    .rim, .core { display: none !important; }
+    .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .big-num { font-size: 2rem; font-weight: 800; color: #14191A; font-family: var(--font-mono); }
+    .muted { font-size: 12px; color: #6B7678; }
+    .full-width { width: 100%; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 960px) { .grid-2, .grid-4 { grid-template-columns: 1fr; } }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #EDF2F0; gap: 12px; }
+    .setting-row:last-child { border-bottom: none; }
+    .retro-btn { border: 1px solid #CBD6D3; background: #F4F7F6; color: #14191A; border-radius: 999px; padding: 6px 14px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .retro-btn.active { background: #DCF291; border-color: rgba(20,25,26,0.16); }
+    .ag-vec-icon { width: 14px; height: 14px; }
+    .tab-btn { appearance: none; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.12); color: #FFFFFF; border-radius: 999px; padding: 8px 18px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+    .tab-btn.active { background: #DCF291; border-color: #DCF291; color: #14191A; }
   </style>
 </head>
 <body>
-
-  <!-- HEADER -->
-  <header>
-    <div class="brand-group">
-      <div class="brand-icon" style="background:rgba(255,184,77,0.1); border:1px solid rgba(255,184,77,0.3); border-radius:10px; width:34px; height:34px; display:flex; align-items:center; justify-content:center;">
-        <svg viewBox="0 0 32 32" width="22" height="22" fill="none">
-          <defs>
-            <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#FF5E7E" />
-              <stop offset="50%" stop-color="#FFB84D" />
-              <stop offset="100%" stop-color="#38E4FF" />
-            </linearGradient>
-          </defs>
-          <path d="M16 4L4 26h24L16 4z" stroke="url(#brandGrad)" stroke-width="2.5" stroke-linejoin="round" fill="rgba(255,184,77,0.1)" />
-          <circle cx="16" cy="18" r="3" fill="url(#brandGrad)" />
-        </svg>
-      </div>
-      <div>
-        <div class="brand-title" style="font-family:var(--font-sans); font-weight:700; font-size:1.02rem; letter-spacing:-0.02em; display:flex; align-items:center; gap:8px;">
-          Antigravity Studio
-          <span class="pixel-tag" style="font-family:var(--font-mono); font-size:9.5px; background:rgba(56,228,255,0.1); border-color:rgba(56,228,255,0.25); color:var(--cyan); border-radius:6px; padding:1px 6px;">127.0.0.1:41177</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="header-actions">
-      <button class="status-pill" id="btnPauseLeave" onclick="togglePauseLeave()" title="Pause and store session for up to 24 hours across PC shutdown" style="cursor:pointer; background:rgba(255,184,77,0.08); border:1px solid rgba(255,184,77,0.3); color:var(--acc); font-family:inherit; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:6px; outline:none; transition:all .2s ease;">
-        <span id="pauseIcon" style="display:inline-flex; align-items:center;">
-          <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="3.5" y="3" width="3" height="10" rx="1"/><rect x="9.5" y="3" width="3" height="10" rx="1"/></svg>
-        </span>
-        <span id="pauseText">Pause &amp; Leave</span>
-      </button>
-      <div class="status-pill" id="workspacePill" title="Open workspaces">
-        <span id="workspaceText">1 Workspace</span>
-      </div>
-      <div class="status-pill">
-        <div id="discordDot" class="status-dot"></div>
-        <span id="discordText">Discord: Connecting...</span>
-      </div>
-      <div class="status-pill">
-        <div id="agentDot" class="status-dot active pulsing"></div>
-        <span id="agentActiveCount">0 Active Agents</span>
-      </div>
-    </div>
-  </header>
-
-  <!-- NAVIGATION TABS -->
-  <div class="tabs-wrapper">
-    <nav class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('overview', this)">Overview</button>
-      <button class="tab-btn" onclick="switchTab('agents', this)">Agents</button>
-      <button class="tab-btn" onclick="switchTab('models', this)">Models & Tokens</button>
-      <button class="tab-btn" onclick="switchTab('conversations', this)">Conversations</button>
-      <button class="tab-btn" onclick="switchTab('analytics', this)">Analytics</button>
-      <button class="tab-btn" onclick="switchTab('settings', this)">Settings</button>
-    </nav>
-  </div>
-
-  <!-- FLOATING TOOLTIP -->
-  <div class="tip" id="globalTip"></div>
-
-  <!-- MAIN -->
-  <main>
-
-    <!-- OVERVIEW TAB -->
-    <section id="tab-overview" class="view-panel active">
-      <div class="bento-grid">
-
-        <!-- TOP TICKER BAR (EXACT INDUSTRIAL REFERENCE REPLICA) -->
-        <div class="ref-top-ticker">
-          <div class="ref-ticker-left">
-            <span class="ref-dot-matrix">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <circle cx="3" cy="3" r="1.4"/><circle cx="8" cy="3" r="1.4"/><circle cx="13" cy="3" r="1.4"/>
-                <circle cx="3" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="13" cy="8" r="1.4"/>
-                <circle cx="3" cy="13" r="1.4"/><circle cx="8" cy="13" r="1.4"/><circle cx="13" cy="13" r="1.4"/>
-              </svg>
-            </span>
-            <div class="ref-ticker-strip">
-              <div class="ticker-item"><span class="ticker-label">ACTIVE MODEL</span><span class="ticker-val" id="refModelVal">Gemini 3.8 Flash</span></div>
-              <div class="ticker-item"><span class="ticker-label">CACHE HIT</span><span class="ticker-val" id="refCacheVal">92.8%</span></div>
-              <div class="ticker-item"><span class="ticker-label">TOTAL TOKENS</span><span class="ticker-val" id="refTokensVal">1.592M</span></div>
-              <div class="ticker-item"><span class="ticker-label">SESSION FOCUS</span><span class="ticker-val" id="refSessionVal">1.8 / 6H</span></div>
-              <div class="ticker-item"><span class="ticker-label">LIFETIME ALL</span><span class="ticker-val" id="refLifetimeVal">31.4h</span></div>
-              <div class="ticker-item"><span class="ticker-label">DISCORD RPC</span><span class="ticker-val green" id="refDiscordVal">CONNECTED</span></div>
-            </div>
+  <div class="nx-page-frame">
+    <div class="nx-shell">
+      ${getDashboardHeroHtml()}
+      <div class="tip" id="globalTip"></div>
+      <main>
+        <section id="tab-overview" class="view-panel active">
+          <div class="nx-overview-grid">
+            ${getDashboardLeftColumnHtml()}
+            ${getDashboardRightColumnHtml()}
           </div>
-          <div class="ref-ticker-right">
-            <div class="ref-user-badge" id="refUserBadge">
-              <img class="ref-user-avatar" id="refUserAvatar" alt="Discord Avatar" />
-              <span class="ref-user-dot" id="refUserDot"></span>
-              <span class="ref-user-name" id="refUserName">ANTIGRAVITY</span>
-            </div>
+          <div style="display:none;">
+            <div id="mascot-rig-dash"></div>
+            <span>24 HOURS</span><span>WEEKLY (7D)</span><span>MONTHLY (30D)</span><span>YEARLY (365D)</span><span>OVERALL</span>
           </div>
-        </div>
-
-        <!-- 4-COLUMN HORIZONTAL BENTO GRID (REFERENCE REPLICA) -->
-        <div class="ref-bento-container">
-
-          <!-- COLUMN 1: LEFT STACK -->
-          <div class="ref-col col-1">
-            <!-- Card 1: Today's Focus -->
-            <div class="ref-card card-focus">
-              <div class="ref-card-head">
-                <span class="ref-eyebrow">TODAY'S FOCUS <span class="colon">:</span></span>
-                <span class="ref-unit-ratio">/ 6H</span>
-              </div>
-              <div class="ref-big-num" id="refTodayFocusNum">1.8</div>
-            </div>
-
-            <!-- Card 2: Completed Tasks -->
-            <div class="ref-card card-tasks">
-              <div class="ref-card-head">
-                <span class="ref-eyebrow">COMPLETED TASKS <span class="colon">:</span></span>
-                <span class="ref-unit-ratio">/ 5</span>
-              </div>
-              <div class="ref-big-num" id="refCompletedTasksNum">2</div>
-            </div>
-
-            <!-- Card 3: Agent Runtime (MJ Fast Hours) -->
-            <div class="ref-card card-runtime">
-              <div class="ref-card-head">
-                <span class="ref-eyebrow">AGENT RUNTIME</span>
-                <button class="ref-arrow-btn" onclick="switchTab('agents', this)" title="View All Agents">
-                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12L12 4M12 4H6M12 4V10"/></svg>
-                </button>
-              </div>
-              <div class="ref-num-sub-row">
-                <span class="ref-big-num" id="refRuntimeNum">6.9</span>
-                <span class="ref-unit-ratio">/ 15H</span>
-              </div>
-              <div class="ref-works-block">
-                <div class="ref-sub-label">ACTIVE AVATARS</div>
-                <div class="ref-avatar-grid">
-                  <div class="ref-av-thumb av-1"></div>
-                  <div class="ref-av-thumb av-2"></div>
-                  <div class="ref-av-thumb av-3"></div>
-                  <div class="ref-av-thumb av-4"></div>
-                  <div class="ref-av-thumb av-5"></div>
-                  <div class="ref-av-thumb av-6"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- COLUMN 2: CENTER-LEFT STACK -->
-          <div class="ref-col col-2">
-            <!-- Card 4: Paid Invoices / Prompts Processed (Tall) -->
-            <div class="ref-card card-invoices">
-              <div>
-                <div class="ref-card-head">
-                  <span class="ref-eyebrow">PROMPTS PROCESSED <span class="colon">:</span></span>
-                  <span class="ref-unit-ratio">/ 32</span>
-                </div>
-                <div class="ref-big-num" id="refInvoicesNum" style="margin-top: 14px;">24</div>
-              </div>
-              <div class="ref-invoices-footer">
-                <span class="ref-footer-label">TOTAL</span>
-                <span class="ref-footer-val" id="refInvoicesTotalVal">124K / 500K</span>
-              </div>
-            </div>
-
-            <!-- Card 5: Slate Denim Blue (Aesthetic-Usability Effect) -->
-            <div class="ref-card card-denim">
-              <svg class="denim-geometric-art" viewBox="0 0 180 180">
-                <circle cx="90" cy="90" r="72" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.3"/>
-                <circle cx="90" cy="90" r="44" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.3"/>
-                <line x1="18" y1="90" x2="162" y2="90" stroke="rgba(255,255,255,0.2)" stroke-width="1.3"/>
-                <line x1="90" y1="18" x2="90" y2="162" stroke="rgba(255,255,255,0.2)" stroke-width="1.3"/>
-                <line x1="18" y1="162" x2="162" y2="18" stroke="rgba(255,255,255,0.25)" stroke-width="1.3"/>
-                <path d="M 90 18 A 72 72 0 0 1 162 90" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
-              </svg>
-              <div>
-                <div class="denim-title">AESTHETIC-<br>USABILITY<br>EFFECT</div>
-                <div class="denim-desc">USERS OFTEN PERCEIVE AESTHETICALLY PLEASING DESIGN AS DESIGN THAT'S MORE USABLE.</div>
-              </div>
-              <div class="denim-dots">
-                <span class="active"></span><span></span><span></span><span></span><span></span>
-              </div>
-            </div>
-          </div>
-
-          <!-- COLUMN 3: CENTER-RIGHT STACK -->
-          <div class="ref-col col-3">
-            <!-- Card 6: Total Balance Tokens (Wide) -->
-            <div class="ref-card card-balance">
-              <div class="ref-card-head">
-                <span class="ref-eyebrow">TOTAL BALANCE (TOKENS)</span>
-                <div class="ref-time-pills">
-                  <button class="ref-pill-btn active" onclick="setRefRange('7d')">7D</button>
-                  <button class="ref-pill-btn" onclick="setRefRange('30d')">30D</button>
-                  <button class="ref-pill-btn" onclick="setRefRange('5m')">5M</button>
-                  <button class="ref-pill-btn" onclick="setRefRange('12m')">12M</button>
-                </div>
-              </div>
-              <div class="ref-balance-body">
-                <div class="ref-balance-left">
-                  <div class="ref-balance-subtitle" id="refBalanceSub">1.8347 JAN, 2026</div>
-                  <div class="ref-big-num balance-num" id="refBalanceBigNum">1.592<span class="ref-token-m">M</span></div>
-                </div>
-                <!-- 5-bar vertical histogram -->
-                <div class="ref-bar-chart">
-                  <div class="ref-vbar h-40"></div>
-                  <div class="ref-vbar h-65"></div>
-                  <div class="ref-vbar h-95 active"></div>
-                  <div class="ref-vbar h-70"></div>
-                  <div class="ref-vbar h-80"></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Card 7: AI Model Ingestion / API Usage -->
-            <div class="ref-card card-api-usage">
-              <div class="ref-card-head">
-                <span class="ref-eyebrow">CHATGPT / GEMINI USAGE</span>
-              </div>
-              <div class="ref-num-sub-row" style="margin-top:10px;">
-                <span class="ref-big-num" id="refApiUsageNum">5.01</span>
-                <span class="ref-unit-ratio">/ $10.00</span>
-              </div>
-              <!-- Segmented horizontal bar -->
-              <div class="ref-api-progress-bar">
-                <div class="ref-api-fill-1" style="width: 50%;"></div>
-                <div class="ref-api-fill-2" style="width: 25%;"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- COLUMN 4: RIGHT STACK -->
-          <div class="ref-col col-4">
-            <!-- Card 8: Radial Circular Gauge (Work-Life / Efficiency Balance) -->
-            <div class="ref-card card-gauge">
-              <div class="ref-gauge-wrapper">
-                <svg class="ref-gauge-svg" viewBox="0 0 160 160">
-                  <circle cx="80" cy="80" r="64" fill="none" stroke="#252730" stroke-width="8"/>
-                  <circle cx="80" cy="80" r="64" fill="none" stroke="#5B9CF6" stroke-width="8" stroke-dasharray="402" stroke-dashoffset="108" stroke-linecap="round"/>
-                </svg>
-                <div class="ref-gauge-center">
-                  <div class="ref-big-num gauge-num" id="refGaugeNum">7.89</div>
-                  <div class="ref-gauge-label">WORK-LIFE BALANCE</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Card 9: Sandstone Alabaster Custom Dashboard -->
-            <div class="ref-card card-sandstone" onclick="switchTab('analytics', this)" title="Open Full Analytics Dashboard">
-              <div class="sandstone-top">
-                <div class="sandstone-title">CUSTOM DASHBOARD</div>
-                <div class="sandstone-arrow-btn">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 12L12 4M12 4H6M12 4V10"/>
-                  </svg>
-                </div>
-              </div>
-              <div class="sandstone-sub">10 / 20 TEMPLATES</div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- 30-MINUTE GITHUB AUTO-UPDATE & RELEASE NOTES CARD (VISIBLE WHEN UPDATE AVAILABLE) -->
-        <div class="glass-update-banner" id="glassUpdateBanner">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div style="display:flex; align-items:center; gap:10px;">
-              <span class="chip" style="color:var(--emerald); border-color:rgba(52,245,164,0.4);" id="updateVersionDiff">v2.1.0 → v2.2.0</span>
-              <span class="ttl" id="updateReleaseTitle">Antigravity Update Available</span>
-            </div>
-            <div style="display:flex; gap:8px;">
-              <button type="button" class="retro-btn active" id="btnApplyUpdate" onclick="applyGithubUpdate()">
-                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10"/></svg>
-                <span id="lblApplyUpdate">Install Update</span>
-              </button>
-              <button type="button" class="retro-btn" onclick="skipGithubUpdate()">
-                <span>Stay on Current Version (Skip)</span>
-              </button>
-            </div>
-          </div>
-          <div class="update-notes-list" id="updateNotesList"></div>
-        </div>
-
-        <!-- 0. LIQUID GLASS MASCOT STAGE & 5-WINDOW TIME/TOKEN MATRIX (span 12) -->
-        <div class="retro-hero-stage" id="retroHeroStage">
-          <!-- Authentic Master PNG Mascot Stage -->
-          <div class="mascot-pedestal" onclick="interactDashMascot()" title="Click Antigravity Mascot">
-            <span class="mascot-pedestal-tag" id="dashMascotStateTag">Idle</span>
-            ${mascotHeroSvg}
-            <div class="mascot-speech" id="dashMascotSpeech">Ready</div>
-            <div class="mascot-sub" id="dashMascotSub">Antigravity</div>
-          </div>
-
-          <!-- 5-Window Time & Token Analytics Matrix (24H | WEEK | MONTH | YEAR | OVERALL) -->
-          <div class="retro-time-matrix">
-            <div class="card-top" style="margin-bottom:0;">
-              <div class="ttl">
-                <span id="matrixTitle">Activity &amp; Time</span>
-                <span class="chip" style="margin-left:8px; color:var(--emerald); border-color:rgba(52,245,164,0.35);" id="agRunningChip">● Online</span>
-              </div>
-              <div class="seg" id="timeRangeSeg">
-                <button type="button" data-range="24h" aria-pressed="false" onclick="setTimeRange('24h')">24H</button>
-                <button type="button" data-range="weekly" aria-pressed="false" onclick="setTimeRange('weekly')">7D</button>
-                <button type="button" data-range="monthly" aria-pressed="false" onclick="setTimeRange('monthly')">30D</button>
-                <button type="button" data-range="yearly" aria-pressed="false" onclick="setTimeRange('yearly')">1Y</button>
-                <button type="button" data-range="overall" aria-pressed="true" onclick="setTimeRange('overall')">ALL</button>
-              </div>
-            </div>
-
-            <div class="retro-5col-strip">
-              <div class="retro-time-cell" id="cell-24h" onclick="setTimeRange('24h')">
-                <div class="w-lbl">24 HOURS</div>
-                <div class="w-hrs" id="hrs-24h">0m</div>
-                <div class="w-tok" id="tok-24h">0 tok</div>
-              </div>
-              <div class="retro-time-cell" id="cell-weekly" onclick="setTimeRange('weekly')">
-                <div class="w-lbl">WEEKLY (7D)</div>
-                <div class="w-hrs" id="hrs-weekly">0m</div>
-                <div class="w-tok" id="tok-weekly">0 tok</div>
-              </div>
-              <div class="retro-time-cell" id="cell-monthly" onclick="setTimeRange('monthly')">
-                <div class="w-lbl">MONTHLY (30D)</div>
-                <div class="w-hrs" id="hrs-monthly">0m</div>
-                <div class="w-tok" id="tok-monthly">0 tok</div>
-              </div>
-              <div class="retro-time-cell" id="cell-yearly" onclick="setTimeRange('yearly')">
-                <div class="w-lbl">YEARLY (365D)</div>
-                <div class="w-hrs" id="hrs-yearly">0m</div>
-                <div class="w-tok" id="tok-yearly">0 tok</div>
-              </div>
-              <div class="retro-time-cell active" id="cell-overall" onclick="setTimeRange('overall')">
-                <div class="w-lbl">OVERALL</div>
-                <div class="w-hrs" id="hrs-overall">0m</div>
-                <div class="w-tok" id="tok-overall">0 tok</div>
-              </div>
-            </div>
-
-            <div class="retro-companion-controls">
-              <button type="button" class="retro-btn active" id="btnNotchToggle" onclick="toggleNotchEnabled()">
-                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="4.5" width="12" height="7" rx="3.5"/></svg>
-                <span id="lblNotchToggle">Liquid Notch: On</span>
-              </button>
-              <button type="button" class="retro-btn active" id="btnMascotToggle" onclick="toggleMascotEnabled()">
-                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2L3 13h10L8 2z"/></svg>
-                <span id="lblMascotToggle">Mascot: On</span>
-              </button>
-              <button type="button" class="retro-btn" id="btnCompBehavior" onclick="cycleCompanionBehavior()">
-                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 13l3.5-5.5L9.5 10 13 4"/></svg>
-                <span id="lblCompBehavior">Sit Corner</span>
-              </button>
-              <button type="button" class="retro-btn" id="btnCompCorner" onclick="cycleCompanionCorner()">
-                <svg class="ag-vec-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6V3h3M13 6V3h-3M3 10v3h3M13 10v3h-3"/></svg>
-                <span id="lblCompCorner">Bottom-Right</span>
-              </button>
-              <button type="button" class="retro-btn active" id="btnCompSfx" onclick="toggleCompanionSfx()">
-                <svg class="ag-vec-icon ag-vec-wave" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="7" width="2.4" height="6" rx="0.8"/><rect x="6.8" y="3" width="2.4" height="10" rx="0.8"/><rect x="11.6" y="5" width="2.4" height="8" rx="0.8"/></svg>
-                <span id="lblCompSfx">Audio: On</span>
-              </button>
-              <button type="button" class="retro-btn active" id="btnIdeExtensionSync" onclick="reinstallIdeExtension()">
-                <svg class="ag-vec-icon" id="iconIdeSync" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 0 1-9.4 3.9L2.5 10.5M2.5 8a5.5 5.5 0 0 1 9.4-3.9l1.6 1.4"/></svg>
-                <span id="lblIdeExtensionSync">IDE Synced</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 1. CUMULATIVE TOKENS STREAM WAVE (#nw, span 8) -->
-        <div class="card h1" id="nw">
-          <div class="rim"></div>
-          <div class="core" style="background: linear-gradient(135deg, rgba(169, 178, 255, 0.22), rgba(64, 50, 130, 0.08));"></div>
-          <div class="in-c">
-            <div class="card-top">
-              <div>
-                <div class="ttl" style="margin-top:2px;">
-                  <span id="nwTitleText">Tokens</span>
-                  <span class="delta" id="nwDelta">+0 out</span>
-                </div>
-              </div>
-              <div class="seg" id="nwSeg">
-                <button type="button" aria-pressed="true" onclick="setNwSpan('all')">All</button>
-                <button type="button" aria-pressed="false" onclick="setNwSpan('1y')">1y</button>
-                <button type="button" aria-pressed="false" onclick="setNwSpan('30d')">30d</button>
-                <button type="button" aria-pressed="false" onclick="setNwSpan('7d')">7d</button>
-                <button type="button" aria-pressed="false" onclick="setNwSpan('24h')">24h</button>
-              </div>
-            </div>
-
-            <!-- DotNumber matrix SVG -->
-            <div id="nwDotNumber" style="margin: 4px 0 10px; height: 32px; display: flex; align-items: center;"></div>
-
-            <!-- Legend -->
-            <div class="legend" style="margin-bottom: 8px;">
-              <span><i style="background:#ffffff;"></i>Input: <b id="legIn" class="mono">0</b></span>
-              <span><i style="background:var(--argon);"></i>Cache Read: <b id="legCache" class="mono">0</b></span>
-              <span><i style="background:var(--acc);"></i>Output: <b id="legOut" class="mono">0</b></span>
-            </div>
-
-            <!-- Interactive SVG Stream Wave -->
-            <div style="flex:1; width:100%; position:relative;" id="nwSvgContainer">
-              <svg id="nwSvg" style="width:100%; height:100%; overflow:visible; cursor:crosshair;"></svg>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2. MODEL TOKEN ALLOCATION GAUGE (#alloc, span 4) -->
-        <div class="card h1" id="alloc">
-          <div class="rim"></div>
-          <div class="core" style="background: linear-gradient(135deg, rgba(232, 255, 31, 0.16), rgba(40, 50, 10, 0.06));"></div>
-          <div class="in-c">
-            <div class="card-top">
-              <div class="cap">MODEL TOKEN SHARE</div>
-              <span class="chip" id="allocModelCount">0 MODELS</span>
-            </div>
-            <div class="ttl">Token Allocation</div>
-
-            <!-- 180-degree Half Gauge SVG -->
-            <div style="height: 180px; position:relative; margin-top: 6px;" id="allocGaugeContainer">
-              <svg id="allocSvg" viewBox="0 0 240 130" style="width:100%; height:100%; overflow:visible;"></svg>
-            </div>
-
-            <!-- Model Allocation Table List -->
-            <div id="allocList" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-top:6px;"></div>
-          </div>
-        </div>
-
-        <!-- 3. KPI 1: ACTIVE AGENTS -->
-        <div class="card h2 kpi" id="kpiAgents">
-          <div class="rim"></div>
-          <div class="core" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(5, 150, 105, 0.08));"></div>
-          <div class="in-c" style="justify-content: space-between;">
-            <div class="card-top" style="margin-bottom:0;">
-              <span class="cap">ACTIVE AGENTS</span>
-              <span class="status-badge thinking" id="kpiAgentBadge">IDLE</span>
-            </div>
-            <div>
-              <div class="big-num" id="kpiAgentCount">0</div>
-              <div class="muted" id="kpiAgentSub" style="margin-top:2px;">Waiting for turn...</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. KPI 2: CACHE HIT EFFICIENCY -->
-        <div class="card h2 kpi" id="kpiCache">
-          <div class="rim"></div>
-          <div class="core" style="background: linear-gradient(135deg, rgba(232, 255, 31, 0.2), rgba(16, 185, 129, 0.1));"></div>
-          <div class="in-c" style="justify-content: space-between;">
-            <div class="card-top" style="margin-bottom:0;">
-              <span class="cap">CACHE EFFICIENCY</span>
-              <span class="chip">PROMPT CACHE</span>
-            </div>
-            <div>
-              <div class="big-num" id="kpiCachePct" style="color:var(--acc);">0%</div>
-              <div class="muted" id="kpiCacheSub" style="margin-top:2px;">0 prompt tokens saved</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 5. KPI 3: TOTAL CONVERSATIONS -->
-        <div class="card h2 kpi" id="kpiConvs">
-          <div class="rim"></div>
-          <div class="core" style="background: linear-gradient(135deg, rgba(169, 178, 255, 0.18), rgba(99, 102, 241, 0.08));"></div>
-          <div class="in-c" style="justify-content: space-between;">
-            <div class="card-top" style="margin-bottom:0;">
-              <span class="cap">CONVERSATIONS</span>
-              <span class="chip">WATERMARKED</span>
-            </div>
-            <div>
-              <div class="big-num" id="kpiConvsCount">0</div>
-              <div class="muted" id="kpiConvsSub" style="margin-top:2px;">0 root • 0 subagents</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 6. KPI 4: SESSION ELAPSED TIMER -->
-        <div class="card h2 kpi" id="kpiSession">
-          <div class="rim"></div>
-          <div class="core" style="background: linear-gradient(135deg, rgba(244, 63, 94, 0.18), rgba(168, 85, 247, 0.08));"></div>
-          <div class="in-c" style="justify-content: space-between;">
-            <div class="card-top" style="margin-bottom:0;">
-              <span class="cap">SESSION TIMER</span>
-              <span class="status-badge running_tool" id="sessionBadge">24H PERSISTENT</span>
-            </div>
-            <div>
-              <div class="big-num mono" id="kpiSessionTimer">00:00:00</div>
-              <div class="muted" id="kpiSessionSub" style="margin-top:2px;">Auto-saved for 24h shutdown recovery</div>
-              <div class="mono" id="kpiLifetimeHours" style="margin-top:4px; font-size:11.5px; color:var(--acc); font-weight:600;">Overall: 0m</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 7. MIRRORED WAVE TOKEN FLOW (#flow, span 5) -->
-        <div class="card h3" id="flow">
-          <div class="rim"></div>
-          <div class="core" style="background: linear-gradient(135deg, rgba(244, 63, 94, 0.14), rgba(168, 85, 247, 0.08));"></div>
-          <div class="in-c">
-            <div class="card-top">
-              <div>
-                <div class="cap">INGESTION VS GENERATION FLOW</div>
-                <div class="ttl" style="margin-top:2px;">Token I/O Flow</div>
-              </div>
-              <div class="legend" style="font-size:11px;">
-                <span><i style="background:#ffffff;"></i>Ingestion (▲)</span>
-                <span><i style="background:var(--acc);"></i>Generation (▼)</span>
-              </div>
-            </div>
-            <div style="flex:1; width:100%; position:relative;">
-              <svg id="flowSvg" style="width:100%; height:100%; overflow:visible; cursor:crosshair;"></svg>
-            </div>
-          </div>
-        </div>
-
-        <!-- 8. MODEL TOKEN DISTRIBUTION (#crypto, span 4) -->
-        <div class="card h3" id="crypto">
-          <div class="rim"></div>
-          <div class="core" style="background: linear-gradient(135deg, rgba(255, 179, 122, 0.16), rgba(180, 83, 9, 0.08));"></div>
-          <div class="in-c">
-            <div class="card-top">
-              <div class="cap">MODELS USAGE</div>
-              <span class="chip">PERSISTENT</span>
-            </div>
-            <div class="ttl">Model Distribution</div>
-            <div id="cryptoList" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-top:8px;"></div>
-          </div>
-        </div>
-
-        <!-- 9. HOURLY ACTIVITY CAPSULES (#stocks, span 3) -->
-        <div class="card h3" id="stocks">
-          <div class="rim"></div>
-          <div class="core" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(5, 150, 105, 0.08));"></div>
-          <div class="in-c">
-            <div class="card-top">
-              <div class="cap">ACTIVITY PULSE</div>
-              <span class="chip">HOURLY</span>
-            </div>
-            <div class="ttl">Token Ingestion</div>
-            <div style="flex:1; width:100%; position:relative; margin-top:6px;">
-              <svg id="stocksSvg" style="width:100%; height:100%; overflow:visible;"></svg>
-            </div>
-          </div>
-        </div>
-
-        <!-- 10. DUAL-MODE MANUAL CODING PRESENCE (span 12) -->
-        <div class="card full-width" style="height: auto;" id="editorCard">
-          <div class="rim"></div>
-          <div class="in-c" style="padding: 16px 24px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div style="display:flex; align-items:center; gap:14px;">
-                <div style="width:36px; height:36px; border-radius:10px; background:rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                </div>
-                <div>
-                  <div style="font-weight:700; font-size:0.95rem;" id="editorFile">No active file in editor</div>
-                  <div style="font-size:0.75rem; color:var(--t3); margin-top:2px;" id="editorDetails">Waiting for Antigravity IDE focus</div>
-                </div>
-              </div>
-              <span class="status-badge idle" id="editorBadge">IDLE</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 11. ACTIVE SESSIONS TABLE (span 12) -->
-        <div class="card full-width" style="height: auto;">
-          <div class="rim"></div>
-          <div class="in-c">
-            <div class="card-top">
-              <div class="cap">DISCOVERED CONVERSATIONS & SESSIONS</div>
-              <span class="chip" id="sessionTableCount">0 SESSIONS</span>
-            </div>
-            <div class="ttl">Active Agent Sessions</div>
-            <div class="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Status</th>
-                    <th>Conversation ID</th>
-                    <th>Model</th>
-                    <th>Active Tool</th>
-                    <th>Turn</th>
-                    <th>Total Tokens</th>
-                    <th>Last Active</th>
-                  </tr>
-                </thead>
-                <tbody id="overviewTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
+        </section>
 
     <!-- AGENTS TAB -->
     <section id="tab-agents" class="view-panel">
@@ -2321,7 +389,9 @@ export function getDashboardHtml(): string {
       </div>
     </section>
 
-  </main>
+      </main>
+    </div>
+  </div>
 
   <!-- SLIDE-OVER CONVERSATION INSPECTION DRAWER -->
   <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer(event)">
@@ -2535,6 +605,18 @@ export function getDashboardHtml(): string {
         if (matchingBtn) matchingBtn.classList.add('active');
       }
       const panel = document.getElementById('tab-' + tabName);
+      const heroTitle = document.getElementById('heroSectionTitle');
+      if (heroTitle) {
+        const titles = {
+          overview: 'Overview',
+          agents: 'Agents',
+          models: 'Models & Tokens',
+          conversations: 'Conversations',
+          analytics: 'Analytics',
+          settings: 'Settings',
+        };
+        heroTitle.innerText = titles[tabName] || 'Overview';
+      }
       if (panel) {
         panel.classList.add('active');
         if (tabName === 'analytics' && currentData) {
@@ -2544,6 +626,13 @@ export function getDashboardHtml(): string {
           setTimeout(function() { renderOverview(currentData); }, 30);
         }
       }
+    }
+
+    function filterDashboard(query) {
+      const q = (query || '').trim().toLowerCase();
+      document.querySelectorAll('#overviewTableBody tr, #agentsTableBody tr, #conversationsTableBody tr').forEach(function(tr) {
+        tr.style.display = (!q || tr.innerText.toLowerCase().indexOf(q) !== -1) ? '' : 'none';
+      });
     }
 
     function setNwSpan(span) {
@@ -3116,10 +1205,14 @@ export function getDashboardHtml(): string {
       }
       dotNumInstance.count(spanTotal);
 
-      // Update Title & Legend
+      // Update Title & Legend & Hero Total
       const titleEl = document.getElementById('nwTitleText');
       if (titleEl) {
         titleEl.innerText = timeframeTitle;
+      }
+      const nxTotalEl = document.getElementById('nxTelemetryTotal');
+      if (nxTotalEl) {
+        nxTotalEl.innerText = formatNumberShort(spanTotal);
       }
       const legInEl = document.getElementById('legIn');
       const legCacheEl = document.getElementById('legCache');
@@ -3209,29 +1302,41 @@ export function getDashboardHtml(): string {
 
       let s = '';
       s += '<defs>';
-      s += '<linearGradient id="nwGradIn" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.25"/><stop offset="100%" stop-color="#ffffff" stop-opacity="0"/></linearGradient>';
-      s += '<linearGradient id="nwGradCache" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#A9B2FF" stop-opacity="0.3"/><stop offset="100%" stop-color="#A9B2FF" stop-opacity="0"/></linearGradient>';
-      s += '<linearGradient id="nwGradOut" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#E8FF1F" stop-opacity="0.35"/><stop offset="100%" stop-color="#E8FF1F" stop-opacity="0"/></linearGradient>';
+      s += '<linearGradient id="nxAreaWash" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#14191A" stop-opacity="0.08"/><stop offset="100%" stop-color="#14191A" stop-opacity="0"/></linearGradient>';
       s += '</defs>';
 
       // Horizontal subtle grid
       for (let g = 0; g <= 4; g++) {
         const yG = padY + (g / 4) * plotH;
-        s += '<line x1="' + padX + '" y1="' + yG + '" x2="' + (w - padX) + '" y2="' + yG + '" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>';
+        s += '<line x1="' + padX + '" y1="' + yG + '" x2="' + (w - padX) + '" y2="' + yG + '" stroke="#EDF2F0" stroke-dasharray="4 4" stroke-width="1"/>';
       }
 
-      // Filled Area curves
-      s += '<path d="' + makeAreaPath('total') + '" fill="url(#nwGradIn)"/>';
-      s += '<path d="' + makeAreaPath('cacheTok') + '" fill="url(#nwGradCache)"/>';
-      s += '<path d="' + makeAreaPath('outTok') + '" fill="url(#nwGradOut)"/>';
+      // Vertical rib bars under curve (#CBD6D3)
+      const ribCount = Math.max(24, Math.min(48, Math.floor(plotW / 14)));
+      for (let r = 0; r < ribCount; r++) {
+        const rx = padX + (r / (ribCount - 1)) * plotW;
+        const idxFloat = (r / (ribCount - 1)) * (pts.length - 1);
+        const i0 = Math.floor(idxFloat);
+        const i1 = Math.min(pts.length - 1, i0 + 1);
+        const frac = idxFloat - i0;
+        const val = pts[i0].total + (pts[i1].total - pts[i0].total) * frac;
+        const ry = getY(val);
+        const barH = Math.max(2, (h - padY) - ry);
+        const isLast = r === ribCount - 1;
+        s += '<rect x="' + (rx - 2) + '" y="' + ry + '" width="4" height="' + barH + '" rx="2" fill="' + (isLast ? '#DCF291' : '#CBD6D3') + '" opacity="' + (isLast ? '1' : '0.65') + '"/>';
+      }
 
-      // Stroke lines
-      s += '<path d="' + makeLinePath('total') + '" fill="none" stroke="#ffffff" stroke-width="1.8"/>';
-      s += '<path d="' + makeLinePath('cacheTok') + '" fill="none" stroke="#A9B2FF" stroke-width="1.8"/>';
-      s += '<path d="' + makeLinePath('outTok') + '" fill="none" stroke="#E8FF1F" stroke-width="2"/>';
+      // Smooth area wash + primary #14191A curve
+      s += '<path d="' + makeAreaPath('total') + '" fill="url(#nxAreaWash)"/>';
+      s += '<path d="' + makeLinePath('total') + '" fill="none" stroke="#14191A" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>';
+
+      // Terminal lime node
+      const lastX = getX(pts.length - 1);
+      const lastY = getY(pts[pts.length - 1].total);
+      s += '<circle cx="' + lastX + '" cy="' + lastY + '" r="4.5" fill="#DCF291" stroke="#14191A" stroke-width="2"/>';
 
       // Crosshair tracking hairline
-      s += '<line class="hl" id="nwHairline" x1="0" y1="' + padY + '" x2="0" y2="' + (h - padY) + '"/>';
+      s += '<line class="hl" id="nwHairline" x1="0" y1="' + padY + '" x2="0" y2="' + (h - padY) + '" stroke="#14191A" stroke-width="1" stroke-dasharray="3 3" style="opacity:0;"/>';
 
       svg.innerHTML = s;
 
@@ -3444,154 +1549,90 @@ export function getDashboardHtml(): string {
     }
 
     function renderOverview(data) {
-      // 0. Reference Horizontal Bento Live Updates
+      // 0. Reference Neo-Swiss Timeline & Discord Profile Updates
       const refTotalTok = (data.session && data.session.tokens) ? data.session.tokens.totalTokens : 0;
       const refInTok = (data.session && data.session.tokens) ? data.session.tokens.inputTokens : 0;
       const refCacheTok = (data.session && data.session.tokens) ? data.session.tokens.cacheReadTokens : 0;
-      const refOutTok = (data.session && data.session.tokens) ? data.session.tokens.outputTokens : 0;
       const refCacheRatio = (refInTok + refCacheTok > 0) ? Math.round((refCacheTok / (refInTok + refCacheTok)) * 100) : 0;
-      const refSessionTokRec = (data.session && data.session.sessionTokens) ? data.session.sessionTokens : (data.sessionTokens || { totalTokens: 0 });
-      const refSessionTok = refSessionTokRec.totalTokens || 0;
-      const refAgents = data.activeAgents || [];
       const refTb = data.timeBreakdown || (data.session && data.session.timeBreakdown) || {};
       const refLifeSecs = typeof refTb.overall === 'number' ? refTb.overall : (data.session ? data.session.lifetimeActiveSeconds : 0) || 0;
       const refLast24Secs = typeof refTb.last24h === 'number' ? refTb.last24h : 0;
-      const refElapsedSec = (data.session && typeof data.session.elapsedSeconds === 'number') ? data.session.elapsedSeconds : 0;
+      const refWeeklySecs = typeof refTb.weekly === 'number' ? refTb.weekly : refLifeSecs;
+      const refMonthlySecs = typeof refTb.monthly === 'number' ? refTb.monthly : refLifeSecs;
 
-      const elFocus = document.getElementById('refTodayFocusNum');
-      if (elFocus) {
-        const focusHrs = (Math.max(refElapsedSec, refLast24Secs) / 3600);
-        elFocus.innerText = focusHrs >= 10 ? focusHrs.toFixed(0) : focusHrs.toFixed(1);
+      const elOverall = document.getElementById('nxOverallTimeVal');
+      if (elOverall) elOverall.innerText = formatLifetimeHours(refLifeSecs);
+      const el24h = document.getElementById('nx24hTimeVal');
+      if (el24h) el24h.innerText = formatLifetimeHours(refLast24Secs);
+      const el7d30d = document.getElementById('nx7d30dTimeVal');
+      if (el7d30d) el7d30d.innerText = formatLifetimeHours(refWeeklySecs) + ' • ' + formatLifetimeHours(refMonthlySecs);
+      const elSessId = document.getElementById('nxSessionIdLabel');
+      if (elSessId && data.session && data.session.sessionId) {
+        elSessId.innerText = data.session.sessionId.replace(/^ext-/, '').toUpperCase().slice(0, 14);
       }
-      const elTasks = document.getElementById('refCompletedTasksNum');
-      if (elTasks) {
-        elTasks.innerText = String(data.session ? (data.session.totalConversations || refAgents.length || 0) : 0);
-      }
-      const elRuntime = document.getElementById('refRuntimeNum');
-      if (elRuntime) {
-        const runtimeHrs = (refLifeSecs / 3600);
-        elRuntime.innerText = runtimeHrs >= 10 ? runtimeHrs.toFixed(0) : runtimeHrs.toFixed(1);
-      }
-      const elInvoices = document.getElementById('refInvoicesNum');
-      if (elInvoices) {
-        const promptEvents = (data.session && typeof data.session.totalEventsProcessed === 'number')
-          ? data.session.totalEventsProcessed
-          : 0;
-        elInvoices.innerText = String(promptEvents);
-      }
-      const elInvoicesTotal = document.getElementById('refInvoicesTotalVal');
-      if (elInvoicesTotal) {
-        elInvoicesTotal.innerText = formatNumberShort(refSessionTok) + ' / ' + formatNumberShort(Math.max(500000, refSessionTok));
-      }
-      const elBalance = document.getElementById('refBalanceBigNum');
-      if (elBalance) {
-        if (refTotalTok >= 1000000) {
-          elBalance.innerHTML = (refTotalTok / 1000000).toFixed(3) + '<span class="ref-token-m">M</span>';
-        } else if (refTotalTok >= 1000) {
-          elBalance.innerHTML = (refTotalTok / 1000).toFixed(1) + '<span class="ref-token-m">K</span>';
-        } else {
-          elBalance.innerHTML = String(refTotalTok) + '<span class="ref-token-m">TOK</span>';
-        }
-      }
-      const elApiUsage = document.getElementById('refApiUsageNum');
-      if (elApiUsage) {
-        const estCost = ((refInTok * 0.075 + refOutTok * 0.30) / 1000000);
-        elApiUsage.innerText = estCost >= 10 ? estCost.toFixed(1) : estCost.toFixed(2);
-      }
-      const elGauge = document.getElementById('refGaugeNum');
-      if (elGauge) {
-        const effScore = refCacheRatio > 0 ? (refCacheRatio / 10).toFixed(2) : '0.00';
-        elGauge.innerText = effScore;
-      }
-      const elModelVal = document.getElementById('refModelVal');
-      if (elModelVal) {
-        elModelVal.innerText = (refAgents.length > 0 && refAgents[0].model) ? refAgents[0].model : 'Standby';
-      }
-      const elCacheVal = document.getElementById('refCacheVal');
-      if (elCacheVal) elCacheVal.innerText = refCacheRatio + '%';
-      const elTokensVal = document.getElementById('refTokensVal');
-      if (elTokensVal) elTokensVal.innerText = formatNumberShort(refTotalTok);
-      const elSessionVal = document.getElementById('refSessionVal');
-      if (elSessionVal) {
-        const hrs = (refElapsedSec / 3600).toFixed(1);
-        elSessionVal.innerText = hrs + ' / 6H';
-      }
-      const elLifetimeVal = document.getElementById('refLifetimeVal');
-      if (elLifetimeVal) elLifetimeVal.innerText = formatLifetimeHours(refLifeSecs);
-      const elDiscordVal = document.getElementById('refDiscordVal');
-      if (elDiscordVal && data.discord) {
-        elDiscordVal.innerText = data.discord.connected ? 'CONNECTED' : 'STANDBY';
-        elDiscordVal.className = 'ticker-val ' + (data.discord.connected ? 'green' : '');
-      }
-      const elUserAvatar = document.getElementById('refUserAvatar');
-      const elUserDot = document.getElementById('refUserDot');
-      const elUserName = document.getElementById('refUserName');
+
       if (data.discord && data.discord.user) {
         const u = data.discord.user;
-        const displayName = (u.globalName || u.username || 'DISCORD').toUpperCase();
+        const displayName = u.globalName || u.username || 'Discord User';
         const tag = u.discriminator && u.discriminator !== '0' ? ' #' + u.discriminator : '';
-        if (elUserName) elUserName.innerText = displayName + tag;
-        if (elUserAvatar && u.avatarUrl) {
-          elUserAvatar.src = u.avatarUrl;
-          elUserAvatar.style.display = 'block';
-          if (elUserDot) elUserDot.style.display = 'none';
+        const pName = document.getElementById('nxProfileName');
+        const pSub = document.getElementById('nxProfileSub');
+        const pAv = document.getElementById('nxProfileAvatar');
+        const hAv = document.getElementById('heroDiscordAvatar');
+        const hIcon = document.getElementById('heroUserIcon');
+        if (pName) pName.innerText = displayName + tag;
+        if (pSub) pSub.innerText = data.discord.connected ? 'Discord Rich Presence Active' : 'Discord Standby';
+        if (pAv && u.avatarUrl) {
+          pAv.src = u.avatarUrl;
+          pAv.style.display = 'block';
+        }
+        if (hAv && u.avatarUrl) {
+          hAv.src = u.avatarUrl;
+          hAv.style.display = 'block';
+          if (hIcon) hIcon.style.display = 'none';
         }
       }
 
       // 1. Workspaces Pill
       const wsCount = (data.workspaces && data.workspaces.count) || 1;
-      const wsNames = (data.workspaces && data.workspaces.names) || [];
       const wsPill = document.getElementById('workspaceText');
       if (wsPill) {
         wsPill.innerText = wsCount === 1 ? '1 Workspace' : wsCount + ' Workspaces';
-        if (wsNames.length > 0) {
-          const wsElem = document.getElementById('workspacePill');
-          if (wsElem) wsElem.title = 'Active Workspaces: ' + wsNames.join(', ');
+      }
+
+      // 2. Delta & Stream Wave
+      const activeCount = data.activeAgents.length;
+      const nwDeltaEl = document.getElementById('nwDelta');
+      if (nwDeltaEl) nwDeltaEl.innerText = '+' + formatNumber(data.session.tokens.outputTokens) + ' out';
+      renderNwStream(data);
+      try { renderAllocGauge(data); } catch {}
+
+      // 3. Null-safe KPI updates
+      const kpiAg = document.getElementById('kpiAgentCount');
+      if (kpiAg) kpiAg.innerText = activeCount;
+      const kpiBadge = document.getElementById('kpiAgentBadge');
+      const kpiAgSub = document.getElementById('kpiAgentSub');
+      if (kpiBadge) {
+        if (activeCount > 0) {
+          const firstAgent = data.activeAgents[0];
+          kpiBadge.innerText = firstAgent.status === 'running_tool' ? 'RUNNING TOOL' : 'THINKING';
+          kpiBadge.className = 'status-badge ' + (firstAgent.status === 'running_tool' ? 'running_tool' : 'thinking');
+          if (kpiAgSub) kpiAgSub.innerText = firstAgent.activeTool ? 'Tool: ' + firstAgent.activeTool : 'Planning step...';
+        } else {
+          kpiBadge.innerText = 'IDLE';
+          kpiBadge.className = 'status-badge idle';
+          if (kpiAgSub) kpiAgSub.innerText = 'Waiting for turn...';
         }
       }
 
-      // 2. Tokenmaxxing Pill
-      const totalTok = (data.session && data.session.tokens) ? data.session.tokens.totalTokens : 0;
-      const maxxingText = document.getElementById('tokenmaxxingText');
-      if (maxxingText) {
-        maxxingText.innerText = 'Tokenmaxxing • ' + formatNumberShort(totalTok);
-      }
-
-      // 3. Delta
-      const activeCount = data.activeAgents.length;
-      document.getElementById('nwDelta').innerText = '+' + formatNumber(data.session.tokens.outputTokens) + ' out tokens';
-
-      // 4. Stream Wave (calculates spanTotal, updates dot matrix, legend, and curve for nwSpan)
-      renderNwStream(data);
-
-      // 5. Allocation Gauge
-      renderAllocGauge(data);
-
-      // 4. KPI Cards
-      document.getElementById('kpiAgentCount').innerText = activeCount;
-      const kpiBadge = document.getElementById('kpiAgentBadge');
-      if (activeCount > 0) {
-        const firstAgent = data.activeAgents[0];
-        const status = firstAgent.status === 'running_tool' ? 'RUNNING TOOL' : 'THINKING';
-        kpiBadge.innerText = status;
-        kpiBadge.className = 'status-badge ' + (firstAgent.status === 'running_tool' ? 'running_tool' : 'thinking');
-        document.getElementById('kpiAgentSub').innerText = firstAgent.activeTool ? 'Tool: ' + firstAgent.activeTool : 'Planning step...';
-      } else {
-        kpiBadge.innerText = 'IDLE';
-        kpiBadge.className = 'status-badge idle';
-        document.getElementById('kpiAgentSub').innerText = 'Waiting for turn...';
-      }
-
-      // KPI Cache efficiency
-      const inT = data.session.tokens.inputTokens;
-      const cacheT = data.session.tokens.cacheReadTokens;
-      const cacheRatio = (inT + cacheT > 0) ? Math.round((cacheT / (inT + cacheT)) * 100) : 0;
-      document.getElementById('kpiCachePct').innerText = cacheRatio + '%';
-      document.getElementById('kpiCacheSub').innerText = formatNumber(cacheT) + ' cached tokens';
-
-      // KPI Conversations
-      document.getElementById('kpiConvsCount').innerText = data.session.totalConversations;
-      document.getElementById('kpiConvsSub').innerText = data.conversations.length + ' registered sessions';
+      const kpiCachePctEl = document.getElementById('kpiCachePct');
+      if (kpiCachePctEl) kpiCachePctEl.innerText = refCacheRatio + '%';
+      const kpiCacheSubEl = document.getElementById('kpiCacheSub');
+      if (kpiCacheSubEl) kpiCacheSubEl.innerText = formatNumber(refCacheTok) + ' cached tokens';
+      const kpiConvsEl = document.getElementById('kpiConvsCount');
+      if (kpiConvsEl) kpiConvsEl.innerText = data.session.totalConversations;
+      const kpiConvsSubEl = document.getElementById('kpiConvsSub');
+      if (kpiConvsSubEl) kpiConvsSubEl.innerText = data.conversations.length + ' registered sessions';
 
       // KPI Lifetime Hours & 5-Window Time/Token Matrix
       const tb = data.timeBreakdown || (data.session && data.session.timeBreakdown) || {

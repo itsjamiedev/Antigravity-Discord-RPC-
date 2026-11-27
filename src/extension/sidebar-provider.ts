@@ -14,6 +14,9 @@ import type { TrackerSnapshot, ModelStats, TokenUsageRecord, Agent, TimeBreakdow
 import { getGroundTruthConversationStatuses } from './agent-watcher.js';
 import { formatLifetimeHours, formatModelDisplayName } from '../discord/presence-manager.js';
 import { getMascotCss, getMascotSfxJs, getMascotSvgHtml } from '../shared/mascot-rig.js';
+import { getSidebarThemeCss, getSidebarHeroHtml } from './sidebar-hero.js';
+import { getSidebarTimelineAndTokensHtml } from './sidebar-timeline.js';
+import { getSidebarProfileAndTabsHtml } from './sidebar-profile.js';
 
 export function formatNumber(n: number): string {
   if (typeof n !== 'number' || !Number.isFinite(n)) return '0';
@@ -327,6 +330,26 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   const sideMascotCss = getMascotCss();
   const sideMascotSfx = getMascotSfxJs();
 
+  const modelsHtml =
+    models.length > 0
+      ? models
+          .slice(0, 4)
+          .map((m, idx) => {
+            const share = totalTokens > 0 ? Math.round((m.tokens.totalTokens / totalTokens) * 100) : 0;
+            const color = idx === 0 ? '#14191A' : idx === 1 ? '#485452' : '#768481';
+            return `<div class="model-row">
+              <div class="model-meta">
+                <span class="model-name">${m.model}</span>
+                <span class="model-stat-num mono">${formatCompactNumber(m.tokens.totalTokens)} (${share}%)</span>
+              </div>
+              <div class="model-bar-wrap">
+                <div class="model-bar-fill" style="width: ${share}%; background: ${color};"></div>
+              </div>
+            </div>`;
+          })
+          .join('')
+      : `<div style="font-size:10px; color:#6B7678; padding:4px 0;">No model tokens logged yet.</div>`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -335,895 +358,38 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Antigravity Presence</title>
   <style>
-    :root {
-      --bg: #131418;
-      --card: #1C1D22;
-      --card-inner: #16171B;
-      --border: #282A31;
-      --border-subtle: #202227;
-      --border-hover: #3E424E;
-      --slate-denim: #4E6482;
-      --slate-denim-dark: #3D4E64;
-      --sandstone: #C7C5B8;
-      --sandstone-text: #131418;
-      --ice: #5B9CF6;
-      --ice-dim: rgba(91, 156, 246, 0.15);
-      --emerald: #34F5A4;
-      --t1: #FFFFFF;
-      --t2: #C4C8D4;
-      --t3: #8A909E;
-      --t4: #555A68;
-      --ease: cubic-bezier(0.16, 1, 0.3, 1);
-      --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    }
-
+    ${getSidebarThemeCss()}
     ${sideMascotCss}
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: var(--bg);
-      color: var(--t1);
-      font-family: var(--font-sans);
-      font-size: 11.5px;
-      line-height: 1.4;
-      padding: 8px 8px 16px;
-      overflow-x: hidden;
-      user-select: none;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* TOP 9-DOT HEADER */
-    .top-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 4px 2px 10px;
-      margin-bottom: 8px;
-      border-bottom: 1px solid var(--border);
-    }
-    .brand-mark {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      font-weight: 800;
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--t1);
-    }
-    .grid-dots-icon {
-      color: var(--t2);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .live-pill {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: rgba(52, 245, 164, 0.1);
-      border: 1px solid rgba(52, 245, 164, 0.3);
-      color: var(--emerald);
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .live-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: currentColor;
-    }
-
-    /* BENTO CARD CONTAINER (INDUSTRIAL MATTE) */
-    .bento-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 11px;
-      margin-bottom: 8px;
-      position: relative;
-      overflow: hidden;
-      transition: border-color 0.15s var(--ease);
-    }
-    .bento-card:hover {
-      border-color: var(--border-hover);
-    }
-
-    /* CARD HEADER & EYEBROW */
-    .card-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 6px;
-    }
-    .eyebrow {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--t3);
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .colon-sep {
-      color: var(--t4);
-    }
-    .chip {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      padding: 2px 5px;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      background: var(--card-inner);
-      color: var(--t2);
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-    }
-
-    /* MASCOT STAGE */
-    .side-mascot-stage {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 10px;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      transition: border-color 0.15s var(--ease);
-    }
-    .side-mascot-stage:hover {
-      border-color: var(--border-hover);
-    }
-    .side-mascot-info {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .side-mascot-speech {
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--t1);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .side-time-pills {
-      display: flex;
-      gap: 5px;
-      flex-wrap: wrap;
-    }
-    .side-time-pill {
-      font-family: var(--font-mono);
-      font-size: 8.5px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: var(--card-inner);
-      border: 1px solid var(--border);
-      color: var(--t3);
-    }
-
-    /* COMPANION ACTION BUTTONS */
-    .side-companion-bar {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 8px;
-    }
-    .side-retro-btn {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 6px 8px;
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      color: var(--t2);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      transition: all 0.15s var(--ease);
-    }
-    .side-retro-btn:hover {
-      border-color: var(--border-hover);
-      color: var(--t1);
-      background: var(--card-inner);
-    }
-    .side-retro-btn.active {
-      border-color: rgba(52, 245, 164, 0.4);
-      color: var(--emerald);
-      background: rgba(52, 245, 164, 0.08);
-    }
-
-    /* 2-COLUMN SPLIT BENTO (SESSION HERO + AGENTS RADAR) */
-    .split-bento-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    .split-tile {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 9px 10px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 94px;
-      transition: border-color 0.15s var(--ease);
-    }
-    .split-tile:hover {
-      border-color: var(--border-hover);
-    }
-    .bold-num-row {
-      display: flex;
-      align-items: baseline;
-      gap: 5px;
-      margin: 3px 0 6px;
-    }
-    .big-num {
-      font-size: 1.45rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: var(--t1);
-      line-height: 1;
-    }
-    .sub-ratio {
-      font-size: 9px;
-      font-weight: 700;
-      color: var(--t3);
-      letter-spacing: 0.04em;
-    }
-    .clock-actions {
-      display: flex;
-      gap: 4px;
-      margin-top: 4px;
-    }
-    .micro-btn {
-      flex: 1;
-      padding: 4px 6px;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      background: var(--card-inner);
-      color: var(--t2);
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      outline: none;
-      transition: all 0.15s var(--ease);
-    }
-    .micro-btn:hover {
-      background: #23252C;
-      color: var(--t1);
-      border-color: var(--border-hover);
-    }
-
-    /* RADAR ACTIVE AGENT BOX */
-    .radar-content {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      margin-top: 2px;
-    }
-    .agent-active-badge {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-weight: 700;
-      font-size: 10.5px;
-      color: var(--t1);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .radar-sonar-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--ice);
-      box-shadow: 0 0 6px var(--ice);
-      flex-shrink: 0;
-    }
-    .radar-sonar-dot.idle {
-      background: var(--t4);
-      box-shadow: none;
-    }
-    .agent-tool-text {
-      font-size: 9px;
-      color: var(--t3);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* HERO TOKEN VOLUME */
-    .hero-tokens {
-      font-size: 1.55rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: var(--t1);
-      margin: 2px 0 6px;
-      line-height: 1;
-    }
-    .ratio-bar {
-      height: 4px;
-      border-radius: 2px;
-      background: var(--card-inner);
-      display: flex;
-      overflow: hidden;
-      margin-bottom: 8px;
-    }
-    .ratio-fill-cache { background: var(--emerald); }
-    .ratio-fill-in { background: #FFFFFF; }
-    .ratio-fill-out { background: var(--ice); }
-
-    .micro-stats-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 4px;
-      font-size: 9.5px;
-    }
-    .micro-stat-col {
-      display: flex;
-      flex-direction: column;
-    }
-    .micro-stat-label {
-      color: var(--t3);
-      font-size: 8.5px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .micro-stat-label i {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      display: inline-block;
-    }
-    .micro-stat-val {
-      font-weight: 700;
-      color: var(--t1);
-      margin-top: 1px;
-    }
-
-    /* SLATE DENIM BLUE ACCENT CARD (AESTHETIC-USABILITY EFFECT) */
-    .bento-accent-denim {
-      background: var(--slate-denim);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 8px;
-      padding: 12px 13px;
-      margin-bottom: 8px;
-      position: relative;
-      overflow: hidden;
-      color: #FFFFFF;
-      min-height: 118px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .denim-geometric-art {
-      position: absolute;
-      top: -10px;
-      right: -10px;
-      width: 130px;
-      height: 130px;
-      pointer-events: none;
-      opacity: 0.85;
-    }
-    .denim-title {
-      font-size: 13px;
-      font-weight: 900;
-      letter-spacing: 0.06em;
-      line-height: 1.15;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-      position: relative;
-      z-index: 2;
-    }
-    .denim-desc {
-      font-size: 8.5px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      line-height: 1.35;
-      text-transform: uppercase;
-      opacity: 0.88;
-      max-width: 170px;
-      position: relative;
-      z-index: 2;
-    }
-    .denim-dots {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-      margin-top: 8px;
-      position: relative;
-      z-index: 2;
-    }
-    .denim-dots span {
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.35);
-    }
-    .denim-dots span.active {
-      background: #FFFFFF;
-      width: 6px;
-      border-radius: 3px;
-    }
-
-    /* SANDSTONE ALABASTER ACTION CARD */
-    .bento-accent-sandstone {
-      background: var(--sandstone);
-      border: 1px solid rgba(0, 0, 0, 0.15);
-      border-radius: 8px;
-      padding: 11px 12px;
-      margin-bottom: 8px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      color: var(--sandstone-text);
-      transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
-    }
-    .bento-accent-sandstone:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-    .sandstone-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 4px;
-    }
-    .sandstone-title {
-      font-weight: 900;
-      font-size: 11.5px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-    .sandstone-arrow-btn {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: var(--sandstone-text);
-      color: var(--sandstone);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-    }
-    .sandstone-sub {
-      font-size: 8.5px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      opacity: 0.75;
-    }
-
-    /* DUAL STUDIO HUB (IN-IDE + BROWSER) */
-    .hub-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 8px;
-    }
-    .hub-tile {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 7px 8px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 50px;
-      transition: all 0.15s var(--ease);
-    }
-    .hub-tile:hover {
-      border-color: var(--border-hover);
-      background: var(--card-inner);
-    }
-    .hub-tile.primary:hover {
-      border-color: var(--ice);
-    }
-    .hub-tile-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .hub-badge {
-      font-size: 8px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      padding: 1px 4px;
-      border-radius: 3px;
-      background: var(--card-inner);
-      color: var(--t3);
-    }
-    .hub-tile.primary .hub-badge {
-      background: var(--ice-dim);
-      color: var(--ice);
-    }
-    .hub-title {
-      font-weight: 700;
-      font-size: 10.5px;
-      color: var(--t1);
-      margin-top: 2px;
-      letter-spacing: -0.01em;
-    }
-    .hub-sub {
-      font-size: 8.5px;
-      color: var(--t3);
-    }
-
-    /* MODEL SHARE BENTO */
-    .model-row {
-      margin-top: 6px;
-    }
-    .model-meta {
-      display: flex;
-      justify-content: space-between;
-      font-size: 9.5px;
-      margin-bottom: 2px;
-    }
-    .model-name {
-      font-weight: 600;
-      color: var(--t1);
-      max-width: 140px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .model-stat-num {
-      color: var(--t3);
-    }
-    .model-bar-wrap {
-      height: 3px;
-      border-radius: 1.5px;
-      background: var(--card-inner);
-      overflow: hidden;
-    }
-    .model-bar-fill {
-      height: 100%;
-      border-radius: 1.5px;
-    }
-
-    /* FOOTER BAR */
-    .footer-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 2px 0;
-      border-top: 1px solid var(--border);
-      margin-top: 4px;
-      font-size: 9px;
-      color: var(--t3);
-    }
-    .reconnect-btn {
-      color: var(--t2);
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 4px;
-      border-radius: 4px;
-      transition: color 0.15s ease;
-    }
-    .reconnect-btn:hover {
-      color: var(--ice);
-    }
-
-    .mono { font-family: var(--font-mono); }
   </style>
 </head>
 <body>
+  ${getSidebarHeroHtml('Live Synced')}
 
-  <!-- TOP 9-DOT HEADER (NEO-SWISS INDUSTRIAL TICKER) -->
-  <div class="top-header">
-    <div class="brand-mark">
-      <span class="grid-dots-icon">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
-          <circle cx="3" cy="3" r="1.4"/>
-          <circle cx="8" cy="3" r="1.4"/>
-          <circle cx="13" cy="3" r="1.4"/>
-          <circle cx="3" cy="8" r="1.4"/>
-          <circle cx="8" cy="8" r="1.4"/>
-          <circle cx="13" cy="8" r="1.4"/>
-          <circle cx="3" cy="13" r="1.4"/>
-          <circle cx="8" cy="13" r="1.4"/>
-          <circle cx="13" cy="13" r="1.4"/>
-        </svg>
-      </span>
-      <span>Antigravity</span>
-    </div>
-    <div style="display:flex; align-items:center; gap:6px;">
-      <img id="sideDiscordAvatar" alt="" style="width:18px; height:18px; border-radius:50%; border:1px solid var(--border-hover); object-fit:cover; display:none;" />
-      <div class="live-pill" id="sideStatusBadge">
-        <span class="live-dot"></span>
-        <span id="sideStatusText">Live Synced</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- MASCOT STAGE -->
-  <div class="side-mascot-stage" onclick="chirpSideMascot()" title="Click mascot to chirp (8-bit SFX)">
-    ${sideMascotSvg}
-    <div class="side-mascot-info">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span class="eyebrow" style="color:var(--emerald);" id="sideMascotBadge">${sideMascotState.charAt(0).toUpperCase() + sideMascotState.slice(1)}</span>
-        <span class="chip mono" style="font-size:8px;" id="sideCompModeChip">Mascot + Notch</span>
-      </div>
-      <div class="side-mascot-speech" id="sideMascotSpeech">
-        ${isAgentActive ? `"${activeAgent?.model ?? 'Agent'} Active"` : '"Ready in Antigravity"'}
-      </div>
-      <div class="side-time-pills">
-        <span class="side-time-pill" id="side24hHours">24H: ${last24hHoursFormatted}</span>
-        <span class="side-time-pill" id="sideOverallBadge">ALL: ${lifetimeHoursFormatted}</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- DESKTOP NOTCH & MASCOT PET QUICK CONTROLS -->
-  <div class="side-companion-bar">
-    <button class="side-retro-btn" id="btnSideNotch" onclick="toggleSideNotch()" title="Toggle between Windows Dynamic Notch and Desktop Mascot">
-      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M5 3v2.5h6V3"/></svg>
-      <span id="lblSideNotch">Toggle Notch</span>
-    </button>
-    <button class="side-retro-btn" id="btnSideBehavior" onclick="cycleSideBehavior()" title="Command Desktop Mascot: Sit Corner / Walk & Follow / Sleep">
-      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2L3 13h10L8 2z"/></svg>
-      <span id="lblSideBehavior">Mascot: Corner</span>
-    </button>
-  </div>
-
-  <!-- 2-COLUMN SPLIT BENTO (SESSION HERO + ACTIVE AGENT RADAR) -->
-  <div class="split-bento-grid">
-    <!-- Tile A: Session Duration & Clock Controls -->
-    <div class="split-tile">
-      <div>
-        <div class="card-head" style="margin-bottom:0;">
-          <span class="eyebrow">
-            TODAY'S FOCUS <span class="colon-sep">:</span>
-          </span>
-          <span class="sub-ratio mono">/ 6H</span>
-        </div>
-        <div class="bold-num-row">
-          <div class="big-num mono" id="sideTimerDisplay">${timeFormatted}</div>
-        </div>
-        <div class="mono" id="sideLifetimeHours" style="font-size:9.5px; color:var(--t3); font-weight:600;">Overall: ${lifetimeHoursFormatted}</div>
-      </div>
-      <div class="clock-actions">
-        <button class="micro-btn" id="btnPause" onclick="togglePause()">
-          <span id="btnPauseIcon">
-            <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor">
-              <rect x="4" y="3" width="2.8" height="10" rx="1.2"/>
-              <rect x="9.2" y="3" width="2.8" height="10" rx="1.2"/>
-            </svg>
-          </span>
-          <span id="btnPauseLabel">Pause</span>
-        </button>
-        <button class="micro-btn" id="btnFresh" onclick="startFresh()" title="Start fresh session">
-          <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2.5 8a5.5 5.5 0 0 1 9.4-3.9L14 6m0-4v4h-4M13.5 8a5.5 5.5 0 0 1-9.4 3.9L2 10m0 4v-4h4"/>
-          </svg>
-          <span>Fresh</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Tile B: Active Agent Radar -->
-    <div class="split-tile">
-      <div>
-        <div class="card-head" style="margin-bottom:0;">
-          <span class="eyebrow">
-            AGENTS <span class="colon-sep">:</span>
-          </span>
-          <span class="sub-ratio mono" id="sideAgentCountChip">${activeAgents.length} / 4</span>
-        </div>
-        <div class="bold-num-row">
-          <div class="big-num mono" style="color:var(--ice);">${activeAgents.length}</div>
-          <span class="sub-ratio mono">ACTIVE</span>
-        </div>
-      </div>
-      <div class="radar-content" id="sideAgentContainer">
-        ${
-          isAgentActive
-            ? `<div class="agent-active-badge">
-                <span class="radar-sonar-dot"></span>
-                <span>${activeAgent?.model ?? 'AI Agent'}</span>
-              </div>
-              <div class="agent-tool-text">
-                ${activeAgent?.activeTool ? `Tool: ${activeAgent.activeTool}` : 'Planning & Acting...'}
-              </div>`
-            : `<div class="agent-active-badge">
-                <span class="radar-sonar-dot idle"></span>
-                <span style="color:var(--t3);">Standing By</span>
-              </div>
-              <div class="agent-tool-text">Telemetry Ready</div>`
-        }
-      </div>
-    </div>
-  </div>
-
-  <!-- HERO TOKEN VOLUME BENTO CARD -->
-  <div class="bento-card">
-    <div class="card-head">
-      <span class="eyebrow">
-        TOTAL BALANCE <span class="colon-sep">:</span>
-      </span>
-      <span class="chip mono" style="color:var(--emerald); border-color:rgba(52,245,164,0.3);" id="sideCacheRatio">${cacheRatio}% SAVED</span>
-    </div>
-
-    <div style="display:flex; align-items:baseline; justify-content:space-between; margin: 2px 0 6px;">
-      <div class="hero-tokens mono" id="sideTotalTokens" style="margin:0;">${formatNumber(totalTokens)}</div>
-      <div class="mono" id="sideSessionTokens" style="font-size:10px; font-weight:700; color:var(--ice);">${formatCompactNumber(sessionTokens)} session</div>
-    </div>
-
-    <!-- Segmented Ratio Bar -->
-    <div class="ratio-bar">
-      <div class="ratio-fill-cache" id="barCache" style="width: ${cacheBarRatio}%;"></div>
-      <div class="ratio-fill-in" id="barIn" style="width: ${inRatio}%;"></div>
-      <div class="ratio-fill-out" id="barOut" style="width: ${outRatio}%;"></div>
-    </div>
-
-    <!-- 3-Column Micro Stats -->
-    <div class="micro-stats-row mono">
-      <div class="micro-stat-col">
-        <span class="micro-stat-label"><i style="background:var(--emerald);"></i> Cache</span>
-        <span class="micro-stat-val" id="sideCacheTokens">${formatCompactNumber(cacheTokens)}</span>
-      </div>
-      <div class="micro-stat-col">
-        <span class="micro-stat-label"><i style="background:#FFFFFF;"></i> In</span>
-        <span class="micro-stat-val" id="sideInTokens">${formatCompactNumber(inTokens)}</span>
-      </div>
-      <div class="micro-stat-col">
-        <span class="micro-stat-label"><i style="background:var(--ice);"></i> Out</span>
-        <span class="micro-stat-val" id="sideOutTokens">${formatCompactNumber(outTokens)}</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- SLATE DENIM BLUE ACCENT CARD (AESTHETIC-USABILITY EFFECT) -->
-  <div class="bento-accent-denim">
-    <svg class="denim-geometric-art" viewBox="0 0 160 160">
-      <circle cx="80" cy="80" r="62" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.2"/>
-      <circle cx="80" cy="80" r="38" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.2"/>
-      <line x1="18" y1="80" x2="142" y2="80" stroke="rgba(255,255,255,0.2)" stroke-width="1.2"/>
-      <line x1="80" y1="18" x2="80" y2="142" stroke="rgba(255,255,255,0.2)" stroke-width="1.2"/>
-      <line x1="18" y1="142" x2="142" y2="18" stroke="rgba(255,255,255,0.25)" stroke-width="1.2"/>
-      <path d="M 80 18 A 62 62 0 0 1 142 80" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.8"/>
-    </svg>
-    <div>
-      <div class="denim-title">AESTHETIC-<br>USABILITY<br>EFFECT</div>
-      <div class="denim-desc">USERS OFTEN PERCEIVE AESTHETICALLY PLEASING DESIGN AS DESIGN THAT'S MORE USABLE.</div>
-    </div>
-    <div class="denim-dots">
-      <span class="active"></span><span></span><span></span><span></span><span></span>
-    </div>
-  </div>
-
-  <!-- SANDSTONE ALABASTER ACTION CARD -->
-  <div class="bento-accent-sandstone" onclick="openFullDashboard()" title="Launch In-IDE Studio & Metrics Dashboard">
-    <div class="sandstone-top">
-      <div class="sandstone-title">CUSTOM DASHBOARD</div>
-      <div class="sandstone-arrow-btn">
-        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 12L12 4M12 4H6M12 4V10"/>
-        </svg>
-      </div>
-    </div>
-    <div class="sandstone-sub">IN-IDE STUDIO & WEB • 10 / 20 TEMPLATES</div>
-  </div>
-
-  <!-- DUAL DASHBOARD ACCESS HUB (IN-IDE + BROWSER) -->
-  <div class="hub-grid">
-    <div class="hub-tile primary" id="btnOpenFull" onclick="openFullDashboard()" title="Open interactive Bento dashboard as an editor tab inside Antigravity IDE">
-      <div class="hub-tile-head">
-        <span class="hub-badge">EDITOR TAB</span>
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="2" width="12" height="12" rx="2.5"/>
-          <path d="M8 2v12"/>
-        </svg>
-      </div>
-      <div>
-        <div class="hub-title">In-IDE Studio</div>
-        <div class="hub-sub">Bento metrics panel</div>
-      </div>
-    </div>
-    <div class="hub-tile" id="btnOpenBrowser" onclick="openBrowserDashboard()" title="Launch companion dashboard at http://127.0.0.1:41177 in your browser">
-      <div class="hub-tile-head">
-        <span class="hub-badge">127.0.0.1</span>
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10 2h4v4M6.5 9.5L14 2M14 8.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h4.5"/>
-        </svg>
-      </div>
-      <div>
-        <div class="hub-title">Web Browser</div>
-        <div class="hub-sub">Chrome / Edge / Brave</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODEL TOKEN ALLOCATION BENTO CARD -->
-  <div class="bento-card">
-    <div class="card-head">
-      <span class="eyebrow">
-        MODEL ALLOCATION <span class="colon-sep">:</span>
-      </span>
-      <span class="chip mono" id="sideModelCount">${models.length} MODELS</span>
-    </div>
-
-    <div id="sideModelList">
-      ${
-        models.length > 0
-          ? models
-              .slice(0, 4)
-              .map((m, idx) => {
-                const share = totalTokens > 0 ? Math.round((m.tokens.totalTokens / totalTokens) * 100) : 0;
-                const color =
-                  idx === 0
-                    ? 'var(--ice)'
-                    : idx === 1
-                      ? '#FFFFFF'
-                      : idx === 2
-                        ? 'var(--slate-denim)'
-                        : 'var(--emerald)';
-                return `<div class="model-row">
-                  <div class="model-meta">
-                    <span class="model-name">${m.model}</span>
-                    <span class="model-stat-num mono">${formatCompactNumber(m.tokens.totalTokens)} (${share}%)</span>
-                  </div>
-                  <div class="model-bar-wrap">
-                    <div class="model-bar-fill" style="width: ${share}%; background: ${color};"></div>
-                  </div>
-                </div>`;
-              })
-              .join('')
-          : `<div style="font-size:10px; color:var(--t3); padding:4px 0;">No model tokens logged yet.</div>`
-      }
-    </div>
-  </div>
-
-  <!-- FOOTER STATUS & RECONNECT -->
-  <div class="footer-bar">
-    <span id="footerWorkspaceText">1 Workspace active</span>
-    <button class="reconnect-btn" onclick="reconnectDiscord()" title="Reconnect Discord RPC">
-      <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M1 8a7 7 0 1 1 12 5M15 8A7 7 0 0 1 3 3"/>
-        <path d="M15 3v5h-5M1 13V8h5"/>
-      </svg>
-      <span>Reconnect RPC</span>
-    </button>
-  </div>
+  <div class="side-panel-view active" id="side-view-overview">
+    ${getSidebarTimelineAndTokensHtml({
+      timeFormatted,
+      lifetimeHoursFormatted,
+      last24hHoursFormatted,
+      totalTokensFormatted: formatNumber(totalTokens),
+      sessionTokensCompact: formatCompactNumber(sessionTokens),
+      cacheRatio,
+      cacheBarRatio,
+      inRatio,
+      outRatio,
+      cacheCompact: formatCompactNumber(cacheTokens),
+      inCompact: formatCompactNumber(inTokens),
+      outCompact: formatCompactNumber(outTokens),
+    })}
+    ${getSidebarProfileAndTabsHtml({
+      sideMascotSvg,
+      sideMascotState,
+      isAgentActive,
+      activeAgentModel: activeAgent?.model ?? 'AI Agent',
+      activeAgentTool: activeAgent?.activeTool ?? '',
+      activeAgentsCount: activeAgents.length,
+      modelsHtml,
+      modelsCount: models.length,
+    })}
 
   <script>
     ${sideMascotSfx}
@@ -1349,6 +515,22 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
 
     startTimer(startedAtIso, isPaused);
 
+    function switchSideTab(tabName, btn) {
+      document.querySelectorAll('.hero-tab').forEach(function(b) {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      if (btn) {
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+      }
+      document.querySelectorAll('.side-panel-view').forEach(function(v) {
+        v.classList.remove('active');
+      });
+      const target = document.getElementById('side-view-' + tabName);
+      if (target) target.classList.add('active');
+    }
+
     function updateFromSnapshot(snap) {
       if (!snap) return;
       hasReceivedUpdate = true;
@@ -1364,6 +546,15 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
           av.title = snap.discord.user.globalName || snap.discord.user.username || 'Discord';
           av.style.display = 'block';
         }
+        const pav = document.getElementById('sideProfileAvatar');
+        if (pav) {
+          pav.src = snap.discord.user.avatarUrl;
+          pav.style.display = 'block';
+        }
+        const pname = document.getElementById('sideProfileName');
+        if (pname) pname.innerText = snap.discord.user.globalName || snap.discord.user.username || 'Discord User';
+        const psub = document.getElementById('sideProfileSub');
+        if (psub) psub.innerText = snap.discord.connected ? 'Discord Connected' : 'Standby';
       }
 
       const tokens = (snap.session && snap.session.tokens && snap.session.tokens.totalTokens > 0)
