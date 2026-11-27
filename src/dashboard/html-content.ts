@@ -115,17 +115,30 @@ export function getDashboardHtml(): string {
     .ref-user-badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       font-size: 9.5px;
       font-weight: 700;
       letter-spacing: 0.08em;
       color: #C4C8D4;
+      background: #1C1D22;
+      border: 1px solid #282A31;
+      padding: 3px 10px 3px 4px;
+      border-radius: 999px;
+    }
+    .ref-user-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid #3E424E;
+      display: none;
     }
     .ref-user-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
       background: #5B9CF6;
+      margin-left: 4px;
     }
 
     .ref-bento-container {
@@ -1489,9 +1502,10 @@ export function getDashboardHtml(): string {
             </div>
           </div>
           <div class="ref-ticker-right">
-            <div class="ref-user-badge">
-              <span class="ref-user-dot"></span>
-              <span class="ref-user-name">ANTIGRAVITY #4015</span>
+            <div class="ref-user-badge" id="refUserBadge">
+              <img class="ref-user-avatar" id="refUserAvatar" alt="Discord Avatar" />
+              <span class="ref-user-dot" id="refUserDot"></span>
+              <span class="ref-user-name" id="refUserName">ANTIGRAVITY</span>
             </div>
           </div>
         </div>
@@ -3508,6 +3522,20 @@ export function getDashboardHtml(): string {
       if (elDiscordVal && data.discord) {
         elDiscordVal.innerText = data.discord.connected ? 'CONNECTED' : 'STANDBY';
         elDiscordVal.className = 'ticker-val ' + (data.discord.connected ? 'green' : '');
+      }
+      const elUserAvatar = document.getElementById('refUserAvatar');
+      const elUserDot = document.getElementById('refUserDot');
+      const elUserName = document.getElementById('refUserName');
+      if (data.discord && data.discord.user) {
+        const u = data.discord.user;
+        const displayName = (u.globalName || u.username || 'DISCORD').toUpperCase();
+        const tag = u.discriminator && u.discriminator !== '0' ? ' #' + u.discriminator : '';
+        if (elUserName) elUserName.innerText = displayName + tag;
+        if (elUserAvatar && u.avatarUrl) {
+          elUserAvatar.src = u.avatarUrl;
+          elUserAvatar.style.display = 'block';
+          if (elUserDot) elUserDot.style.display = 'none';
+        }
       }
 
       // 1. Workspaces Pill

@@ -925,18 +925,6 @@
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
         <span>Hide Mascot</span>
       </button>
-
-      <div class="ag-menu-section-title">
-        <span>Play Movements</span>
-      </div>
-      <div class="ag-menu-quick-grid">
-        <button type="button" class="ag-menu-chip" onclick="playMovementAction('launch')">🦘 Hop / Jump</button>
-        <button type="button" class="ag-menu-chip" onclick="playMovementAction('celebrate')">🎉 Backflip</button>
-        <button type="button" class="ag-menu-chip" onclick="playMovementAction('wave')">👋 Wave</button>
-        <button type="button" class="ag-menu-chip" onclick="playMovementAction('coffee')">☕ Coffee</button>
-        <button type="button" class="ag-menu-chip" onclick="playMovementAction('look')">👀 Look</button>
-        <button type="button" class="ag-menu-chip" onclick="playMovementAction('yawn')">🥱 Stretch</button>
-      </div>
     </div>
 
     <!-- Authentic Transparent Master PNG Mascot + Responsive SVG Facial Overlay -->
@@ -1213,6 +1201,7 @@
     };
     let latestData = null;
     let lastAgentCount = 0;
+    let lastTypingSeenAt = 0;
 
     let mascotX = window.innerWidth - 124;
     let mascotY = window.innerHeight - 118;
@@ -1225,14 +1214,21 @@
 
     function getCornerCoords(corner) {
       const marginX = 24;
-      const marginY = 20;
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      if (corner === 'bottom-left') return { x: marginX, y: h - 116 };
-      if (corner === 'top-right') return { x: w - 124, y: marginY + 32 };
-      if (corner === 'top-left') return { x: marginX, y: marginY + 32 };
-      return { x: w - 124, y: h - 116 };
+      const w = Math.max(400, window.innerWidth);
+      const h = Math.max(300, window.innerHeight);
+      const bottomY = Math.max(120, h - 122);
+      if (corner === 'bottom-left' || corner === 'top-left') return { x: marginX, y: bottomY };
+      return { x: w - 124, y: bottomY };
     }
+
+    window.addEventListener('resize', function() {
+      if (companion.mascotBehavior === 'sit_corner' || companion.mascotBehavior === 'sleep') {
+        const c = getCornerCoords(companion.corner || 'bottom-right');
+        targetX = c.x;
+        targetY = c.y;
+        mascotY = c.y;
+      }
+    });
 
     function applyMascotTransform(flipX) {
       mascotActor.style.left = Math.round(mascotX) + 'px';
@@ -1436,11 +1432,9 @@
         if (mascotRig && (mascotRig.getAttribute('data-state') === 'working' || mascotRig.getAttribute('data-state') === 'thinking')) return;
 
         const ambientMoves = [
-          { cls: 'ag-m-perch-look', face: 'curious', dur: 1400, sfx: null, msg: '👀 Looking' },
-          { cls: 'ag-m-stretch-yawn', face: 'sleepy', dur: 1600, sfx: 'organic_purr', msg: 'Yawn~' },
-          { cls: 'ag-m-alert-hop', face: 'laugh', dur: 650, sfx: 'marimba_tap', msg: 'Hop!' },
-          { cls: 'ag-m-prompt-chirp', face: 'smile', dur: 600, sfx: 'haptic_switch', msg: '♪ Chirp' },
-          { cls: 'ag-m-bubble-float', face: 'smile', dur: 2200, sfx: 'bubble_undock_pop', msg: 'Floating ✨' }
+          { cls: 'ag-m-perch-look', face: 'curious', dur: 1400, sfx: null, msg: 'Looking around' },
+          { cls: 'ag-m-stretch-yawn', face: 'sleepy', dur: 1600, sfx: 'organic_purr', msg: 'Relaxing~' },
+          { cls: 'ag-m-prompt-chirp', face: 'smile', dur: 600, sfx: 'haptic_switch', msg: 'Ready' }
         ];
 
         const pick = ambientMoves[Math.floor(Math.random() * ambientMoves.length)];
@@ -1453,6 +1447,14 @@
       if (!data) return;
       latestData = data;
       if (data.companion) {
+        const incomingTyping = data.companion.typingAt || 0;
+        if (incomingTyping > lastTypingSeenAt && (Date.now() - incomingTyping) < 3500) {
+          lastTypingSeenAt = incomingTyping;
+          if (companion.mascotBehavior !== 'sleep' && !isDragging) {
+            setMascotMovement('ag-m-prompt-chirp', 'curious', 1200, 'haptic_switch');
+            showMascotTempBubble('Typing...', 1800);
+          }
+        }
         companion = Object.assign({}, companion, data.companion);
         applyCompanionVisibility();
       }
@@ -1556,8 +1558,9 @@
     }
 
     function cycleDesktopCorner() {
-      const order = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
-      const next = order[(order.indexOf(companion.corner || 'bottom-right') + 1) % order.length];
+      const order = ['bottom-right', 'bottom-left'];
+      const cur = (companion.corner === 'bottom-left' || companion.corner === 'top-left') ? 'bottom-left' : 'bottom-right';
+      const next = order[(order.indexOf(cur) + 1) % order.length];
       commandMascot({ corner: next, mascotBehavior: 'sit_corner' });
     }
 

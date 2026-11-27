@@ -70,6 +70,14 @@ export interface DashboardFullState extends TrackerSnapshot {
   discord: {
     connected: boolean;
     state: string;
+    user?: {
+      id: string;
+      username: string;
+      globalName?: string;
+      discriminator?: string;
+      avatar?: string | null;
+      avatarUrl?: string;
+    } | null;
   };
   settings: PrivacySettings;
   companion?: CompanionSettings;
@@ -295,6 +303,7 @@ export class DashboardServer {
       discord: {
         connected: discordState === 'connected',
         state: discordState,
+        user: this.discordClient?.getConnectedUser?.() ?? null,
       },
       settings,
       companion,

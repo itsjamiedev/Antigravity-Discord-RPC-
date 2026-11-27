@@ -169,10 +169,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     startFollowerSync();
   }
 
-  // 7. Register VS Code Editor Event Listeners (Manual Coding Mode)
+  // 7. Register VS Code Editor Event Listeners (Manual Coding Mode & Prompt Typing Signal)
+  let lastTypingPulseMs = 0;
+  const signalTypingPulse = () => {
+    const now = Date.now();
+    if (now - lastTypingPulseMs < 1500) return;
+    lastTypingPulseMs = now;
+    try {
+      const body = JSON.stringify({ typingAt: now });
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port: 41177,
+        path: '/api/companion',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+        timeout: 400,
+      });
+      req.on('error', () => {});
+      req.write(body);
+      req.end();
+    } catch {}
+  };
+
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(() => onEditorChanged()),
     vscode.window.onDidChangeTextEditorSelection(() => onEditorChanged()),
+    vscode.workspace.onDidChangeTextDocument(() => signalTypingPulse()),
     vscode.workspace.onDidChangeWorkspaceFolders(() => syncWorkspaces()),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('antigravityPresence')) {

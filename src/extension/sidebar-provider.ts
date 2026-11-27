@@ -966,9 +966,12 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       </span>
       <span>Antigravity</span>
     </div>
-    <div class="live-pill" id="sideStatusBadge">
-      <span class="live-dot"></span>
-      <span id="sideStatusText">Live Synced</span>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <img id="sideDiscordAvatar" alt="" style="width:18px; height:18px; border-radius:50%; border:1px solid var(--border-hover); object-fit:cover; display:none;" />
+      <div class="live-pill" id="sideStatusBadge">
+        <span class="live-dot"></span>
+        <span id="sideStatusText">Live Synced</span>
+      </div>
     </div>
   </div>
 
@@ -1353,6 +1356,14 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       const badge = document.getElementById('sideStatusText');
       if (badge && (badge.innerText === 'Connecting...' || badge.innerText === 'Initializing')) {
         badge.innerText = 'Live Synced';
+      }
+      if (snap.discord && snap.discord.user && snap.discord.user.avatarUrl) {
+        const av = document.getElementById('sideDiscordAvatar');
+        if (av) {
+          av.src = snap.discord.user.avatarUrl;
+          av.title = snap.discord.user.globalName || snap.discord.user.username || 'Discord';
+          av.style.display = 'block';
+        }
       }
 
       const tokens = (snap.session && snap.session.tokens && snap.session.tokens.totalTokens > 0)

@@ -333,12 +333,13 @@ function createOverlayWindow() {
 
   overlayWindow = new BrowserWindow({
     x,
-    y,
+    y: y - 1,
     width,
-    height,
+    height: height + 1,
     transparent: true,
     backgroundColor: '#00000000',
     frame: false,
+    titleBarStyle: 'hidden',
     thickFrame: false,
     resizable: false,
     movable: false,
@@ -377,7 +378,7 @@ function createOverlayWindow() {
   const syncDisplayBounds = () => {
     if (!overlayWindow || overlayWindow.isDestroyed()) return;
     const wa = screen.getPrimaryDisplay().workArea;
-    overlayWindow.setBounds({ x: wa.x, y: wa.y, width: wa.width, height: wa.height });
+    overlayWindow.setBounds({ x: wa.x, y: wa.y - 1, width: wa.width, height: wa.height + 1 });
   };
   screen.on('display-metrics-changed', syncDisplayBounds);
 
@@ -560,7 +561,7 @@ ipcMain.on('desktop:open-dashboard', () => {
 ipcMain.on('desktop:focus-ide', () => {
   try {
     const { exec } = require('child_process');
-    exec('powershell -Command "$p = Get-Process Antigravity -ErrorAction SilentlyContinue | Select-Object -First 1; if ($p) { (New-Object -ComObject WScript.Shell).AppActivate($p.Id) }"');
+    exec('powershell -Command "$p = Get-Process -Name \'Antigravity IDE\',\'Antigravity\' -ErrorAction SilentlyContinue | Select-Object -First 1; if ($p) { (New-Object -ComObject WScript.Shell).AppActivate($p.Id) }"');
   } catch {}
 });
 

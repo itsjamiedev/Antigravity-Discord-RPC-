@@ -168,7 +168,7 @@ describe('Phase 5: Local Usage Dashboard (127.0.0.1)', () => {
     const overview = (await overRes.json()) as Record<string, unknown>;
     expect(overview['session']).toBeDefined();
     expect((overview['activeAgents'] as Array<unknown>).length).toBe(1);
-    expect(overview['discord']).toEqual({ connected: false, state: 'disconnected' });
+    expect(overview['discord']).toEqual({ connected: false, state: 'disconnected', user: null });
 
     // 2. /api/agents
     const agentsRes = await fetch(`${baseUrl}/api/agents`);

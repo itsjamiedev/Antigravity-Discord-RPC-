@@ -34,6 +34,15 @@ export interface DiscordIpcOptions {
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'destroyed';
 
+export interface DiscordUser {
+  id: string;
+  username: string;
+  globalName?: string;
+  discriminator?: string;
+  avatar?: string | null;
+  avatarUrl?: string;
+}
+
 export function getPossiblePipePaths(): string[] {
   const isWindows = process.platform === 'win32';
   const paths: string[] = [];
@@ -118,6 +127,7 @@ export class DiscordIpcClient {
   private reconnectTimer: NodeJS.Timeout | null = null;
   private pingTimer: NodeJS.Timeout | null = null;
   private lastActivity: DiscordActivity | null = null;
+  private connectedUser: DiscordUser | null = null;
   private stateListeners = new Set<IpcStateChangeListener>();
 
   private readonly clientId: string;
@@ -136,6 +146,10 @@ export class DiscordIpcClient {
 
   public getState(): ConnectionState {
     return this.state;
+  }
+
+  public getConnectedUser(): DiscordUser | null {
+    return this.connectedUser;
   }
 
   public onStateChange(listener: IpcStateChangeListener): () => void {
@@ -227,6 +241,22 @@ export class DiscordIpcClient {
       if (packet.opcode === IPC_OPCODES.FRAME) {
         const payload = packet.payload;
         if (payload['evt'] === 'READY') {
+          const dataObj = payload['data'] as Record<string, unknown> | undefined;
+          const userObj = dataObj?.['user'] as Record<string, unknown> | undefined;
+          if (userObj && typeof userObj['id'] === 'string') {
+            const id = userObj['id'];
+            const username =
+              typeof userObj['username'] === 'string' ? userObj['username'] : 'Discord User';
+            const globalName =
+              typeof userObj['global_name'] === 'string' ? userObj['global_name'] : undefined;
+            const discriminator =
+              typeof userObj['discriminator'] === 'string' ? userObj['discriminator'] : undefined;
+            const avatar = typeof userObj['avatar'] === 'string' ? userObj['avatar'] : null;
+            const avatarUrl = avatar
+              ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.png?size=64`
+              : `https://cdn.discordapp.com/embed/avatars/0.png`;
+            this.connectedUser = { id, username, globalName, discriminator, avatar, avatarUrl };
+          }
           this.setState('connected');
           this.startHeartbeat();
           // If there is a pending activity, send it immediately upon connection
