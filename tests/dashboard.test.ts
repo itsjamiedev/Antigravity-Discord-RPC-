@@ -74,6 +74,10 @@ describe('Phase 5: Local Usage Dashboard (127.0.0.1)', () => {
     expect(html).toContain('MONTHLY (30D)');
     expect(html).toContain('YEARLY (365D)');
     expect(html).toContain('OVERALL');
+
+    const scriptMatch = html.match(/<script>([\s\S]*)<\/script>/);
+    expect(scriptMatch).not.toBeNull();
+    expect(() => new Function(scriptMatch![1]!)).not.toThrow();
   });
 
   it('persists and updates Desktop Companion & Windows Dynamic Notch settings via /api/companion', async () => {

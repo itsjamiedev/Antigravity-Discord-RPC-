@@ -711,7 +711,7 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
         const totTokens = tokens ? tokens.totalTokens : 1;
         mListEl.innerHTML = models.slice(0, 4).map(function(m, i) {
           const share = totTokens > 0 ? Math.round((m.tokens.totalTokens / totTokens) * 100) : 0;
-          const color = i === 0 ? 'var(--acc)' : i === 1 ? 'var(--cyan)' : i === 2 ? 'var(--lavender)' : 'var(--coral)';
+          const color = i === 0 ? '#14191A' : i === 1 ? '#137A50' : i === 2 ? '#4E6482' : '#464B48';
           return '<div class="model-row">' +
             '<div class="model-meta">' +
             '<span class="model-name">' + m.model + '</span>' +

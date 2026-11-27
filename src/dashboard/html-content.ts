@@ -2161,13 +2161,10 @@ export function getDashboardHtml(): string {
           const xCenter = padLeft + i * slotW + slotW / 2;
           const isToday = i === barCount - 1;
           s += '<text x="' + xCenter + '" y="' + (yBase + 22) + '" fill="#14191A" font-size="11" font-weight="' + (isToday ? '800' : '500') + '" font-family="Geist" text-anchor="middle">' + d.label + '</text>';
+          const colLeft = padLeft + i * slotW;
+          s += '<rect class="bar-hitbox" data-idx="' + i + '" x="' + colLeft + '" y="' + padTop + '" width="' + slotW + '" height="' + plotH + '" fill="transparent" style="cursor:pointer;" onmouseenter="onBarHover(event, ' + i + ')" onmouseleave="onBarLeave()"/>';
         });
       }
-
-        // Hitbox for Tooltip Hover
-        const colLeft = padLeft + i * slotW;
-        s += '<rect class="bar-hitbox" data-idx="' + i + '" x="' + colLeft + '" y="' + padTop + '" width="' + slotW + '" height="' + plotH + '" fill="transparent" style="cursor:pointer;" onmouseenter="onBarHover(event, ' + i + ')" onmouseleave="onBarLeave()"/>';
-      });
 
       svg.innerHTML = s;
 
