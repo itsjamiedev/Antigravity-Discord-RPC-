@@ -53,6 +53,13 @@ export function getDashboardRightColumnHtml(): string {
             </div>
 
             <div style="position:relative;display:flex;flex-direction:column;gap:2px;">
+              <span aria-hidden="true" style="position:absolute;left:-20px;top:4px;width:11px;height:11px;border-radius:50%;background:#DCF291;border:2px solid #14191A;"></span>
+              <div style="font-size:13px;color:#14191A;">
+                Daily Focus: <b id="nxDailyFocusVal" class="mono">0m / 6h &bull; 0d streak</b>
+              </div>
+            </div>
+
+            <div style="position:relative;display:flex;flex-direction:column;gap:2px;">
               <span aria-hidden="true" style="position:absolute;left:-20px;top:4px;width:11px;height:11px;border-radius:50%;background:#FFFFFF;border:2px solid #14191A;"></span>
               <div style="font-size:13px;color:#14191A;">
                 Current Session: <b id="kpiSessionTimer" class="mono">00:00:00</b>

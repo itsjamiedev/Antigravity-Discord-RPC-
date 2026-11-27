@@ -619,6 +619,49 @@ export function getSidebarHtml(snapshot?: TrackerSnapshot | null): string {
       if (bAllEl) {
         bAllEl.innerText = 'ALL: ' + formatLifetimeHoursJs(lifeSecs);
       }
+
+      if (snap.dailyFocus) {
+        const dfEl = document.getElementById('sideDailyFocus');
+        if (dfEl) {
+          const goalH = Math.round((snap.dailyFocus.goalSeconds || 21600) / 3600);
+          dfEl.innerText = formatLifetimeHoursJs(snap.dailyFocus.todaySeconds) + ' / ' + goalH + 'h • ' + snap.dailyFocus.streakDays + 'd';
+        }
+      }
+
+      if (snap.contextWindow) {
+        const cw = snap.contextWindow;
+        const cLbl = document.getElementById('sideCtxLabel');
+        const cPct = document.getElementById('sideCtxPct');
+        const cBar = document.getElementById('sideCtxBar');
+        if (cLbl) cLbl.innerText = 'CTX: ' + formatCompactJs(cw.usedTokens) + ' / ' + formatCompactJs(cw.maxTokens);
+        if (cPct) {
+          cPct.innerText = cw.percentFull + '%' + (cw.isNearLimit ? ' !' : '');
+          cPct.style.background = cw.isNearLimit ? '#FDECE8' : '#DCF291';
+          cPct.style.color = cw.isNearLimit ? '#DC2626' : '#14191A';
+        }
+        if (cBar) {
+          cBar.style.width = Math.min(100, Math.max(0, cw.percentFull)) + '%';
+          cBar.style.background = cw.isNearLimit ? '#DC2626' : '#14191A';
+        }
+      }
+
+      const skList = document.getElementById('sideSkillList');
+      const skCount = document.getElementById('sideSkillCount');
+      const skills = snap.skillStats || [];
+      if (skCount) skCount.innerText = skills.length + ' SKILLS';
+      if (skList && skills.length > 0) {
+        const maxSk = Math.max(1, skills[0].tokens.totalTokens);
+        skList.innerHTML = skills.slice(0, 5).map(function(sk) {
+          const pct = Math.round((sk.tokens.totalTokens / maxSk) * 100);
+          return '<div class="model-row">' +
+            '<div class="model-meta">' +
+            '<span class="model-name">' + sk.skillName + '</span>' +
+            '<span class="model-stat-num mono">' + formatCompactJs(sk.tokens.totalTokens) + ' (' + sk.invocationCount + 'x)</span>' +
+            '</div>' +
+            '<div class="model-bar-wrap"><div class="model-bar-fill" style="width:' + pct + '%; background:#14191A;"></div></div>' +
+            '</div>';
+        }).join('');
+      }
       if (snap.companion) {
         syncSideCompanionUi(snap.companion);
       }

@@ -298,6 +298,13 @@ export function getDashboardHtml(): string {
               </div>
               <input type="checkbox" id="settingEnableManualPresence" onchange="updateSetting('enableManualEditsPresence', this.checked)">
             </label>
+            <label style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+              <div>
+                <div style="font-weight:600;">Broadcast Active Skill &amp; Context % in Discord</div>
+                <div style="font-size:0.75rem; color:var(--t3);">Include top skill name and context window fullness in Discord Rich Presence.</div>
+              </div>
+              <input type="checkbox" id="settingShowSkillContext" onchange="updateSetting('showSkillAndContextInDiscord', this.checked)">
+            </label>
           </div>
         </div>
       </div>
@@ -1565,6 +1572,63 @@ export function getDashboardHtml(): string {
       if (el24h) el24h.innerText = formatLifetimeHours(refLast24Secs);
       const el7d30d = document.getElementById('nx7d30dTimeVal');
       if (el7d30d) el7d30d.innerText = formatLifetimeHours(refWeeklySecs) + ' • ' + formatLifetimeHours(refMonthlySecs);
+
+      const df = data.dailyFocus;
+      const elDailyFocus = document.getElementById('nxDailyFocusVal');
+      if (elDailyFocus && df) {
+        const goalH = Math.round((df.goalSeconds || 21600) / 3600);
+        elDailyFocus.innerText = formatLifetimeHours(df.todaySeconds) + ' / ' + goalH + 'h • ' + df.streakDays + 'd streak';
+      }
+
+      const cw = data.contextWindow;
+      if (cw) {
+        const ctxText = document.getElementById('nxContextText');
+        const ctxBadge = document.getElementById('nxContextPctBadge');
+        const ctxBar = document.getElementById('nxContextBar');
+        if (ctxText) ctxText.innerText = formatNumberShort(cw.usedTokens) + ' / ' + formatNumberShort(cw.maxTokens) + ' (' + (cw.model || 'Model') + ')';
+        if (ctxBadge) {
+          ctxBadge.innerText = cw.percentFull + '% FULL' + (cw.isNearLimit ? ' • COMPACT' : '');
+          ctxBadge.style.background = cw.isNearLimit ? '#FDECE8' : '#DCF291';
+          ctxBadge.style.color = cw.isNearLimit ? '#DC2626' : '#14191A';
+        }
+        if (ctxBar) {
+          ctxBar.style.width = Math.min(100, Math.max(0, cw.percentFull)) + '%';
+          ctxBar.style.background = cw.isNearLimit ? '#DC2626' : '#14191A';
+        }
+      }
+
+      const skillsBody = document.getElementById('nxSkillsBody');
+      if (skillsBody) {
+        const skills = data.skillStats || [];
+        if (skills.length === 0) {
+          skillsBody.innerHTML = '<tr><td colspan="6" style="color:#464B48;">No skill token reads recorded yet.</td></tr>';
+        } else {
+          skillsBody.innerHTML = skills.slice(0, 10).map(function(sk) {
+            return '<tr>' +
+              '<td style="font-weight:700; color:#14191A;">' + sk.skillName + '</td>' +
+              '<td class="mono">' + sk.invocationCount + '</td>' +
+              '<td class="mono">' + formatNumberShort(sk.tokens.inputTokens) + '</td>' +
+              '<td class="mono">' + formatNumberShort(sk.tokens.cacheReadTokens) + '</td>' +
+              '<td class="mono">' + formatNumberShort(sk.tokens.outputTokens) + '</td>' +
+              '<td class="mono" style="font-weight:700;">' + formatNumberShort(sk.tokens.totalTokens) + '</td>' +
+              '</tr>';
+          }).join('');
+        }
+      }
+
+      const toolsListEl = document.getElementById('nxTopToolsList');
+      const filesListEl = document.getElementById('nxHotFilesList');
+      const tfs = data.toolAndFileStats;
+      if (toolsListEl && tfs) {
+        toolsListEl.innerHTML = tfs.topTools && tfs.topTools.length > 0
+          ? tfs.topTools.map(function(t) { return '<span class="chip mono">' + t.name + ' &bull; ' + t.count + '</span>'; }).join('')
+          : '<span class="chip">No tool calls yet</span>';
+      }
+      if (filesListEl && tfs) {
+        filesListEl.innerHTML = tfs.hotFiles && tfs.hotFiles.length > 0
+          ? tfs.hotFiles.map(function(f) { return '<span class="chip mono">' + f.name + ' &bull; ' + f.count + '</span>'; }).join('')
+          : '<span class="chip">No file edits yet</span>';
+      }
       const elSessId = document.getElementById('nxSessionIdLabel');
       if (elSessId && data.session && data.session.sessionId) {
         elSessId.innerText = data.session.sessionId.replace(/^ext-/, '').toUpperCase().slice(0, 14);
@@ -1813,21 +1877,57 @@ export function getDashboardHtml(): string {
       }).join('');
     }
 
+    function switchLeftBottomView(viewName, btn) {
+      document.querySelectorAll('#nxBottomSeg .nx-seg-btn').forEach(function(b) { b.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+      var pSess = document.getElementById('nxPanelSessions');
+      var pSkills = document.getElementById('nxPanelSkills');
+      var pTools = document.getElementById('nxPanelTools');
+      if (pSess) pSess.style.display = viewName === 'sessions' ? '' : 'none';
+      if (pSkills) pSkills.style.display = viewName === 'skills' ? '' : 'none';
+      if (pTools) pTools.style.display = viewName === 'tools' ? '' : 'none';
+    }
+
     function renderAgentsTab(data) {
       const tbody = document.getElementById('agentsTableBody');
-      tbody.innerHTML = data.agents.map(function(a) {
+      const convMap = new Map((data.conversations || []).map(function(c) { return [c.conversationId, c]; }));
+      const roots = (data.agents || []).filter(function(a) { return !a.isSubagent || !a.parentConversationId; });
+      const childrenByParent = new Map();
+      (data.agents || []).forEach(function(a) {
+        if (a.isSubagent && a.parentConversationId) {
+          if (!childrenByParent.has(a.parentConversationId)) childrenByParent.set(a.parentConversationId, []);
+          childrenByParent.get(a.parentConversationId).push(a);
+        }
+      });
+
+      const ordered = [];
+      roots.forEach(function(r) {
+        ordered.push({ agent: r, isChild: false });
+        const kids = childrenByParent.get(r.conversationId) || [];
+        kids.forEach(function(k) { ordered.push({ agent: k, isChild: true }); });
+      });
+      (data.agents || []).forEach(function(a) {
+        if (a.isSubagent && a.parentConversationId && !roots.some(function(r) { return r.conversationId === a.parentConversationId; })) {
+          ordered.push({ agent: a, isChild: true });
+        }
+      });
+
+      tbody.innerHTML = ordered.map(function(entry) {
+        const a = entry.agent;
+        const conv = convMap.get(a.conversationId);
         const isActive = a.status === 'thinking' || a.status === 'running_tool';
         const badgeClass = isActive ? (a.status === 'running_tool' ? 'running_tool' : 'thinking') : 'idle';
         const badgeText = isActive ? (a.status === 'running_tool' ? 'RUNNING TOOL' : 'THINKING') : 'IDLE';
+        const prefix = entry.isChild ? '<span style="color:#6B7678; margin-right:6px;">&#8627; sub</span>' : '';
 
         return (
           '<tr data-id="' + a.conversationId + '" onclick="openDrawer(this.dataset.id)">' +
           '<td><span class="status-badge ' + badgeClass + '">' + badgeText + '</span></td>' +
-          '<td class="mono">' + a.conversationId.slice(0, 18) + '...</td>' +
+          '<td class="mono">' + prefix + a.conversationId.slice(0, 18) + '...</td>' +
           '<td style="color:var(--t1); font-weight:600;">' + a.model + '</td>' +
           '<td class="mono" style="color:var(--acc);">' + (a.activeTool ? a.activeTool : '--') + '</td>' +
-          '<td class="mono">--</td>' +
-          '<td class="mono">--</td>' +
+          '<td class="mono">' + (conv ? conv.turnCount : '--') + '</td>' +
+          '<td class="mono">' + (conv && conv.tokens ? formatNumberShort(conv.tokens.totalTokens) : '--') + '</td>' +
           '<td>' + formatTime(a.lastEventAt) + '</td>' +
           '</tr>'
         );
@@ -2129,6 +2229,8 @@ export function getDashboardHtml(): string {
     function renderSettings(s) {
       document.getElementById('settingDisablePresence').checked = !!s.disableRichPresence;
       document.getElementById('settingHideModels').checked = !!s.hideModels;
+      const elSkillCtx = document.getElementById('settingShowSkillContext');
+      if (elSkillCtx) elSkillCtx.checked = !!s.showSkillAndContextInDiscord;
       document.getElementById('settingHideFileNames').checked = !!s.hideFileNamesInManualEdits;
       document.getElementById('settingEnableManualPresence').checked = !!s.enableManualEditsPresence;
     }

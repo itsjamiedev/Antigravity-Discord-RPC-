@@ -13,6 +13,12 @@ import { EventEmitter } from 'node:events';
 import type { TokenUsageRecord } from '../shared/types.js';
 import { formatModelDisplayName } from '../discord/presence-manager.js';
 
+export interface SkillTranscriptStat {
+  invocationCount: number;
+  tokens: TokenUsageRecord;
+  lastUsedAt: string;
+}
+
 export interface ActiveAgentInfo {
   conversationId: string;
   lastActiveMs: number;
@@ -22,6 +28,11 @@ export interface ActiveAgentInfo {
   modelTokens?: Record<string, TokenUsageRecord>;
   modelsUsed?: string[];
   dailyTokens?: Record<string, TokenUsageRecord>;
+  latestContextTokens?: number;
+  latestContextModel?: string;
+  skillTokens?: Record<string, SkillTranscriptStat>;
+  toolCounts?: Record<string, number>;
+  fileCounts?: Record<string, number>;
   activeTool?: string | null;
   status?: 'thinking' | 'running_tool' | 'idle' | 'error';
   recentEvents?: Array<{
@@ -526,6 +537,11 @@ interface TranscriptCacheEntry {
   modelTokens: Record<string, TokenUsageRecord>;
   modelsUsed: string[];
   dailyTokens: Record<string, TokenUsageRecord>;
+  latestContextTokens?: number;
+  latestContextModel?: string;
+  skillTokens?: Record<string, SkillTranscriptStat>;
+  toolCounts?: Record<string, number>;
+  fileCounts?: Record<string, number>;
   isExecuting: boolean;
   activeTool: string | null;
   recentEvents: Array<{
@@ -779,6 +795,11 @@ export class AgentWatcher extends EventEmitter {
             modelTokens: parsedTail?.modelTokens,
             modelsUsed: parsedTail?.modelsUsed,
             dailyTokens: parsedTail?.dailyTokens,
+            latestContextTokens: parsedTail?.latestContextTokens,
+            latestContextModel: parsedTail?.latestContextModel,
+            skillTokens: parsedTail?.skillTokens,
+            toolCounts: parsedTail?.toolCounts,
+            fileCounts: parsedTail?.fileCounts,
             activeTool: parsedTail?.activeTool ?? null,
             status: agentStatus,
             recentEvents: parsedTail?.recentEvents ?? [],
@@ -883,6 +904,14 @@ export class AgentWatcher extends EventEmitter {
 
       const modelTokensMap: Record<string, TokenUsageRecord> = {};
       const dailyTokensMap: Record<string, TokenUsageRecord> = {};
+      const skillTokensMap: Record<string, SkillTranscriptStat> = {};
+      const toolCountsMap: Record<string, number> = {};
+      const fileCountsMap: Record<string, number> = {};
+      let activeSkillName: string | null = null;
+      let latestContextTokens = 0;
+      let latestContextModel = latestModel;
+      const skillPathRe = /skills[\\/]([^\\/\s"']+)[\\/]SKILL\.md/i;
+      const fileBasenameRe = /([A-Za-z0-9_.-]+\.(?:ts|tsx|js|jsx|cjs|mjs|json|html|css|md|py))/g;
 
       for (let i = 0; i < lines.length; i++) {
         const rawLine = lines[i];
@@ -921,6 +950,7 @@ export class AgentWatcher extends EventEmitter {
                 sumInput += inTok;
                 sumCache += cacheTok;
                 sumOutput += outTok;
+                latestContextTokens = inTok + cacheTok + outTok;
               }
 
               // Determine exact model for this generation turn (preferring explicit parsed.model from transcript)
@@ -930,7 +960,38 @@ export class AgentWatcher extends EventEmitter {
                   : (stepModelMap.get(plannerTurnIndex) || activeGroundTruthModel);
               const turnModel = formatModelDisplayName(turnRawModel);
               latestModel = turnModel;
+              if (inTok + cacheTok + outTok > 0) {
+                latestContextModel = turnModel;
+              }
               plannerTurnIndex++;
+
+              if (activeSkillName) {
+                if (!skillTokensMap[activeSkillName]) {
+                  skillTokensMap[activeSkillName] = {
+                    invocationCount: 0,
+                    tokens: {
+                      inputTokens: 0,
+                      cacheReadTokens: 0,
+                      outputTokens: 0,
+                      totalTokens: 0,
+                      estimated: false,
+                      source: 'transcript_exact',
+                    },
+                    lastUsedAt:
+                      typeof parsed.created_at === 'string'
+                        ? parsed.created_at
+                        : new Date().toISOString(),
+                  };
+                }
+                const st = skillTokensMap[activeSkillName]!;
+                st.tokens.inputTokens += inTok;
+                st.tokens.cacheReadTokens += cacheTok;
+                st.tokens.outputTokens += outTok;
+                st.tokens.totalTokens += inTok + cacheTok + outTok;
+                if (typeof parsed.created_at === 'string') {
+                  st.lastUsedAt = parsed.created_at;
+                }
+              }
 
               if (!modelTokensMap[turnModel]) {
                 modelTokensMap[turnModel] = {
@@ -973,14 +1034,73 @@ export class AgentWatcher extends EventEmitter {
           }
 
           const eventType = typeof parsed.type === 'string' ? parsed.type : 'UNKNOWN';
+          const eventTs =
+            typeof parsed.created_at === 'string' ? parsed.created_at : new Date().toISOString();
+
+          if (typeof parsed.content === 'string') {
+            const sm = skillPathRe.exec(parsed.content);
+            if (sm && sm[1]) {
+              activeSkillName = sm[1];
+              if (!skillTokensMap[activeSkillName]) {
+                skillTokensMap[activeSkillName] = {
+                  invocationCount: 0,
+                  tokens: {
+                    inputTokens: 0,
+                    cacheReadTokens: 0,
+                    outputTokens: 0,
+                    totalTokens: 0,
+                    estimated: false,
+                    source: 'transcript_exact',
+                  },
+                  lastUsedAt: eventTs,
+                };
+              }
+              skillTokensMap[activeSkillName]!.invocationCount += 1;
+            }
+          }
+
+          if (Array.isArray(parsed.tool_calls)) {
+            for (const tc of parsed.tool_calls) {
+              if (tc && typeof tc.name === 'string') {
+                toolCountsMap[tc.name] = (toolCountsMap[tc.name] || 0) + 1;
+              }
+              const tcSerialized = JSON.stringify(tc || {});
+              const sm = skillPathRe.exec(tcSerialized);
+              if (sm && sm[1]) {
+                activeSkillName = sm[1];
+                if (!skillTokensMap[activeSkillName]) {
+                  skillTokensMap[activeSkillName] = {
+                    invocationCount: 0,
+                    tokens: {
+                      inputTokens: 0,
+                      cacheReadTokens: 0,
+                      outputTokens: 0,
+                      totalTokens: 0,
+                      estimated: false,
+                      source: 'transcript_exact',
+                    },
+                    lastUsedAt: eventTs,
+                  };
+                }
+                skillTokensMap[activeSkillName]!.invocationCount += 1;
+              }
+              let fm: RegExpExecArray | null;
+              fileBasenameRe.lastIndex = 0;
+              while ((fm = fileBasenameRe.exec(tcSerialized)) !== null) {
+                const fname = fm[1];
+                if (fname && fname !== 'SKILL.md') {
+                  fileCountsMap[fname] = (fileCountsMap[fname] || 0) + 1;
+                }
+              }
+            }
+          }
+
           const toolCallName =
             Array.isArray(parsed.tool_calls) &&
             parsed.tool_calls.length > 0 &&
             typeof parsed.tool_calls[0]?.name === 'string'
               ? parsed.tool_calls[0].name
               : null;
-          const eventTs =
-            typeof parsed.created_at === 'string' ? parsed.created_at : new Date().toISOString();
 
           allEvents.push({
             type: eventType,
@@ -1034,6 +1154,11 @@ export class AgentWatcher extends EventEmitter {
         modelTokens: modelTokensMap,
         modelsUsed: modelsUsed.length > 0 ? modelsUsed : [latestModel],
         dailyTokens: dailyTokensMap,
+        latestContextTokens,
+        latestContextModel,
+        skillTokens: skillTokensMap,
+        toolCounts: toolCountsMap,
+        fileCounts: fileCountsMap,
         isExecuting,
         activeTool,
         recentEvents,

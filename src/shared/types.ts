@@ -217,6 +217,32 @@ export interface DailyUsage {
   tokens: TokenUsageRecord;
 }
 
+export interface ContextWindowMetrics {
+  usedTokens: number;
+  maxTokens: number;
+  percentFull: number;
+  model: string;
+  isNearLimit: boolean;
+}
+
+export interface SkillUsageStat {
+  skillName: string;
+  invocationCount: number;
+  tokens: TokenUsageRecord;
+  lastUsedAt: string;
+}
+
+export interface ToolAndFileStats {
+  topTools: Array<{ name: string; count: number }>;
+  hotFiles: Array<{ name: string; count: number }>;
+}
+
+export interface DailyFocusStats {
+  todaySeconds: number;
+  goalSeconds: number;
+  streakDays: number;
+}
+
 export interface TrackerSnapshot {
   session: Session;
   agents: Agent[];
@@ -228,6 +254,10 @@ export interface TrackerSnapshot {
   lifetimeTokens?: TokenUsageRecord;
   timeBreakdown?: TimeBreakdown;
   tokenBreakdown?: TokenBreakdown;
+  contextWindow?: ContextWindowMetrics;
+  skillStats?: SkillUsageStat[];
+  toolAndFileStats?: ToolAndFileStats;
+  dailyFocus?: DailyFocusStats;
 }
 
 /**
@@ -251,6 +281,8 @@ export interface PrivacySettings {
   hideModels: boolean;
   enableManualEditsPresence: boolean;
   hideFileNamesInManualEdits: boolean;
+  showSkillAndContextInDiscord?: boolean;
+  dailyFocusGoalHours?: number;
   discordClientId: string;
   debounceMs: number;
 }

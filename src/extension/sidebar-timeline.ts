@@ -92,6 +92,12 @@ export function getSidebarTimelineAndTokensHtml(params: SidebarTimelineAndTokens
       </div>
 
       <div class="timeline-item" style="position:relative; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+        <span style="position:absolute; left:-16px; top:50%; transform:translateY(-50%); width:10px; height:10px; border-radius:50%; background:#DCF291; border:2px solid #14191A;"></span>
+        <span style="font-size:9px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#464B48;">Daily Focus</span>
+        <b class="mono" id="sideDailyFocus" style="font-size:10px; font-weight:800; color:#14191A;">0m / 6h</b>
+      </div>
+
+      <div class="timeline-item" style="position:relative; display:flex; align-items:center; justify-content:space-between; gap:8px;">
         <span style="position:absolute; left:-16px; top:50%; transform:translateY(-50%); width:10px; height:10px; border-radius:50%; background:#FFFFFF; border:2px solid #14191A;"></span>
         <span style="font-size:9px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#6B7678;">Session Status</span>
         <span class="mono" id="sideTimerStatus" style="font-size:10px; font-weight:800; letter-spacing:0.06em; color:#14191A;">RUNNING</span>
@@ -121,7 +127,7 @@ export function getSidebarTimelineAndTokensHtml(params: SidebarTimelineAndTokens
       <div class="ratio-fill-out" id="barOut" style="width:${outW}%; background:#CBD6D3;"></div>
     </div>
 
-    <div class="micro-stats-row mono" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;">
+    <div class="micro-stats-row mono" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:10px;">
       <div class="micro-stat-col">
         <span class="micro-stat-label"><i style="background:#14191A;"></i> Cache</span>
         <span class="micro-stat-val" id="sideCacheTokens">${cacheCompact}</span>
@@ -133,6 +139,17 @@ export function getSidebarTimelineAndTokensHtml(params: SidebarTimelineAndTokens
       <div class="micro-stat-col">
         <span class="micro-stat-label"><i style="background:#CBD6D3;"></i> Out</span>
         <span class="micro-stat-val" id="sideOutTokens">${outCompact}</span>
+      </div>
+    </div>
+
+    <!-- COMPACT CONTEXT WINDOW FULLNESS BAR -->
+    <div style="background:#C0B8A8; border:1px solid #B2A998; border-radius:8px; padding:7px 9px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:4px;">
+        <span class="mono" id="sideCtxLabel" style="font-size:9px; font-weight:700; color:#14191A;">CTX: 0 / 1M</span>
+        <span class="chip mono" id="sideCtxPct" style="font-size:8.5px; background:#DCF291; color:#14191A;">0%</span>
+      </div>
+      <div style="height:4px; border-radius:999px; background:#B2A998; overflow:hidden;">
+        <div id="sideCtxBar" style="height:100%; width:0%; background:#14191A; border-radius:999px; transition:width 0.3s ease;"></div>
       </div>
     </div>
   </div>`;

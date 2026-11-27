@@ -18,7 +18,18 @@ import type {
   DailyUsage,
   WhitelistedHookPayload,
   TokenUsageRecord,
+  ContextWindowMetrics,
+  SkillUsageStat,
+  ToolAndFileStats,
 } from '../shared/types.js';
+
+export function getModelContextLimit(model: string): number {
+  const m = (model || '').toLowerCase();
+  if (m.includes('gemini')) return 1_000_000;
+  if (m.includes('claude')) return 200_000;
+  if (m.includes('gpt-4') || m.includes('o1') || m.includes('o3')) return 128_000;
+  return 200_000;
+}
 import type { AgentWatcherState } from '../extension/agent-watcher.js';
 import { TokenStore } from './token-store.js';
 import { SessionManager, type PersistentSessionState } from './session-manager.js';
@@ -40,6 +51,15 @@ export class PureTracker {
   private syncedModelStats: ModelStats[] = [];
   private sessionTokens: TokenUsageRecord;
   private initialLifetimeTokens: number;
+  private latestContextWindow: ContextWindowMetrics = {
+    usedTokens: 0,
+    maxTokens: 1_000_000,
+    percentFull: 0,
+    model: 'Gemini',
+    isNearLimit: false,
+  };
+  private aggregatedSkills: SkillUsageStat[] = [];
+  private aggregatedToolsAndFiles: ToolAndFileStats = { topTools: [], hotFiles: [] };
 
   constructor(
     _isLeader: boolean = false,
@@ -306,7 +326,52 @@ export class PureTracker {
     let totalDeltaCache = 0;
     let totalDeltaOut = 0;
 
+    const skillMap = new Map<string, SkillUsageStat>();
+    const toolCountMap = new Map<string, number>();
+    const fileCountMap = new Map<string, number>();
+    let freshestActive: { lastActiveMs: number; usedTokens: number; model: string } | null = null;
+
     for (const item of conversationList) {
+      if (typeof item.latestContextTokens === 'number' && item.latestContextTokens > 0) {
+        const ctxModel = item.latestContextModel || item.model;
+        if (!freshestActive || item.lastActiveMs > freshestActive.lastActiveMs) {
+          freshestActive = {
+            lastActiveMs: item.lastActiveMs,
+            usedTokens: item.latestContextTokens,
+            model: ctxModel,
+          };
+        }
+      }
+      if (item.skillTokens) {
+        for (const [sName, sStat] of Object.entries(item.skillTokens)) {
+          const existing = skillMap.get(sName);
+          if (existing) {
+            existing.invocationCount += sStat.invocationCount;
+            existing.tokens.inputTokens += sStat.tokens.inputTokens;
+            existing.tokens.cacheReadTokens += sStat.tokens.cacheReadTokens;
+            existing.tokens.outputTokens += sStat.tokens.outputTokens;
+            existing.tokens.totalTokens += sStat.tokens.totalTokens;
+            if (sStat.lastUsedAt > existing.lastUsedAt) existing.lastUsedAt = sStat.lastUsedAt;
+          } else {
+            skillMap.set(sName, {
+              skillName: sName,
+              invocationCount: sStat.invocationCount,
+              tokens: { ...sStat.tokens },
+              lastUsedAt: sStat.lastUsedAt,
+            });
+          }
+        }
+      }
+      if (item.toolCounts) {
+        for (const [tName, count] of Object.entries(item.toolCounts)) {
+          toolCountMap.set(tName, (toolCountMap.get(tName) ?? 0) + count);
+        }
+      }
+      if (item.fileCounts) {
+        for (const [fName, count] of Object.entries(item.fileCounts)) {
+          fileCountMap.set(fName, (fileCountMap.get(fName) ?? 0) + count);
+        }
+      }
       if (item.modelTokens && Object.keys(item.modelTokens).length > 0) {
         const res = this.tokenStore.recordConversationMultiModelTokens(
           item.conversationId,
@@ -436,6 +501,36 @@ export class PureTracker {
     }
     this.session.sessionTokens = { ...this.sessionTokens };
     this.session.totalConversations = this.conversations.size;
+
+    if (freshestActive) {
+      const maxTokens = getModelContextLimit(freshestActive.model);
+      const percentFull = Math.min(
+        100,
+        Math.round((freshestActive.usedTokens / Math.max(1, maxTokens)) * 100)
+      );
+      this.latestContextWindow = {
+        usedTokens: freshestActive.usedTokens,
+        maxTokens,
+        percentFull,
+        model: freshestActive.model,
+        isNearLimit: percentFull >= 80,
+      };
+    }
+
+    this.aggregatedSkills = Array.from(skillMap.values()).sort(
+      (a, b) => b.tokens.totalTokens - a.tokens.totalTokens
+    );
+    this.aggregatedToolsAndFiles = {
+      topTools: Array.from(toolCountMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([name, count]) => ({ name, count })),
+      hotFiles: Array.from(fileCountMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([name, count]) => ({ name, count })),
+    };
+
     this.notify();
   }
 
@@ -507,6 +602,13 @@ export class PureTracker {
       lifetimeTokens: { ...effectiveTokens },
       timeBreakdown: effectiveTimeBreakdown,
       tokenBreakdown: effectiveTokenBreakdown,
+      contextWindow: { ...this.latestContextWindow },
+      skillStats: this.aggregatedSkills.map((s) => ({ ...s, tokens: { ...s.tokens } })),
+      toolAndFileStats: {
+        topTools: [...this.aggregatedToolsAndFiles.topTools],
+        hotFiles: [...this.aggregatedToolsAndFiles.hotFiles],
+      },
+      dailyFocus: this.timeLedger.getDailyFocusStats(Date.now(), this.isPaused),
       agents: agentsList,
       activeAgents: activeAgentsList,
       conversations: Array.from(this.conversations.values()),

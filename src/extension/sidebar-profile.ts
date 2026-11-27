@@ -95,7 +95,7 @@ export function getSidebarProfileAndTabsHtml(params: SidebarProfileAndTabsParams
     </div>
   </div>
 
-  <!-- MODELS TAB PANEL -->
+  <!-- MODELS & SKILLS TAB PANEL -->
   <div class="side-panel-view" id="side-view-models">
     <div class="side-card">
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
@@ -103,6 +103,13 @@ export function getSidebarProfileAndTabsHtml(params: SidebarProfileAndTabsParams
         <span class="chip mono" id="sideModelCount">${modelsCount} MODELS</span>
       </div>
       <div id="sideModelList">${modelsHtml}</div>
+    </div>
+    <div class="side-card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+        <span class="eyebrow">SKILL TOKENS</span>
+        <span class="chip mono" id="sideSkillCount">0 SKILLS</span>
+      </div>
+      <div id="sideSkillList"><div style="font-size:10px; color:#464B48; padding:4px 0;">No skill token reads yet.</div></div>
     </div>
   </div>
 

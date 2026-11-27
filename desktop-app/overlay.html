@@ -819,6 +819,7 @@
         </div>
         <div class="ag-notch-right">
           <span class="ag-notch-model" id="notchModelBadge">Idle</span>
+          <span class="ag-notch-model" id="notchCtxBadge" style="display:none; background:rgba(220,38,38,0.22); border-color:rgba(220,38,38,0.5); color:#FCA5A5;">CTX 80%+</span>
           <span class="ag-notch-timer" id="notchTimerText">00:00:00</span>
         </div>
       </div>
@@ -1471,6 +1472,15 @@
       const led = document.getElementById('notchLed');
       const statusTxt = document.getElementById('notchStatusText');
       const modelBadge = document.getElementById('notchModelBadge');
+      const ctxBadge = document.getElementById('notchCtxBadge');
+      if (ctxBadge) {
+        if (data.contextWindow && data.contextWindow.isNearLimit) {
+          ctxBadge.style.display = 'inline-flex';
+          ctxBadge.innerText = 'CTX ' + data.contextWindow.percentFull + '%';
+        } else {
+          ctxBadge.style.display = 'none';
+        }
+      }
 
       if (!isRunning) {
         if (led) led.className = 'ag-notch-led offline';

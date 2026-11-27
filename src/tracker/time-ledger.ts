@@ -221,6 +221,31 @@ export class TimeLedger {
     };
   }
 
+  public getDailyFocusStats(
+    nowMs: number = Date.now(),
+    isPaused: boolean = false,
+    goalHours: number = 6
+  ): { todaySeconds: number; goalSeconds: number; streakDays: number } {
+    const pending = this.getPendingDeltaSeconds(nowMs, isPaused);
+    const todayKey = toUtcDateKey(nowMs);
+    const todaySeconds = (this.dailyActiveSeconds.get(todayKey) ?? 0) + pending;
+    const goalSeconds = Math.max(1800, Math.round(goalHours * 3600));
+
+    let streakDays = todaySeconds > 0 ? 1 : 0;
+    let cursorMs = nowMs - 86400 * 1000;
+    for (let i = 0; i < 365; i++) {
+      const k = toUtcDateKey(cursorMs);
+      if ((this.dailyActiveSeconds.get(k) ?? 0) > 0) {
+        streakDays++;
+        cursorMs -= 86400 * 1000;
+      } else {
+        break;
+      }
+    }
+
+    return { todaySeconds, goalSeconds, streakDays };
+  }
+
   public saveSync(nowMs: number = Date.now()): void {
     try {
       const dir = path.dirname(this.filePath);

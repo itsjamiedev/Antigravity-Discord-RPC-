@@ -180,6 +180,15 @@ export function buildDiscordActivity(
       parts.push(dualTokenStr);
     }
 
+    if (settings.showSkillAndContextInDiscord) {
+      const topSkill = snapshot.skillStats?.[0]?.skillName;
+      const ctxPct = snapshot.contextWindow?.percentFull;
+      if (topSkill) parts.push(`Skill: ${topSkill}`);
+      if (typeof ctxPct === 'number' && snapshot.contextWindow && snapshot.contextWindow.usedTokens > 0) {
+        parts.push(`Ctx: ${ctxPct}%`);
+      }
+    }
+
     const state = parts.length > 0 ? parts.join(' • ') : undefined;
 
     return {
